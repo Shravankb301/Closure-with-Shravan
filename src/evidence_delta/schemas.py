@@ -53,7 +53,9 @@ class MutationResult(BaseModel):
 
 class WorkerRunResult(BaseModel):
     claimed: bool
+    published: bool = False
     job_id: str | None = None
     artifact_id: str | None = None
     artifact_key: str | None = None
     version: int | None = None
+    reason: str | None = None

@@ -123,7 +123,12 @@ class ArtifactRecord(Base):
     artifact_type: Mapped[str] = mapped_column(String(80), nullable=False)
     artifact_key: Mapped[str] = mapped_column(String(280), nullable=False)
     current_version_id: Mapped[str | None] = mapped_column(
-        ForeignKey("artifact_versions.id", use_alter=True, ondelete="SET NULL"),
+        ForeignKey(
+            "artifact_versions.id",
+            name="fk_artifact_current_version",
+            use_alter=True,
+            ondelete="SET NULL",
+        ),
         nullable=True,
     )
 
@@ -132,12 +137,20 @@ class ArtifactVersionRecord(Base):
     __tablename__ = "artifact_versions"
     __table_args__ = (
         UniqueConstraint("artifact_id", "version", name="uq_artifact_version"),
-        UniqueConstraint("artifact_id", "input_fingerprint", name="uq_artifact_fingerprint"),
+        UniqueConstraint("source_job_id", name="uq_artifact_source_job"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     artifact_id: Mapped[str] = mapped_column(
         ForeignKey("artifacts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source_job_id: Mapped[str] = mapped_column(
+        ForeignKey(
+            "recompute_jobs.id",
+            name="fk_artifact_version_source_job",
+            use_alter=True,
+        ),
+        nullable=False,
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     computed_at_revision: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -183,6 +196,7 @@ class RecomputeJobRecord(Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="QUEUED")
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    claim_token: Mapped[str | None] = mapped_column(String(36), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now

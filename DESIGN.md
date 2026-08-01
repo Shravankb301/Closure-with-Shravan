@@ -14,20 +14,32 @@ curated example.
 ## Mutation path
 
 1. Lock the case row and advance its revision.
-2. Append a document or a document-retraction tombstone.
-3. Derive the affected entity-day change keys.
-4. Advance only those key versions.
-5. Create one idempotent recomputation job per affected artifact and revision.
-6. Persist a change set containing affected and untouched counts.
+2. Check idempotency after acquiring the lock, so concurrent duplicates return
+   one logical document instead of racing a unique constraint.
+3. Append a document or a document-retraction tombstone.
+4. Derive the affected entity-day change keys.
+5. Advance only those key versions.
+6. Find artifacts through their recorded dependency reads.
+7. Create one idempotent recomputation job per affected artifact and revision.
+8. Persist a change set containing affected and untouched counts.
 
 ## Worker path
 
 1. Claim one available or lease-expired job with `FOR UPDATE SKIP LOCKED`.
+   Lease timestamps come from the database, and every claim receives a new
+   fencing token.
 2. Read active assertions for the artifact key.
-3. Derive payload, exact lineage, input fingerprint, and dependency read set.
-4. In one transaction, append the artifact version and dependencies, move the
-   current pointer, and mark the job successful.
-5. If the transaction rolls back, the job lease expires and the same work can
+3. Read the dependency version, inputs, and dependency version again. If the
+   version changed, supersede the job instead of combining inconsistent reads.
+4. Derive payload, exact lineage, input fingerprint, and dependency read set.
+5. Lock every dependency key and verify its observed version is still current.
+6. Verify the fencing token still owns the job. A resumed expired worker cannot
+   publish or overwrite the replacement worker's state.
+7. In one transaction, append the artifact version and dependencies, move the
+   current pointer, and mark the job successful. Publication idempotency uses
+   the job ID, not output equality, so an equivalent state at a later revision
+   still records a fresh dependency observation.
+8. If the transaction rolls back, the job lease expires and the same work can
    be retried without orphan rows.
 
 ## Four failure modes to whiteboard
@@ -43,10 +55,10 @@ uncertain, invalidate a broader partition rather than risk a false negative.
 ### 2. Stale publication during a concurrent mutation
 
 A worker can compute from key version 12 while another transaction advances it
-to 13. Before publication, a production worker must lock every observed key and
-verify its version is unchanged. If verification fails, it should discard the
-result and enqueue a retry. This check is documented but deliberately not built
-in the kernel.
+to 13. The worker locks its observed keys immediately before publication and
+compares versions. If one changed, the job becomes `SUPERSEDED`; the mutation
+that advanced the key already enqueued replacement work in the same transaction.
+The race is forced deterministically in the test suite.
 
 ### 3. Orphaned state after retraction
 
@@ -69,3 +81,22 @@ durable leases. PostgreSQL already supplies those. Redis, Celery, and a graph
 database would add operational surfaces without strengthening the invariant.
 SQLite remains available only for a zero-setup local demonstration and tests;
 it does not provide PostgreSQL's concurrent `SKIP LOCKED` behavior.
+
+CI therefore starts PostgreSQL and proves that four workers claim twenty queued
+jobs exactly once each. A separate PostgreSQL test submits the same document
+from two concurrent transactions and verifies one idempotent logical result.
+
+## Retry policy
+
+Deterministic application failures become permanent after one attempt.
+Explicit transient failures, connection failures, timeouts, and SQLAlchemy
+operational errors may consume at most three attempts. Persisted errors contain
+only the exception class. Immediate retry keeps the kernel small, but production
+would need backoff, jitter, `next_attempt_at`, and a dead-letter review path.
+
+## Reader contract
+
+An artifact response includes `fresh` and the observed/current version for each
+dependency. A pending or permanently failed recomputation therefore cannot make
+an older artifact look current. This exposes staleness; it does not decide
+whether a caller should block, warn, or deliberately use the older version.

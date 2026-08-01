@@ -38,4 +38,5 @@ def test_api_vertical_slice() -> None:
 
         artifact = client.get(f"/cases/{case_id}/artifacts/timeline:john-carter:2026-03-14")
         assert artifact.status_code == 200
+        assert artifact.json()["fresh"] is True
         assert artifact.json()["payload"]["events"][0]["value"] == ("Entered Northside Storage")

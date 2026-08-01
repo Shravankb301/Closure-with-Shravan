@@ -86,7 +86,8 @@ def build_timeline(
     fingerprint = sha256_json(
         {
             "artifact_key": artifact_key,
-            "assertion_ids": [item.assertion_id for item in ordered],
+            "payload": payload,
+            "lineage": lineage,
             "deriver_version": "timeline-v1",
         }
     )
