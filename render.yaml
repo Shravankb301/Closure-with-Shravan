@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     region: oregon
-    buildCommand: python -m pip install -e ".[postgres]"
+    buildCommand: python -m pip install -e .
     preDeployCommand: alembic upgrade head
     startCommand: uvicorn evidence_delta.api:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
