@@ -21,6 +21,9 @@ The tests are the evidence for a decision, not the prose in this file.
 | Store immutable artifact versions plus a current pointer | Update one artifact row in place | Readers observe partial writes and history disappears | Transactional publication and version-count tests | Old-version retention policy is not designed |
 | Key publication idempotency by job ID | Deduplicate versions by output fingerprint | A state cycle reuses dependency observations from an older revision | Equivalent-state-cycle test | Administrative job replay semantics are not designed |
 | Expose dependency freshness to readers | Return the last artifact without qualification | A failed or pending recompute looks current | Pending-recompute freshness test | Callers must still enforce their own stale-data policy |
+| Run schema changes with Alembic | Call `create_all` against a persistent database | Model changes drift across deployments and cannot be reviewed or rolled back | Upgrade, drift-check, downgrade, and PostgreSQL CI checks | Data backfills still need explicit migration design |
+| Use an embedded worker only on the free demo | Pretend a free web process is a production worker | A sleeping instance leaves queued work pending | UI exposes freshness and the same worker has a standalone entry point | The free service processes no work while asleep |
+| Require a static demo key for mutable hosted routes | Publish an anonymous write API | Public traffic creates unbounded synthetic cases and compute | API authorization test | No users, roles, rotation workflow, or per-principal audit |
 | Keep payload and lineage in JSON for the kernel | Normalize every event and span now | Premature schema breadth obscures the recomputation invariant | Small synthetic workload only | Large lineage must move to normalized or object storage |
 | Use change-key versions instead of the whole case revision | Invalidate on any case mutation | Unrelated evidence causes needless retries and recomputation | Three-of-one-hundred selectivity test | Incorrect key granularity can still miss an impact |
 
@@ -71,7 +74,9 @@ also enqueued the newer job in its transaction.
    case. Production should remove redundant case IDs or add composite keys.
 6. Status values and state transitions have no database `CHECK` constraints.
    Worker credentials and transition guards are the current enforcement layer.
-7. Schema migrations, model-output cache invalidation, artifact retention,
+7. Model-output cache invalidation, artifact retention, role-based
    authorization, backups, and disaster recovery are deliberately not solved.
-8. The equivalence oracle covers deterministic structured assertions. It does
+8. The hosted demo uses one static API key and has no per-user rate limit. It is
+   suitable for controlled sharing, not anonymous public traffic.
+9. The equivalence oracle covers deterministic structured assertions. It does
    not establish the correctness of upstream extraction or entity resolution.

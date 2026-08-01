@@ -100,3 +100,16 @@ An artifact response includes `fresh` and the observed/current version for each
 dependency. A pending or permanently failed recomputation therefore cannot make
 an older artifact look current. This exposes staleness; it does not decide
 whether a caller should block, warn, or deliberately use the older version.
+
+## Deployment boundary
+
+PostgreSQL schema changes are applied through a frozen Alembic migration before
+the web process starts. Provider connection strings are normalized to psycopg 3,
+the engine checks pooled connections before reuse, and `/health` verifies a real
+database round trip.
+
+The free interview deployment embeds the queue poller in the web process. This
+preserves transaction, lease, fencing, and retry semantics, but it is an
+operational compromise: a sleeping web instance cannot process work. A paid or
+production deployment should run the same `evidence-delta-worker` entry point as
+an independently scalable worker service.

@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import os
+import secrets
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse
+from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_delta.database import Database
+from evidence_delta.runtime import WorkerLoop
+from evidence_delta.scenario import build_selectivity_scenario
 from evidence_delta.schemas import CaseInput, DocumentInput, RetractionInput
 from evidence_delta.service import EvidenceService
 from evidence_delta.worker import RecomputeWorker
@@ -16,11 +23,38 @@ def create_app(database_url: str | None = None) -> FastAPI:
     database = Database(url)
     service = EvidenceService(database)
     worker = RecomputeWorker(database)
+    configured_key = os.getenv("DEMO_API_KEY") or None
+    demo_key_required = os.getenv("REQUIRE_DEMO_API_KEY", "false").lower() == "true"
+    if demo_key_required and configured_key is None:
+        raise RuntimeError("DEMO_API_KEY is required for this deployment")
+    embedded_worker = os.getenv("RUN_EMBEDDED_WORKER", "false").lower() == "true"
+    manual_drain = os.getenv("ENABLE_MANUAL_DRAIN", "true").lower() == "true"
+    worker_runtime: WorkerLoop | None = None
+
+    def require_demo_key(
+        x_demo_key: Annotated[str | None, Header()] = None,
+    ) -> None:
+        if configured_key is None:
+            return
+        supplied = x_demo_key or ""
+        if not secrets.compare_digest(supplied, configured_key):
+            raise HTTPException(status_code=401, detail="A valid demo key is required")
+
+    secured = [Depends(require_demo_key)]
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
-        database.create_schema()
-        yield
+        nonlocal worker_runtime
+        if database.engine.dialect.name == "sqlite":
+            database.create_schema()
+        if embedded_worker:
+            worker_runtime = WorkerLoop(worker)
+            worker_runtime.start()
+        try:
+            yield
+        finally:
+            if worker_runtime is not None:
+                worker_runtime.stop()
 
     application = FastAPI(
         title="Evidence Delta Engine",
@@ -28,23 +62,43 @@ def create_app(database_url: str | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    @application.get("/", include_in_schema=False)
+    def dashboard() -> FileResponse:
+        return FileResponse(Path(__file__).parent / "static" / "index.html")
+
     @application.get("/health")
     def health() -> dict:
-        return {"status": "ok"}
+        try:
+            database.ping()
+        except SQLAlchemyError as error:
+            raise HTTPException(status_code=503, detail="Database unavailable") from error
+        return {
+            "status": "ok",
+            "database": database.engine.dialect.name,
+            "worker_mode": "embedded" if embedded_worker else "external_or_manual",
+        }
 
-    @application.post("/cases", status_code=201)
+    @application.post("/cases", status_code=201, dependencies=secured)
     def create_case(body: CaseInput) -> dict:
         record = service.create_case(body.name)
         return {"id": record.id, "name": record.name, "revision": record.revision}
 
-    @application.post("/cases/{case_id}/documents", status_code=202)
+    @application.post("/demo/scenario", status_code=201, dependencies=secured)
+    def create_demo_scenario() -> dict:
+        return build_selectivity_scenario(service, worker)
+
+    @application.post("/cases/{case_id}/documents", status_code=202, dependencies=secured)
     def add_document(case_id: str, body: DocumentInput) -> dict:
         try:
             return service.ingest_document(case_id, body).model_dump(mode="json")
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @application.post("/cases/{case_id}/documents/{document_id}/retractions", status_code=202)
+    @application.post(
+        "/cases/{case_id}/documents/{document_id}/retractions",
+        status_code=202,
+        dependencies=secured,
+    )
     def retract_document(case_id: str, document_id: str, body: RetractionInput) -> dict:
         try:
             return service.retract_document(case_id, document_id, body.reason).model_dump(
@@ -53,15 +107,17 @@ def create_app(database_url: str | None = None) -> FastAPI:
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @application.post("/workers/drain")
+    @application.post("/workers/drain", dependencies=secured)
     def drain_worker() -> dict:
+        if not manual_drain:
+            raise HTTPException(status_code=404, detail="Manual worker drain is disabled")
         results = worker.run_until_idle()
         return {
             "processed": len(results),
             "artifacts": [item.model_dump(mode="json") for item in results],
         }
 
-    @application.get("/cases/{case_id}/artifacts/{artifact_key:path}")
+    @application.get("/cases/{case_id}/artifacts/{artifact_key:path}", dependencies=secured)
     def get_artifact(case_id: str, artifact_key: str) -> dict:
         result = service.current_artifact(case_id, artifact_key)
         if result is None:

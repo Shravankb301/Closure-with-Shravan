@@ -9,6 +9,7 @@ description = "A deterministic, provenance-preserving incremental recomputation 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "alembic>=1.16,<2",
   "fastapi>=0.116,<1",
   "pydantic>=2.11,<3",
   "sqlalchemy>=2.0,<3",
@@ -32,9 +33,13 @@ select = ["E", "F", "I", "B", "UP"]
 
 [project.scripts]
 evidence-delta-demo = "evidence_delta.demo:main"
+evidence-delta-worker = "evidence_delta.runtime:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+evidence_delta = ["static/*.html"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
