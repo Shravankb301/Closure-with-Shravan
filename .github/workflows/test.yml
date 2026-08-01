@@ -22,6 +22,7 @@ jobs:
           --health-timeout 2s
           --health-retries 15
     env:
+      DATABASE_URL: postgresql+psycopg://evidence_delta:evidence_delta@localhost:5432/evidence_delta_test
       TEST_DATABASE_URL: postgresql+psycopg://evidence_delta:evidence_delta@localhost:5432/evidence_delta_test
     steps:
       - uses: actions/checkout@v4
