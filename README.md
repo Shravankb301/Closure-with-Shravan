@@ -64,6 +64,18 @@ job completion are committed in one transaction. A crash before commit leaves
 no artifact versions or dependency rows behind, and the expired lease makes the
 same job retryable.
 
+Before publication, the worker locks every dependency key in sorted order and
+compares its current version with the version observed during computation. If a
+key advanced, the stale job becomes `SUPERSEDED` and cannot move the artifact's
+current pointer. A per-claim fencing token also prevents a lease-expired worker
+from overwriting its replacement. Deterministic failures stop immediately;
+classified transient failures have a bounded attempt budget. Persisted errors
+contain only exception classes so evidence text does not leak into job records.
+
+Artifact responses expose `fresh` plus observed and current dependency versions.
+Pending or permanently failed recomputation therefore remains visible instead
+of silently presenting an old artifact as current.
+
 ## Data semantics
 
 - `documents` are idempotent within a case by canonical content hash.
@@ -72,7 +84,8 @@ same job retryable.
 - `change_keys` identify the smallest supported recomputation partition.
 - `artifact_versions` are immutable results with exact source lineage.
 - `artifact_dependencies` record the keys and versions actually read.
-- `recompute_jobs` use leases and transactional publication for crash recovery.
+- `recompute_jobs` use database-time leases, fencing tokens, and transactional
+  publication for crash recovery.
 
 ## API
 
@@ -117,14 +130,13 @@ Synthetic inputs contain ground-truth entity IDs. Entity resolution is treated
 as an upstream oracle because uncertain merges and splits are a separate hard
 problem that would obscure the incremental-computation experiment.
 
-### Concurrent case revisions
+### Concurrent mutations
 
-The current worker records the case revision and exact change-key versions it
-observed, but it does not yet reject publication when one of those keys advances
-during computation. The production fix is an optimistic publication check:
-lock the observed keys, compare their versions, and retry instead of publishing
-if any changed. Using the whole `case_revision` would be safe but would cause
-unnecessary retries for unrelated evidence.
+Mutations serialize on the case row, then advance affected keys and enqueue work
+in the same transaction. Workers use key-level optimistic publication checks,
+not the whole `case_revision`, so unrelated evidence does not reject valid work.
+The test suite forces a mutation precisely between compute and publish and
+verifies that the stale version never appears.
 
 ### Deliberate exclusions
 
@@ -133,4 +145,6 @@ language question answering, authentication, and a user interface are outside
 scope. Synthetic structured assertions keep the central correctness property
 testable and explainable.
 
-See [DESIGN.md](DESIGN.md) for failure modes and transactional details.
+See [DESIGN.md](DESIGN.md) for failure modes and transactional details, and
+[ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) for challenged alternatives,
+lock ordering, retry states, and assumptions that remain unsafe.

@@ -3,13 +3,14 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import exists, func, select
+from sqlalchemy import and_, exists, func, select
 from sqlalchemy.orm import Session
 
 from evidence_delta.database import Database
 from evidence_delta.domain import (
     AssertionView,
     build_timeline,
+    canonical_json,
     parse_timeline_key,
     sha256_json,
     timeline_key,
@@ -46,12 +47,25 @@ class EvidenceService:
     @staticmethod
     def _document_hash(document: DocumentInput) -> str:
         body = document.model_dump(mode="json", exclude={"filename"})
+        # Extraction order is not evidence identity. Sorting prevents a
+        # harmless parser reorder from bypassing the idempotency key.
+        body["assertions"] = sorted(body["assertions"], key=canonical_json)
         return sha256_json(body)
 
     def ingest_document(self, case_id: str, document: DocumentInput) -> MutationResult:
         content_hash = self._document_hash(document)
 
         with self.database.session() as session, session.begin():
+            # The case row is the mutation serialization boundary. The content
+            # hash check must happen after this lock; checking first allows two
+            # concurrent uploads to both observe absence and race the unique
+            # constraint instead of returning the same logical result.
+            case = session.scalar(
+                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
+            )
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+
             existing = session.scalar(
                 select(DocumentRecord).where(
                     DocumentRecord.case_id == case_id,
@@ -59,28 +73,17 @@ class EvidenceService:
                 )
             )
             if existing is not None:
-                case_revision = session.scalar(
-                    select(CaseRecord.revision).where(CaseRecord.id == case_id)
-                )
-                if case_revision is None:
-                    raise KeyError(f"Unknown case: {case_id}")
                 return MutationResult(
                     case_id=case_id,
                     document_id=existing.id,
                     change_set_id=None,
-                    revision=case_revision,
+                    revision=case.revision,
                     operation="ADD_DOCUMENT",
                     deduplicated=True,
                     affected_keys=[],
                     queued_artifacts=0,
                     untouched_artifacts=self._artifact_count(session, case_id),
                 )
-
-            case = session.scalar(
-                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
-            )
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
 
             case.revision += 1
             revision = case.revision
@@ -146,6 +149,12 @@ class EvidenceService:
 
     def retract_document(self, case_id: str, document_id: str, reason: str) -> MutationResult:
         with self.database.session() as session, session.begin():
+            case = session.scalar(
+                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
+            )
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+
             document = session.scalar(
                 select(DocumentRecord).where(
                     DocumentRecord.id == document_id,
@@ -161,26 +170,17 @@ class EvidenceService:
                 )
             )
             if existing is not None:
-                case_revision = session.scalar(
-                    select(CaseRecord.revision).where(CaseRecord.id == case_id)
-                )
                 return MutationResult(
                     case_id=case_id,
                     document_id=document_id,
                     change_set_id=None,
-                    revision=int(case_revision or 0),
+                    revision=case.revision,
                     operation="RETRACT_DOCUMENT",
                     deduplicated=True,
                     affected_keys=[],
                     queued_artifacts=0,
                     untouched_artifacts=self._artifact_count(session, case_id),
                 )
-
-            case = session.scalar(
-                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
-            )
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
 
             case.revision += 1
             revision = case.revision
@@ -389,6 +389,7 @@ class EvidenceService:
                 select(
                     ArtifactRecord.id,
                     ArtifactRecord.artifact_key,
+                    ArtifactVersionRecord.id.label("artifact_version_id"),
                     ArtifactVersionRecord.version,
                     ArtifactVersionRecord.payload,
                     ArtifactVersionRecord.lineage,
@@ -405,11 +406,40 @@ class EvidenceService:
             ).one_or_none()
             if row is None:
                 return None
+            dependency_versions = session.execute(
+                select(
+                    ArtifactDependencyRecord.change_key,
+                    ArtifactDependencyRecord.observed_version,
+                    ChangeKeyRecord.version.label("current_version"),
+                )
+                .join(
+                    ChangeKeyRecord,
+                    and_(
+                        ChangeKeyRecord.case_id == case_id,
+                        ChangeKeyRecord.key == ArtifactDependencyRecord.change_key,
+                    ),
+                )
+                .where(ArtifactDependencyRecord.artifact_version_id == row.artifact_version_id)
+                .order_by(ArtifactDependencyRecord.change_key)
+            ).all()
+            fresh = bool(dependency_versions) and all(
+                dependency.observed_version == dependency.current_version
+                for dependency in dependency_versions
+            )
             return {
                 "artifact_id": row.id,
                 "artifact_key": row.artifact_key,
                 "version": row.version,
                 "computed_at_revision": row.computed_at_revision,
+                "fresh": fresh,
+                "dependency_versions": [
+                    {
+                        "key": dependency.change_key,
+                        "observed": dependency.observed_version,
+                        "current": dependency.current_version,
+                    }
+                    for dependency in dependency_versions
+                ],
                 "payload": row.payload,
                 "lineage": row.lineage,
             }
