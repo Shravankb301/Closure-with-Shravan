@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A provenance-preserving incremental recomputation demonstration.">
+  <title>Evidence Delta Engine</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #07110f;
+      --panel: #0d1a17;
+      --panel-raised: #13231f;
+      --line: #294039;
+      --line-soft: rgba(145, 178, 166, 0.16);
+      --text: #f2f7f4;
+      --muted: #93aaa2;
+      --mint: #61e7b7;
+      --mint-dark: #153f33;
+      --amber: #f1c66d;
+      --red: #ff8a7a;
+      --blue: #8db9ff;
+      --radius: 18px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 80% -10%, rgba(97, 231, 183, 0.11), transparent 34rem),
+        linear-gradient(180deg, #07110f 0%, #091512 100%);
+      color: var(--text);
+    }
+
+    button, input { font: inherit; }
+
+    button:focus-visible, input:focus-visible, a:focus-visible {
+      outline: 3px solid rgba(97, 231, 183, 0.5);
+      outline-offset: 3px;
+    }
+
+    .shell { max-width: 1420px; margin: 0 auto; padding: 28px; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 13px; }
+
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(97, 231, 183, 0.5);
+      border-radius: 13px;
+      background: linear-gradient(145deg, rgba(97, 231, 183, 0.22), rgba(97, 231, 183, 0.04));
+      color: var(--mint);
+      font: 700 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      box-shadow: inset 0 0 24px rgba(97, 231, 183, 0.08);
+    }
+
+    .brand h1 { margin: 0; font-size: 17px; letter-spacing: -0.02em; }
+    .brand p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+
+    .health {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(13, 26, 23, 0.7);
+    }
+
+    .health-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
+    .health.ready .health-dot { background: var(--mint); box-shadow: 0 0 12px rgba(97, 231, 183, 0.8); }
+    .health.error .health-dot { background: var(--red); }
+
+    a { color: var(--muted); text-decoration: none; }
+    a:hover { color: var(--text); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.78fr) minmax(520px, 1.7fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: rgba(13, 26, 23, 0.88);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+    }
+
+    .control-panel { position: sticky; top: 24px; }
+    .panel-section { padding: 24px; border-bottom: 1px solid var(--line-soft); }
+    .panel-section:last-child { border-bottom: 0; }
+
+    .eyebrow {
+      margin: 0 0 9px;
+      color: var(--mint);
+      font: 650 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h2 { margin: 0; font-size: clamp(23px, 3vw, 36px); line-height: 1.08; letter-spacing: -0.04em; }
+    h3 { margin: 0; font-size: 15px; letter-spacing: -0.02em; }
+    .lede { margin: 13px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
+
+    .key-row { display: flex; gap: 8px; }
+
+    input {
+      width: 100%;
+      min-height: 43px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #091410;
+      color: var(--text);
+    }
+
+    input::placeholder { color: #5e756d; }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 44px;
+      padding: 0 16px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .button:hover:not(:disabled) { transform: translateY(-1px); }
+    .button:disabled { cursor: wait; opacity: 0.55; }
+    .button-primary { width: 100%; background: var(--mint); color: #04100c; }
+    .button-primary:hover:not(:disabled) { background: #7ceec5; }
+    .button-secondary { background: transparent; color: var(--text); border-color: var(--line); }
+    .button-secondary:hover:not(:disabled) { border-color: #49665d; background: rgba(255, 255, 255, 0.03); }
+    .button-danger { color: #ffd4ce; border-color: rgba(255, 138, 122, 0.32); background: rgba(255, 138, 122, 0.07); }
+    .button-small { min-height: 36px; padding: 0 12px; }
+    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
+
+    .scenario-note {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 11px;
+      margin-top: 17px;
+      padding: 13px;
+      border: 1px solid rgba(241, 198, 109, 0.18);
+      border-radius: 12px;
+      background: rgba(241, 198, 109, 0.05);
+      color: #c9b88f;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .scenario-note strong { color: var(--amber); }
+
+    .main-panel { min-height: 720px; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: end;
+      padding: 28px;
+      border-bottom: 1px solid var(--line-soft);
+      background: linear-gradient(135deg, rgba(97, 231, 183, 0.04), transparent 55%);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font: 650 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .status-badge.current { color: var(--mint); border-color: rgba(97, 231, 183, 0.28); background: rgba(97, 231, 183, 0.06); }
+    .status-badge.pending { color: var(--amber); border-color: rgba(241, 198, 109, 0.28); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line-soft);
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .metric { padding: 20px; background: var(--panel); }
+    .metric-value { display: block; font-size: 26px; font-weight: 760; letter-spacing: -0.04em; }
+    .metric-value.mint { color: var(--mint); }
+    .metric-value.amber { color: var(--amber); }
+    .metric-label { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+
+    .trace-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); }
+    .trace-column { min-height: 420px; padding: 24px; }
+    .trace-column + .trace-column { border-left: 1px solid var(--line-soft); }
+
+    .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .muted { color: var(--muted); }
+    .tiny { font-size: 11px; }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 310px;
+      padding: 34px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .empty-state strong { display: block; color: var(--text); margin-bottom: 7px; }
+
+    .timeline { position: relative; display: grid; gap: 12px; }
+    .timeline::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 1px; background: var(--line); }
+
+    .event { position: relative; display: grid; grid-template-columns: 18px 1fr; gap: 13px; }
+    .event-dot { z-index: 1; width: 9px; height: 9px; margin-top: 18px; margin-left: 4px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 4px var(--panel), 0 0 13px rgba(97, 231, 183, 0.35); }
+    .event-card { padding: 15px; border: 1px solid var(--line-soft); border-radius: 13px; background: rgba(19, 35, 31, 0.68); }
+    .event-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--muted); font-size: 10px; }
+    .event-value { margin: 0; font-size: 13px; line-height: 1.5; }
+
+    .lineage-list { display: grid; gap: 9px; }
+    .lineage-item { padding: 13px; border: 1px solid var(--line-soft); border-radius: 12px; background: rgba(7, 17, 15, 0.38); }
+    .lineage-source { margin: 0 0 7px; color: var(--blue); font: 650 10px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+    .lineage-text { margin: 0; color: #c2d1cc; font-size: 12px; line-height: 1.5; }
+
+    .dependency {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 9px;
+      align-items: center;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line-soft);
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .dependency-key { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .version-pair { color: var(--mint); }
+
+    .activity {
+      padding: 18px 24px;
+      border-top: 1px solid var(--line-soft);
+      background: rgba(7, 17, 15, 0.42);
+    }
+
+    .activity-line { margin: 0; color: var(--muted); font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .activity-line.error { color: var(--red); }
+
+    .raw-output { display: none; margin-top: 12px; max-height: 250px; overflow: auto; padding: 13px; border: 1px solid var(--line); border-radius: 10px; background: #050c0a; color: #a7bbb4; font: 10px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+    .raw-output.visible { display: block; }
+
+    @media (max-width: 980px) {
+      .workspace { grid-template-columns: 1fr; }
+      .control-panel { position: static; }
+      .main-panel { min-height: 0; }
+    }
+
+    @media (max-width: 680px) {
+      .shell { padding: 17px; }
+      header { align-items: flex-start; }
+      .header-actions a { display: none; }
+      .hero { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .trace-grid { grid-template-columns: 1fr; }
+      .trace-column + .trace-column { border-left: 0; border-top: 1px solid var(--line-soft); }
+      .button-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="mark" aria-hidden="true">Δ</div>
+        <div>
+          <h1>Evidence Delta Engine</h1>
+          <p>Selective recomputation with source-level proof</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="health" id="health"><span class="health-dot"></span><span>Checking service</span></div>
+        <a href="/docs">API reference ↗</a>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel control-panel">
+        <section class="panel-section">
+          <p class="eyebrow">Controlled experiment</p>
+          <h2>Change the evidence.<br>Prove the result.</h2>
+          <p class="lede">Build 100 independent entity-day timelines, add one source that touches three, then retract it without deleting provenance.</p>
+        </section>
+
+        <section class="panel-section">
+          <label for="demo-key">Demo access key</label>
+          <div class="key-row">
+            <input id="demo-key" type="password" autocomplete="current-password" placeholder="Required on hosted demo">
+            <button class="button button-secondary button-small" id="save-key" type="button">Save</button>
+          </div>
+          <p class="muted tiny">Held only for this browser session. Leave blank when running locally.</p>
+        </section>
+
+        <section class="panel-section">
+          <button class="button button-primary" id="run-scenario" type="button">Run 3-of-100 scenario</button>
+          <div class="button-row">
+            <button class="button button-danger" id="retract" type="button" disabled>Retract source</button>
+            <button class="button button-secondary" id="copy-report" type="button" disabled>Copy audit JSON</button>
+          </div>
+          <div class="scenario-note">
+            <strong>Invariant</strong>
+            <span>After queued work drains, incremental state must equal a deterministic full rebuild.</span>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <h3>Run context</h3>
+            <button class="button button-secondary button-small" id="toggle-raw" type="button">Raw JSON</button>
+          </div>
+          <p class="activity-line" id="case-context">No case initialized.</p>
+          <pre class="raw-output" id="raw-output"></pre>
+        </section>
+      </aside>
+
+      <section class="panel main-panel" aria-live="polite">
+        <div class="hero">
+          <div>
+            <p class="eyebrow">Current artifact</p>
+            <h2 id="artifact-title">Waiting for a controlled mutation</h2>
+            <p class="lede mono" id="artifact-key">timeline:entity:date</p>
+          </div>
+          <div class="status-badge" id="freshness">Not computed</div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric"><span class="metric-value mint" id="affected">0</span><span class="metric-label">Affected artifacts</span></div>
+          <div class="metric"><span class="metric-value" id="untouched">0</span><span class="metric-label">Untouched artifacts</span></div>
+          <div class="metric"><span class="metric-value amber" id="revision">0</span><span class="metric-label">Case revision</span></div>
+          <div class="metric"><span class="metric-value" id="version">0</span><span class="metric-label">Artifact version</span></div>
+        </div>
+
+        <div class="trace-grid">
+          <div class="trace-column">
+            <div class="section-heading">
+              <h3>Derived timeline</h3>
+              <span class="muted tiny" id="event-count">0 events</span>
+            </div>
+            <div id="timeline-empty" class="empty-state">
+              <div><strong>No derived state yet</strong>Run the scenario to compute a timeline and its exact evidence lineage.</div>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </div>
+
+          <div class="trace-column">
+            <div class="section-heading">
+              <h3>Source lineage</h3>
+              <span class="muted tiny">Court-reviewable</span>
+            </div>
+            <div id="lineage-empty" class="empty-state">
+              <div><strong>No lineage recorded</strong>Every derived event will point back to its source document and locator.</div>
+            </div>
+            <div class="lineage-list" id="lineage"></div>
+            <div id="dependency"></div>
+          </div>
+        </div>
+
+        <div class="activity">
+          <p class="activity-line" id="activity">Ready. The demo uses synthetic structured assertions only.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = { caseId: null, documentId: null, artifactKey: null, mutation: null, artifact: null };
+    const byId = (id) => document.getElementById(id);
+    const keyInput = byId("demo-key");
+    keyInput.value = sessionStorage.getItem("evidenceDeltaDemoKey") || "";
+
+    function headers() {
+      const value = keyInput.value.trim();
+      return value ? { "X-Demo-Key": value } : {};
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...headers(), ...(options.headers || {}) },
+      });
+      let body = null;
+      try { body = await response.json(); } catch (_error) { body = { detail: "Invalid server response" }; }
+      if (!response.ok) {
+        const error = new Error(body.detail || `Request failed (${response.status})`);
+        error.status = response.status;
+        throw error;
+      }
+      return body;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setBusy(button, busy, label) {
+      if (!button.dataset.label) button.dataset.label = button.textContent;
+      button.disabled = busy;
+      button.textContent = busy ? label : button.dataset.label;
+    }
+
+    function setActivity(message, error = false) {
+      byId("activity").textContent = message;
+      byId("activity").classList.toggle("error", error);
+    }
+
+    function renderMutation(mutation) {
+      state.mutation = mutation;
+      byId("affected").textContent = mutation.queued_artifacts;
+      byId("untouched").textContent = mutation.untouched_artifacts;
+      byId("revision").textContent = mutation.revision;
+      byId("artifact-key").textContent = state.artifactKey;
+      byId("artifact-title").textContent = mutation.operation === "RETRACT_DOCUMENT" ? "Source retracted, provenance retained" : "New evidence selectively invalidated";
+      byId("freshness").textContent = "Recompute pending";
+      byId("freshness").className = "status-badge pending";
+      byId("case-context").textContent = `case ${state.caseId} · document ${state.documentId}`;
+      byId("raw-output").textContent = JSON.stringify({ mutation, artifact: state.artifact }, null, 2);
+    }
+
+    function renderArtifact(artifact) {
+      state.artifact = artifact;
+      byId("version").textContent = artifact.version;
+      byId("freshness").textContent = artifact.fresh ? "Current" : "Stale";
+      byId("freshness").className = `status-badge ${artifact.fresh ? "current" : "pending"}`;
+
+      const events = artifact.payload?.events || [];
+      const lineage = artifact.lineage || [];
+      byId("event-count").textContent = `${events.length} event${events.length === 1 ? "" : "s"}`;
+      byId("timeline-empty").style.display = events.length ? "none" : "grid";
+      byId("lineage-empty").style.display = lineage.length ? "none" : "grid";
+      byId("timeline").innerHTML = events.map((event) => `
+        <article class="event">
+          <span class="event-dot"></span>
+          <div class="event-card">
+            <div class="event-meta"><span>${escapeHtml(event.kind)}</span><span>${escapeHtml(event.occurred_at)}</span></div>
+            <p class="event-value">${escapeHtml(event.value)}</p>
+          </div>
+        </article>`).join("");
+      byId("lineage").innerHTML = lineage.map((source) => `
+        <article class="lineage-item">
+          <p class="lineage-source">${escapeHtml(source.document_id)} · ${escapeHtml(source.source_locator)}</p>
+          <p class="lineage-text">${escapeHtml(source.source_text)}</p>
+        </article>`).join("");
+
+      const dependencies = artifact.dependency_versions || [];
+      byId("dependency").innerHTML = dependencies.map((dependency) => `
+        <div class="dependency">
+          <span class="dependency-key mono" title="${escapeHtml(dependency.key)}">${escapeHtml(dependency.key)}</span>
+          <span class="version-pair mono">v${escapeHtml(dependency.observed)} / v${escapeHtml(dependency.current)}</span>
+        </div>`).join("");
+      byId("raw-output").textContent = JSON.stringify({ mutation: state.mutation, artifact }, null, 2);
+    }
+
+    async function pollArtifact() {
+      for (let attempt = 0; attempt < 50; attempt += 1) {
+        try {
+          const artifact = await api(`/cases/${state.caseId}/artifacts/${encodeURIComponent(state.artifactKey)}`);
+          renderArtifact(artifact);
+          if (artifact.fresh) return artifact;
+        } catch (error) {
+          if (!error.message.includes("Artifact not found")) throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      throw new Error("Artifact did not become current before the polling deadline");
+    }
+
+    async function requestManualDrainWhenAvailable() {
+      try {
+        await api("/workers/drain", { method: "POST", body: "{}" });
+      } catch (error) {
+        if (error.status !== 404) throw error;
+      }
+    }
+
+    async function runScenario() {
+      const button = byId("run-scenario");
+      setBusy(button, true, "Building 100 artifacts…");
+      setActivity("Creating ten entities across ten days, then injecting a three-key evidence delta.");
+      try {
+        const mutation = await api("/demo/scenario", { method: "POST", body: "{}" });
+        state.caseId = mutation.case_id;
+        state.documentId = mutation.document_id;
+        state.artifactKey = mutation.affected_keys[0];
+        renderMutation(mutation);
+        byId("retract").disabled = false;
+        byId("copy-report").disabled = false;
+        await requestManualDrainWhenAvailable();
+        await pollArtifact();
+        setActivity("Verified: 3 artifacts recomputed, 97 stayed untouched, and the selected artifact is current.");
+      } catch (error) {
+        setActivity(error.message, true);
+      } finally {
+        setBusy(button, false, "");
+      }
+    }
+
+    async function retractSource() {
+      if (!state.caseId || !state.documentId) return;
+      const button = byId("retract");
+      setBusy(button, true, "Retracting…");
+      setActivity("Appending a retraction tombstone. No assertion rows are deleted.");
+      try {
+        const mutation = await api(`/cases/${state.caseId}/documents/${state.documentId}/retractions`, {
+          method: "POST",
+          body: JSON.stringify({ reason: "Demonstration source withdrawn" }),
+        });
+        renderMutation(mutation);
+        await requestManualDrainWhenAvailable();
+        await pollArtifact();
+        setActivity("Retraction verified: derived state changed, original assertions remained auditable.");
+        button.textContent = "Source retracted";
+        button.disabled = true;
+      } catch (error) {
+        setActivity(error.message, true);
+        setBusy(button, false, "");
+      }
+    }
+
+    async function copyReport() {
+      const report = JSON.stringify({ mutation: state.mutation, artifact: state.artifact }, null, 2);
+      try {
+        await navigator.clipboard.writeText(report);
+        setActivity("Audit JSON copied to clipboard.");
+      } catch (_error) {
+        setActivity("Clipboard access was blocked by the browser.", true);
+      }
+    }
+
+    async function checkHealth() {
+      const element = byId("health");
+      try {
+        const health = await api("/health");
+        element.className = "health ready";
+        element.lastElementChild.textContent = `${health.database} · ${health.worker_mode}`;
+      } catch (_error) {
+        element.className = "health error";
+        element.lastElementChild.textContent = "Service unavailable";
+      }
+    }
+
+    byId("save-key").addEventListener("click", () => {
+      sessionStorage.setItem("evidenceDeltaDemoKey", keyInput.value.trim());
+      setActivity("Demo key saved for this browser session.");
+    });
+    byId("run-scenario").addEventListener("click", runScenario);
+    byId("retract").addEventListener("click", retractSource);
+    byId("copy-report").addEventListener("click", copyReport);
+    byId("toggle-raw").addEventListener("click", () => byId("raw-output").classList.toggle("visible"));
+    checkHealth();
+  </script>
+</body>
+</html>

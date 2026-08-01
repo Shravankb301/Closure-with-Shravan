@@ -46,6 +46,17 @@ Representative impact:
 Timing in the demo is intentionally labeled as a local illustration, not a
 production-scale benchmark. Correctness is the primary result.
 
+## Interactive control surface
+
+The root route serves a focused browser demonstration. One action creates 100
+independent entity-day artifacts, adds evidence affecting three, and renders the
+selected timeline, exact source lineage, dependency versions, and freshness.
+The same source can then be retracted to show that derived state changes while
+the original assertions remain auditable.
+
+The hosted demo can require an `X-Demo-Key`. The browser keeps that value in
+session storage only and never places it in a URL.
+
 ## Architecture
 
 ```mermaid
@@ -115,6 +126,28 @@ Core endpoints:
 
 Interactive API documentation is available at `/docs` while the server runs.
 
+## Deploy on Render
+
+The repository includes a Render Blueprint for one web service and one managed
+PostgreSQL 17 database:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Shravankb301/Closure-with-Shravan)
+
+During Blueprint creation, set a strong `DEMO_API_KEY`. The database blocks
+external network connections and the application uses Render's internal
+connection string. Alembic runs before every deploy, health checks verify the
+database, and automatic deploys wait for GitHub checks to pass.
+
+The free demo profile deliberately runs the durable queue worker in the web
+process because Render does not offer free background workers. For a production
+split, set `RUN_EMBEDDED_WORKER=false` on the web service and run
+`evidence-delta-worker` as a separate worker service using the same
+`DATABASE_URL`.
+
+Free Render web services sleep after inactivity, and free Render Postgres
+databases expire after 30 days. That is acceptable for a short-lived interview
+demo, not for retained evidence or production use.
+
 ## Design notes and limitations
 
 ### Determinism is required
@@ -141,9 +174,10 @@ verifies that the stale version never appears.
 ### Deliberate exclusions
 
 Raw PDF ingestion, OCR, audio/video processing, entity resolution, natural
-language question answering, authentication, and a user interface are outside
-scope. Synthetic structured assertions keep the central correctness property
-testable and explainable.
+language question answering, role-based authorization, and disaster recovery
+are outside scope. The hosted API key is controlled-demo access, not a
+production identity system. Synthetic structured assertions keep the central
+correctness property testable and explainable.
 
 See [DESIGN.md](DESIGN.md) for failure modes and transactional details, and
 [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) for challenged alternatives,

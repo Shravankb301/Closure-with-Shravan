@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -13,11 +13,15 @@ from evidence_delta.models import Base
 
 class Database:
     def __init__(self, url: str) -> None:
+        url = self.normalize_url(url)
         engine_options: dict = {"future": True}
         if url.startswith("sqlite"):
             engine_options["connect_args"] = {"check_same_thread": False}
             if ":memory:" in url:
                 engine_options["poolclass"] = StaticPool
+
+        else:
+            engine_options["pool_pre_ping"] = True
 
         self.engine: Engine = create_engine(url, **engine_options)
 
@@ -32,6 +36,16 @@ class Database:
         )
 
     @staticmethod
+    def normalize_url(url: str) -> str:
+        """Use psycopg 3 for provider URLs that omit a SQLAlchemy driver."""
+
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+psycopg://", 1)
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return url
+
+    @staticmethod
     def _enable_sqlite_foreign_keys(connection, _record) -> None:
         cursor = connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
@@ -42,6 +56,10 @@ class Database:
 
     def drop_schema(self) -> None:
         Base.metadata.drop_all(self.engine)
+
+    def ping(self) -> None:
+        with self.engine.connect() as connection:
+            connection.execute(select(1))
 
     @contextmanager
     def session(self) -> Iterator[Session]:
