@@ -5,7 +5,7 @@ VENV := .venv
 
 setup:
 	$(PYTHON) -m venv $(VENV)
-	$(VENV)/bin/python -m pip install -e ".[dev,postgres]"
+	$(VENV)/bin/python -m pip install -e ".[dev]"
 
 test:
 	$(VENV)/bin/python -m ruff check .

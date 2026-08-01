@@ -12,12 +12,12 @@ dependencies = [
   "alembic>=1.16,<2",
   "fastapi>=0.116,<1",
   "pydantic>=2.11,<3",
+  "psycopg[binary]>=3.2,<4",
   "sqlalchemy>=2.0,<3",
   "uvicorn>=0.35,<1",
 ]
 
 [project.optional-dependencies]
-postgres = ["psycopg[binary]>=3.2,<4"]
 dev = [
   "httpx>=0.28,<1",
   "pytest>=8.4,<9",
@@ -40,6 +40,9 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 evidence_delta = ["static/*.html"]
+
+[tool.vercel]
+entrypoint = "src.evidence_delta.api:app"
 
 [tool.pytest.ini_options]
 addopts = "-q"
