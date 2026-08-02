@@ -32,6 +32,24 @@ def test_api_vertical_slice() -> None:
         assert added.status_code == 202
         assert added.json()["queued_artifacts"] == 1
 
+        pending_workspace = client.get(f"/cases/{case_id}")
+        assert pending_workspace.status_code == 200
+        assert pending_workspace.json()["case"]["name"] == "API case"
+        assert pending_workspace.json()["documents"] == [
+            {
+                "id": added.json()["document_id"],
+                "filename": "witness.json",
+                "source_type": "structured_fixture",
+                "added_at_revision": 1,
+                "created_at": pending_workspace.json()["documents"][0]["created_at"],
+                "assertion_count": 1,
+                "retracted": False,
+                "retracted_at_revision": None,
+                "retraction_reason": None,
+            }
+        ]
+        assert pending_workspace.json()["artifacts"][0]["fresh"] is False
+
         drained = client.post("/workers/drain")
         assert drained.status_code == 200
         assert drained.json()["processed"] == 1
@@ -40,3 +58,18 @@ def test_api_vertical_slice() -> None:
         assert artifact.status_code == 200
         assert artifact.json()["fresh"] is True
         assert artifact.json()["payload"]["events"][0]["value"] == ("Entered Northside Storage")
+
+        current_workspace = client.get(f"/cases/{case_id}").json()
+        assert current_workspace["artifacts"][0]["fresh"] is True
+        assert current_workspace["artifacts"][0]["lineage"][0]["source_locator"] == "paragraph:4"
+
+        retracted = client.post(
+            f"/cases/{case_id}/documents/{added.json()['document_id']}/retractions",
+            json={"reason": "source corrected"},
+        )
+        assert retracted.status_code == 202
+        client.post("/workers/drain")
+        retracted_workspace = client.get(f"/cases/{case_id}").json()
+        assert retracted_workspace["documents"][0]["retracted"] is True
+        assert retracted_workspace["documents"][0]["retraction_reason"] == "source corrected"
+        assert retracted_workspace["artifacts"][0]["payload"]["events"] == []

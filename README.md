@@ -61,6 +61,25 @@ crash-before-commit rollback, stale-worker fencing, bounded retries, and
 PostgreSQL multi-worker claims. Its link-preview image uses the same impact map,
 so a shared demo URL communicates the result before the page opens.
 
+### Use your own evidence
+
+The browser also exposes a durable case workspace intended for hands-on review.
+A user can create or reopen a case, add a guided raw-text observation, upload or
+paste JSON/CSV assertions, inspect every materialized timeline and source span,
+share the case URL, and retract a source without deleting its audit record.
+
+JSON and CSV inputs use these fields:
+
+```text
+entity_id, occurred_at, kind, value, source_locator, source_text
+```
+
+The first four fields are required. `source_locator` defaults to the input row
+and `source_text` defaults to `value`. Uploaded bytes are parsed in the browser;
+the durable record is the validated assertion set and its provenance, not the
+original file blob. Imports are limited to 1,000 assertions and 5 MB in the
+hosted workspace.
+
 The hosted demo can require an `X-Demo-Key`. The browser keeps that value in
 session storage only and never places it in a URL.
 
@@ -126,6 +145,7 @@ Core endpoints:
 | Method | Path | Purpose |
 |---|---|---|
 | `POST` | `/cases` | Create an isolated synthetic case |
+| `GET` | `/cases/{case_id}` | Reopen a case with its source history and current artifacts |
 | `POST` | `/cases/{case_id}/documents` | Add structured assertions idempotently |
 | `POST` | `/cases/{case_id}/documents/{document_id}/retractions` | Append a retraction tombstone |
 | `POST` | `/workers/drain` | Process queued recomputations locally |
