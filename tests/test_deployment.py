@@ -52,7 +52,10 @@ def test_dashboard_serves_the_selectivity_experiment() -> None:
         response = client.get("/")
         assert response.status_code == 200
         assert "Run the live proof" in response.text
-        assert "Exact source lineage" in response.text
+        assert "Evidence graph" in response.text
+        assert 'id="evidence-graph"' in response.text
+        assert 'id="graph-inspector"' in response.text
+        assert "Withdrawn evidence stays visible" in response.text
         assert 'content="http://testserver/og.png"' in response.text
         preview = client.get("/og.png")
         assert preview.status_code == 200
