@@ -383,6 +383,93 @@ class EvidenceService:
             ).all()
             return {key: payload for key, payload in rows}
 
+    def case_workspace(self, case_id: str) -> dict:
+        """Return the durable case state needed by the interactive workspace."""
+
+        with self.database.session() as session:
+            case = session.get(CaseRecord, case_id)
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+
+            assertion_count = (
+                select(func.count(AssertionRecord.id))
+                .where(AssertionRecord.document_id == DocumentRecord.id)
+                .correlate(DocumentRecord)
+                .scalar_subquery()
+            )
+            retracted_at_revision = (
+                select(DocumentRetractionRecord.retracted_at_revision)
+                .where(DocumentRetractionRecord.document_id == DocumentRecord.id)
+                .correlate(DocumentRecord)
+                .scalar_subquery()
+            )
+            retraction_reason = (
+                select(DocumentRetractionRecord.reason)
+                .where(DocumentRetractionRecord.document_id == DocumentRecord.id)
+                .correlate(DocumentRecord)
+                .scalar_subquery()
+            )
+            documents = session.execute(
+                select(
+                    DocumentRecord.id,
+                    DocumentRecord.filename,
+                    DocumentRecord.source_type,
+                    DocumentRecord.added_at_revision,
+                    DocumentRecord.created_at,
+                    assertion_count.label("assertion_count"),
+                    retracted_at_revision.label("retracted_at_revision"),
+                    retraction_reason.label("retraction_reason"),
+                )
+                .where(DocumentRecord.case_id == case_id)
+                .order_by(DocumentRecord.added_at_revision.desc())
+            ).all()
+            artifact_keys = session.scalars(
+                select(ArtifactRecord.artifact_key)
+                .where(ArtifactRecord.case_id == case_id)
+                .order_by(ArtifactRecord.artifact_key)
+            ).all()
+            case_summary = {
+                "id": case.id,
+                "name": case.name,
+                "revision": case.revision,
+                "created_at": case.created_at.isoformat(),
+            }
+
+        artifacts = []
+        for key in artifact_keys:
+            artifact = self.current_artifact(case_id, key)
+            artifacts.append(
+                artifact
+                or {
+                    "artifact_key": key,
+                    "version": 0,
+                    "computed_at_revision": 0,
+                    "fresh": False,
+                    "dependency_versions": [],
+                    "payload": {"events": []},
+                    "lineage": [],
+                }
+            )
+
+        return {
+            "case": case_summary,
+            "documents": [
+                {
+                    "id": row.id,
+                    "filename": row.filename,
+                    "source_type": row.source_type,
+                    "added_at_revision": row.added_at_revision,
+                    "created_at": row.created_at.isoformat(),
+                    "assertion_count": int(row.assertion_count or 0),
+                    "retracted": row.retracted_at_revision is not None,
+                    "retracted_at_revision": row.retracted_at_revision,
+                    "retraction_reason": row.retraction_reason,
+                }
+                for row in documents
+            ],
+            "artifacts": artifacts,
+        }
+
     def case_proof(self, case_id: str) -> dict:
         """Return live evidence for the invariants highlighted by the demo UI."""
 

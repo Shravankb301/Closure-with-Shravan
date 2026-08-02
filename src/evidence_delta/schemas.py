@@ -11,9 +11,9 @@ class AssertionInput(BaseModel):
     entity_id: str = Field(min_length=1, max_length=120)
     occurred_at: datetime
     kind: str = Field(min_length=1, max_length=80)
-    value: str = Field(min_length=1)
+    value: str = Field(min_length=1, max_length=20_000)
     source_locator: str = Field(min_length=1, max_length=160)
-    source_text: str = Field(min_length=1)
+    source_text: str = Field(min_length=1, max_length=100_000)
 
     @field_validator("occurred_at")
     @classmethod
@@ -28,7 +28,7 @@ class DocumentInput(BaseModel):
 
     filename: str = Field(min_length=1, max_length=255)
     source_type: str = Field(default="structured_fixture", min_length=1, max_length=80)
-    assertions: list[AssertionInput] = Field(min_length=1)
+    assertions: list[AssertionInput] = Field(min_length=1, max_length=1_000)
 
 
 class CaseInput(BaseModel):

@@ -14,10 +14,8 @@
   <meta property="og:image:alt" content="Evidence Delta Engine impact surface with three of one hundred artifacts highlighted">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="{{SITE_ORIGIN}}/og.png">
+  <meta name="theme-color" content="#f2efe6">
   <title>Evidence Delta Engine | Live Engineering Proof</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
@@ -381,6 +379,77 @@
     .raw-output { display: none; max-height: 240px; margin: 16px 0 0; padding: 14px; overflow: auto; border: 1px solid var(--line); border-radius: 11px; background: #050705; color: #859183; font: 500 8px/1.55 var(--mono); white-space: pre-wrap; }
     .raw-output.visible { display: block; }
 
+    .hidden { display: none !important; }
+    .workspace-app { display: grid; grid-template-columns: minmax(280px, 0.68fr) minmax(0, 1.32fr); gap: 18px; align-items: start; }
+    .workspace-stack { display: grid; gap: 18px; }
+    .workspace-card { padding: 26px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: rgba(13, 17, 14, 0.82); box-shadow: 0 26px 70px rgba(0, 0, 0, 0.16); }
+    .workspace-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+    .workspace-step { color: var(--acid); font: 600 9px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+    .workspace-card h3 { margin: 7px 0 0; font-size: 20px; letter-spacing: -0.035em; }
+    .workspace-card-copy { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .field-grid .field-wide { grid-column: 1 / -1; }
+    .field label { display: block; margin-bottom: 7px; color: #8d988b; font: 600 9px/1.3 var(--mono); }
+    .field input, .field textarea, .field select {
+      width: 100%; min-height: 43px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 11px;
+      color: var(--text); background: #080b08; font: 500 11px/1.5 var(--mono); resize: vertical;
+    }
+    .field textarea { min-height: 94px; }
+    .field input::placeholder, .field textarea::placeholder { color: #4f594f; }
+    .field-note { display: block; margin-top: 6px; color: #5f6a5f; font: 500 8px/1.5 var(--mono); }
+    .form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
+    .form-actions .button { min-height: 43px; font-size: 10px; }
+    .form-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: #576157; font: 500 8px/1 var(--mono); text-transform: uppercase; }
+    .form-divider::before, .form-divider::after { flex: 1; height: 1px; content: ""; background: var(--line); }
+    .case-active { padding: 15px; border: 1px solid rgba(199, 243, 107, 0.22); border-radius: 13px; background: rgba(199, 243, 107, 0.04); }
+    .case-active strong { display: block; color: #dce6d4; font-size: 13px; }
+    .case-active code { display: block; margin-top: 6px; color: #87a45a; font: 500 8px/1.5 var(--mono); overflow-wrap: anywhere; }
+    .case-active-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .case-active-actions .button { min-height: 34px; padding: 0 10px; font-size: 8px; }
+    .workspace-status { min-height: 20px; margin: 14px 0 0; color: #7d887b; font: 500 9px/1.55 var(--mono); }
+    .workspace-status.error { color: #ff8c84; }
+    .mode-tabs { display: inline-flex; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: #080b08; }
+    .mode-tab { min-height: 34px; padding: 0 13px; border: 0; border-radius: 8px; color: #748073; background: transparent; cursor: pointer; font: 600 9px/1 var(--mono); }
+    .mode-tab.active { color: #10160a; background: var(--acid); }
+    .drop-zone { display: grid; place-items: center; min-height: 128px; margin-bottom: 13px; padding: 20px; border: 1px dashed var(--line-strong); border-radius: 13px; color: #7f8a7d; background: rgba(255, 255, 255, 0.012); cursor: pointer; text-align: center; }
+    .drop-zone:hover, .drop-zone.dragging { border-color: var(--acid); background: rgba(199, 243, 107, 0.035); }
+    .drop-zone strong { display: block; margin-bottom: 7px; color: #bdc6ba; font-size: 12px; }
+    .drop-zone span { font: 500 8px/1.6 var(--mono); }
+    .data-contract { margin-top: 15px; padding: 13px; border-left: 2px solid var(--cyan); background: rgba(112, 215, 232, 0.035); color: #81908a; font: 500 8px/1.65 var(--mono); }
+    .draft-preview { margin-top: 16px; border: 1px solid var(--line); border-radius: 13px; overflow: hidden; }
+    .draft-preview-header { display: flex; justify-content: space-between; gap: 10px; padding: 11px 13px; border-bottom: 1px solid var(--line); color: #849082; font: 500 8px/1 var(--mono); text-transform: uppercase; }
+    .draft-rows { max-height: 220px; overflow: auto; }
+    .draft-row { display: grid; grid-template-columns: 0.7fr 1fr 1.4fr; gap: 10px; padding: 11px 13px; border-bottom: 1px solid var(--line); color: #9ca79a; font: 500 8px/1.45 var(--mono); }
+    .draft-row:last-child { border-bottom: 0; }
+    .draft-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .workspace-results { margin-top: 18px; border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: rgba(13, 17, 14, 0.88); overflow: hidden; }
+    .workspace-results-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px 26px; border-bottom: 1px solid var(--line); }
+    .workspace-results-header h3 { margin: 0; font-size: 18px; }
+    .workspace-results-header p { margin: 6px 0 0; color: var(--muted); font: 500 9px/1.5 var(--mono); }
+    .workspace-metrics { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+    .workspace-metric { padding: 18px 20px; border-right: 1px solid var(--line); }
+    .workspace-metric:last-child { border-right: 0; }
+    .workspace-metric strong { display: block; color: var(--acid); font-size: 25px; letter-spacing: -0.05em; }
+    .workspace-metric span { display: block; margin-top: 5px; color: #707b70; font: 500 8px/1.35 var(--mono); text-transform: uppercase; }
+    .workspace-results-body { display: grid; grid-template-columns: minmax(260px, 0.68fr) minmax(0, 1.32fr); }
+    .workspace-results-column { padding: 24px; }
+    .workspace-results-column + .workspace-results-column { border-left: 1px solid var(--line); }
+    .result-list { display: grid; gap: 9px; }
+    .document-row, .user-artifact { padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.014); }
+    .document-row.retracted { opacity: 0.62; border-style: dashed; border-color: rgba(255, 120, 73, 0.38); }
+    .result-row-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .result-row-head strong { display: block; color: #cdd5ca; font-size: 11px; overflow-wrap: anywhere; }
+    .result-row-head code { display: block; margin-top: 5px; color: #6d786c; font: 500 7px/1.4 var(--mono); }
+    .result-badge { flex: 0 0 auto; padding: 5px 7px; border: 1px solid rgba(199, 243, 107, 0.24); border-radius: 999px; color: var(--acid); font: 600 7px/1 var(--mono); text-transform: uppercase; }
+    .result-badge.retracted { border-color: rgba(255, 120, 73, 0.3); color: var(--orange); }
+    .result-meta { margin: 10px 0 0; color: #727d71; font: 500 8px/1.55 var(--mono); }
+    .row-action { margin-top: 10px; padding: 0; border: 0; color: #e18a6c; background: none; cursor: pointer; font: 600 8px/1 var(--mono); }
+    .user-artifact-events { display: grid; gap: 7px; margin-top: 11px; }
+    .user-event { padding: 10px; border-left: 2px solid var(--cyan); background: rgba(112, 215, 232, 0.025); }
+    .user-event strong { display: block; color: #c2cbc0; font-size: 10px; }
+    .user-event span { display: block; margin-top: 5px; color: #717d72; font: 500 8px/1.5 var(--mono); }
+    .user-lineage { margin-top: 9px; color: #859283; font: 500 8px/1.55 var(--mono); overflow-wrap: anywhere; }
+
     .architecture { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 22px; }
     .principle-card, .flow-card { border: 1px solid var(--line); border-radius: var(--radius-lg); background: rgba(13, 17, 14, 0.74); }
     .principle-card { padding: 34px; }
@@ -418,6 +487,8 @@
     @media (max-width: 1080px) {
       .hero { grid-template-columns: 1fr; min-height: 0; }
       .instrument { width: min(620px, 100%); }
+      .workspace-app, .workspace-results-body { grid-template-columns: 1fr; }
+      .workspace-results-column + .workspace-results-column { border-top: 1px solid var(--line); border-left: 0; }
       .console-body { grid-template-columns: 1fr; }
       .journal-panel { border-top: 1px solid var(--line); border-left: 0; }
       .architecture { grid-template-columns: 1fr; }
@@ -437,6 +508,13 @@
       .impact-map { gap: 4px; }
       .section { padding: 76px 0; }
       .section-heading { grid-template-columns: 1fr; gap: 20px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .field-grid .field-wide { grid-column: auto; }
+      .workspace-metrics { grid-template-columns: 1fr 1fr; }
+      .workspace-metric:nth-child(2) { border-right: 0; }
+      .workspace-metric:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+      .draft-row { grid-template-columns: 0.7fr 1fr; }
+      .draft-row span:last-child { grid-column: 1 / -1; }
       .run-strip { grid-template-columns: 1fr; }
       .run-step { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
       .run-step:last-child { border-bottom: 0; }
@@ -452,9 +530,301 @@
       .failure-card h3 { margin-top: 38px; }
       .site-footer { flex-direction: column; }
     }
+
+    /* Editorial redesign: clear hierarchy, one accent, and restrained surfaces. */
+    :root {
+      color-scheme: light;
+      --canvas: #f2efe6;
+      --surface: #fffdf7;
+      --surface-2: #e8e3d8;
+      --surface-3: #dad3c6;
+      --line: #c8c1b4;
+      --line-strong: #161612;
+      --text: #161612;
+      --muted: #625e56;
+      --acid: #ff4f00;
+      --acid-dark: #792700;
+      --orange: #c93218;
+      --cyan: #1648d8;
+      --red: #b42318;
+      --radius-lg: 3px;
+      --radius-md: 2px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    html { background: var(--canvas); }
+    body { color: var(--text); background: var(--canvas); }
+    body::before { display: none; }
+    ::selection { color: #fff; background: var(--cyan); }
+
+    .skip-link {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 100;
+      padding: 12px 16px;
+      border: 2px solid var(--text);
+      color: #fff;
+      background: var(--text);
+      transform: translateY(-160%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible, label:focus-visible {
+      outline: 3px solid var(--cyan);
+      outline-offset: 3px;
+    }
+
+    .shell { width: min(1420px, calc(100% - 64px)); }
+    .site-header {
+      min-height: 88px;
+      border-bottom: 2px solid var(--text);
+    }
+    .brand { gap: 14px; }
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border: 0;
+      border-radius: 0;
+      color: #fff;
+      background: var(--text);
+      box-shadow: inset 0 -5px var(--acid);
+      font-size: 14px;
+    }
+    .brand-name { color: var(--text); font-size: 15px; letter-spacing: -0.025em; }
+    .brand-type { color: var(--muted); font-size: 10px; letter-spacing: 0.08em; }
+    .header-nav { gap: 26px; color: var(--muted); font-size: 13px; }
+    .header-nav a { border-bottom: 2px solid transparent; }
+    .header-nav a:hover { color: var(--text); border-color: var(--acid); }
+    .health {
+      min-height: 44px;
+      padding: 0 0 0 18px;
+      border: 0;
+      border-left: 1px solid var(--line);
+      border-radius: 0;
+      color: var(--muted);
+      background: transparent;
+      font-size: 10px;
+    }
+    .health.ready { color: #2f5d16; }
+    .health-dot, .health.ready .health-dot { box-shadow: none; }
+
+    .hero {
+      grid-template-columns: minmax(0, 1.18fr) minmax(380px, 0.82fr);
+      gap: clamp(50px, 7vw, 112px);
+      min-height: 720px;
+      padding: 82px 0 96px;
+    }
+    .kicker {
+      gap: 10px;
+      margin-bottom: 28px;
+      color: var(--text);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+    }
+    .kicker::before { width: 10px; height: 10px; background: var(--acid); }
+    h1 {
+      max-width: 840px;
+      font-size: clamp(58px, 7.3vw, 108px);
+      line-height: 0.9;
+      letter-spacing: -0.075em;
+    }
+    h1 .outline { color: var(--text); -webkit-text-stroke: 0; }
+    .hero-copy { max-width: 610px; margin-top: 32px; color: var(--muted); font-size: clamp(17px, 1.5vw, 20px); line-height: 1.55; }
+    .hero-actions { gap: 10px; margin-top: 38px; }
+    .run-hint { width: 100%; margin-top: 4px; color: var(--muted); font-size: 11px; }
+
+    .button {
+      min-height: 48px;
+      padding: 0 18px;
+      border: 1px solid var(--text);
+      border-radius: 0;
+      font-size: 13px;
+      letter-spacing: -0.01em;
+      transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+    }
+    .button:hover:not(:disabled) { transform: none; }
+    .button-primary, .button-primary:hover:not(:disabled) { color: #fff; background: var(--text); box-shadow: none; }
+    .button-primary:hover:not(:disabled) { color: var(--text); border-color: var(--acid); background: var(--acid); }
+    .button-secondary { color: var(--text); border-color: var(--text); background: transparent; }
+    .button-secondary:hover:not(:disabled) { color: #fff; border-color: var(--text); background: var(--text); }
+    .button-danger { color: var(--red); border-color: var(--red); background: transparent; }
+
+    .instrument {
+      padding: 20px;
+      border: 2px solid var(--text);
+      border-radius: 0;
+      color: #f7f4ec;
+      background: #161612;
+      box-shadow: 10px 10px 0 var(--acid);
+    }
+    .instrument::before { display: none; }
+    .instrument-label { color: #f7f4ec; font-size: 11px; }
+    .instrument-id { color: #aaa79f; font-size: 10px; }
+    .map-wrap { border-color: #4a4943; border-radius: 0; background: #0b0b09; }
+    .impact-cell { border-color: #3d3d37; border-radius: 1px; background: #282822; }
+    .impact-cell.target { border-color: var(--acid); }
+    .impact-map.active .impact-cell.target { border-color: var(--acid); background: var(--acid); box-shadow: none; }
+    .impact-map.retracted .impact-cell.target { border-color: #ff8a56; box-shadow: inset 0 0 0 2px var(--acid); }
+    .legend-dot { border-radius: 0; background: #56564f; }
+    .legend-dot.hot { background: var(--acid); box-shadow: none; }
+    .map-legend { color: #aaa79f; font-size: 10px; }
+    .readout { border-color: #4a4943; border-radius: 0; background: #20201b; }
+    .readout:first-child .readout-value { color: #ff6a28; }
+    .readout-value { color: #fff; }
+    .readout-label { color: #aaa79f; font-size: 10px; }
+    .access-panel { border-color: #4a4943; border-radius: 0; background: transparent; }
+    .access-panel summary { min-height: 44px; color: #c7c4bc; font-size: 11px; }
+    .key-form input { min-height: 44px; border-color: #68675f; border-radius: 0; color: #fff; background: #0b0b09; }
+    .instrument .button-secondary { color: #fff; border-color: #fff; }
+
+    .section { padding: 118px 0; border-top: 2px solid var(--text); }
+    .section-heading { grid-template-columns: minmax(0, 0.82fr) minmax(300px, 0.38fr); gap: 72px; align-items: end; margin-bottom: 54px; }
+    .section-heading h2 { font-size: clamp(44px, 6vw, 78px); line-height: 0.96; letter-spacing: -0.065em; }
+    .section-heading p { color: var(--muted); font-size: 16px; line-height: 1.6; }
+
+    .workspace-app { grid-template-columns: minmax(300px, 0.62fr) minmax(0, 1.38fr); gap: 20px; }
+    .workspace-stack { gap: 20px; }
+    .workspace-card {
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--text);
+      border-radius: 0;
+      background: var(--surface);
+      box-shadow: none;
+    }
+    .workspace-card-header { margin-bottom: 26px; }
+    .workspace-step { color: var(--acid-dark); font-size: 11px; }
+    .workspace-card h3 { font-size: 23px; letter-spacing: -0.04em; }
+    .workspace-card-copy { color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .field-grid { gap: 16px; }
+    .field label { margin-bottom: 8px; color: var(--text); font-size: 11px; }
+    .field input, .field textarea, .field select {
+      min-height: 48px;
+      padding: 12px 13px;
+      border-color: #8d877c;
+      border-radius: 0;
+      color: var(--text);
+      background: #fff;
+      font: 500 14px/1.5 var(--sans);
+    }
+    .field textarea { min-height: 118px; }
+    .field input::placeholder, .field textarea::placeholder { color: #817b72; }
+    .field-note { color: var(--muted); font-size: 10px; }
+    .form-actions .button { min-height: 46px; font-size: 12px; }
+    .form-divider { color: var(--muted); font-size: 10px; }
+    .case-active { border-color: var(--text); border-radius: 0; background: #f6f0e5; }
+    .case-active strong, .result-row-head strong, .user-event strong { color: var(--text); }
+    .case-active code { color: var(--acid-dark); font-size: 10px; }
+    .case-active-actions .button { min-height: 40px; font-size: 10px; }
+    .workspace-status { color: var(--muted); font-size: 11px; }
+    .mode-tabs { padding: 0; border-color: var(--text); border-radius: 0; background: #fff; }
+    .mode-tab { min-height: 44px; border-radius: 0; color: var(--muted); font-size: 10px; }
+    .mode-tab + .mode-tab { border-left: 1px solid var(--text); }
+    .mode-tab.active { color: #fff; background: var(--text); }
+    .drop-zone { min-height: 150px; border-color: #8d877c; border-radius: 0; color: var(--muted); background: #f7f4ec; }
+    .drop-zone:hover, .drop-zone.dragging { border-color: var(--acid); background: #fff2eb; }
+    .drop-zone strong { color: var(--text); font-size: 14px; }
+    .drop-zone span { font-size: 10px; }
+    .data-contract { border-color: var(--cyan); color: #383f54; background: #edf1ff; font-size: 10px; }
+    .draft-preview, .workspace-results { border-color: var(--line-strong); border-radius: 0; background: var(--surface); box-shadow: none; }
+    .draft-preview-header, .draft-row, .workspace-results-header p { color: var(--muted); font-size: 10px; }
+    .workspace-results-header h3 { font-size: 21px; }
+    .workspace-metric strong { color: var(--text); font-size: 29px; }
+    .workspace-metric:first-child strong { color: var(--acid-dark); }
+    .workspace-metric span { color: var(--muted); font-size: 10px; }
+    .document-row, .user-artifact { border-radius: 0; background: #fff; }
+    .result-row-head code, .result-meta, .user-event span, .user-lineage { color: var(--muted); font-size: 10px; }
+    .result-badge, .status-badge { border-radius: 0; color: var(--acid-dark); border-color: var(--acid); background: #fff2eb; font-size: 9px; }
+    .user-event { border-color: var(--cyan); background: #f2f5ff; }
+
+    .proof-console { border: 2px solid var(--text); border-radius: 0; color: var(--text); background: var(--surface); box-shadow: none; }
+    .console-top { min-height: 48px; border-color: var(--text); color: #fff; background: var(--text); }
+    .window-dots { display: none; }
+    .console-status { color: #d9d5ca; font-size: 10px; }
+    .run-step { min-height: 122px; padding: 21px; background: transparent; }
+    .run-step-index { color: var(--muted); font-size: 10px; }
+    .run-step strong { color: var(--text); font-size: 13px; }
+    .run-step small { color: var(--muted); font-size: 10px; }
+    .run-step.running { background: #edf1ff; }
+    .run-step.complete { background: #fff2eb; }
+    .run-step.complete .run-step-index, .run-step.complete small { color: var(--acid-dark); }
+    .proof-metric { min-height: 128px; }
+    .proof-metric-label { color: var(--muted); font-size: 10px; }
+    .proof-metric.verified .proof-metric-value { color: var(--acid-dark); }
+    .journal-panel { background: #ebe6dc; }
+    .artifact-summary { color: var(--text); }
+    .artifact-key { color: var(--cyan); font-size: 11px; }
+    .empty-state { border-radius: 0; color: var(--muted); }
+    .empty-state strong { color: var(--text); }
+    .empty-state span { font-size: 11px; }
+    .graph-workspace, .inspector-fact { border-radius: 0; background: #f7f4ec; }
+    .graph-toolbar, .graph-inspector { background: #ebe6dc; }
+    .graph-legend, .graph-hint { color: var(--muted); font-size: 9px; }
+    .graph-canvas { background-color: #fffdf7; background-image: radial-gradient(circle, #c8c1b4 1px, transparent 1px); }
+    .graph-canvas::after { display: none; }
+    .graph-node { border-radius: 0; color: var(--text); background: #fff; box-shadow: 4px 4px 0 #d7d0c3; }
+    .graph-node:hover, .graph-node.selected { border-color: var(--acid); box-shadow: 4px 4px 0 var(--acid); }
+    .graph-node-type, .graph-node-detail, .inspector-fact span { color: var(--muted); }
+    .graph-node-title, .inspector-title, .inspector-fact strong { color: var(--text); }
+    .graph-node.withdrawn { color: var(--text); background: #fff2eb; }
+    .journal-copy strong { color: var(--text); font-size: 12px; }
+    .journal-copy span, .activity { color: var(--muted); font-size: 10px; }
+    .journal-dot { border-radius: 0; background: #817b72; box-shadow: 0 0 0 5px #ebe6dc; }
+    .journal-entry.complete .journal-dot { background: var(--acid); box-shadow: 0 0 0 5px #ebe6dc; }
+    .raw-output { border-radius: 0; color: #d9d5ca; background: var(--text); }
+
+    .architecture { gap: 20px; }
+    .principle-card, .flow-card { border-color: var(--text); border-radius: 0; background: var(--surface); }
+    .principle-card { color: #fff; background: var(--text); }
+    .principle-card .big-number { color: #ff6a28; }
+    .principle-card p { color: #c8c4ba; font-size: 14px; }
+    .invariant-code { border-left-color: var(--acid); color: #fff; background: #25251f; }
+    .flow-node-index, .flow-node p { color: var(--muted); font-size: 10px; }
+    .flow-node:last-child { background: #fff2eb; }
+    .flow-node:last-child .flow-node-index, .flow-node:last-child h4 { color: var(--acid-dark); }
+    .failure-grid { gap: 0; margin-top: 20px; border: 1px solid var(--text); }
+    .failure-card { min-height: 280px; border: 0; border-right: 1px solid var(--line); border-radius: 0; background: var(--surface); }
+    .failure-card:last-child { border-right: 0; }
+    .failure-tag { color: var(--acid-dark); font-size: 10px; }
+    .failure-card p { color: var(--muted); font-size: 13px; }
+    .failure-proof { color: #254800; font-size: 10px; }
+
+    .site-footer { padding: 42px 0 64px; border-color: var(--text); color: var(--muted); font-size: 10px; }
+    .site-footer a { color: var(--text); border-bottom: 1px solid var(--text); }
+
+    @media (max-width: 1080px) {
+      .hero { grid-template-columns: 1fr; min-height: 0; }
+      .instrument { width: min(640px, calc(100% - 10px)); }
+      .failure-grid { grid-template-columns: 1fr 1fr; }
+      .failure-card:nth-child(2) { border-right: 0; }
+      .failure-card:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+    }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 32px, 1420px); }
+      .site-header { min-height: 76px; }
+      .brand-mark { width: 38px; height: 38px; }
+      .hero { padding: 64px 0 76px; }
+      h1 { font-size: clamp(52px, 15vw, 76px); }
+      .hero-copy { font-size: 17px; }
+      .instrument { padding: 14px; box-shadow: 7px 7px 0 var(--acid); }
+      .section { padding: 82px 0; }
+      .section-heading { gap: 22px; }
+      .section-heading p { font-size: 15px; }
+      .workspace-card { padding: 23px; }
+      .workspace-card-header { flex-direction: column; }
+      .mode-tabs { width: 100%; }
+      .mode-tab { flex: 1; }
+      .failure-grid { grid-template-columns: 1fr; }
+      .failure-card { min-height: 220px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .failure-card:nth-child(2) { border-bottom: 1px solid var(--line); }
+      .failure-card:last-child { border-bottom: 0; }
+    }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#top">Skip to main content</a>
   <div class="shell">
     <header class="site-header">
       <a class="brand" href="#top" aria-label="Evidence Delta Engine home">
@@ -465,24 +835,25 @@
         </span>
       </a>
       <nav class="header-nav" aria-label="Primary navigation">
+        <a href="#workspace">Use your data</a>
         <a href="#proof">Live proof</a>
         <a href="#architecture">Architecture</a>
         <a href="https://github.com/Shravankb301/Closure-with-Shravan" target="_blank" rel="noreferrer">Source</a>
         <a href="/docs">API reference</a>
-        <div class="health" id="health"><span class="health-dot"></span><span>Connecting</span></div>
+        <div class="health" id="health" role="status" aria-live="polite"><span class="health-dot"></span><span>Connecting</span></div>
       </nav>
     </header>
 
     <main id="top">
       <section class="hero">
         <div>
-          <p class="kicker">Live systems engineering demo</p>
+          <p class="kicker">Selective recomputation, proved live</p>
           <h1>Change <span class="accent">3</span> facts.<br>Recompute <span class="accent">3</span>.<br><span class="outline">Prove the other 97.</span></h1>
           <p class="hero-copy">A deterministic evidence engine that tracks the exact inputs every artifact reads, invalidates only what changed, and proves the result against a full rebuild.</p>
           <div class="hero-actions">
-            <button class="button button-primary" id="run-scenario" type="button">Run the live proof <span aria-hidden="true">-&gt;</span></button>
-            <a class="button button-secondary" href="#architecture">See the architecture</a>
-            <span class="run-hint">Synthetic data / real transactions</span>
+            <a class="button button-primary" href="#workspace">Use your own data <span aria-hidden="true">&#8594;</span></a>
+            <button class="button button-secondary" id="run-scenario" type="button">Run the live proof</button>
+            <span class="run-hint">Your data / durable cases / real transactions</span>
           </div>
         </div>
 
@@ -512,10 +883,109 @@
         </aside>
       </section>
 
+      <section class="section" id="workspace">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Work with your own evidence</p>
+            <h2>Bring your own evidence.</h2>
+          </div>
+          <p>Create a durable case, add a single observation or import a JSON/CSV batch, then inspect the timelines, source lineage, and correctness proof produced from your records.</p>
+        </div>
+
+        <div class="workspace-app">
+          <div class="workspace-stack">
+            <article class="workspace-card">
+              <div class="workspace-card-header">
+                <div><span class="workspace-step">01 / Case</span><h3>Start or reopen</h3><p class="workspace-card-copy">Cases persist in the database. The case URL can be reopened later with the same hosted access key.</p></div>
+              </div>
+              <div class="field"><label for="workspace-demo-key">Hosted access key</label><input id="workspace-demo-key" type="password" autocomplete="current-password" placeholder="Leave blank when running locally"><span class="field-note">Stored only for this browser session and never added to a URL.</span></div>
+              <div class="form-actions"><button class="button button-secondary" id="workspace-save-key" type="button">Save access key</button></div>
+              <div class="form-divider">create a case</div>
+              <form id="create-case-form">
+                <div class="field"><label for="workspace-case-name">Case name</label><input id="workspace-case-name" maxlength="200" required value="Closure evidence review"></div>
+                <div class="form-actions"><button class="button button-primary" id="create-case" type="submit">Create workspace</button></div>
+              </form>
+              <div class="form-divider">or reopen a case</div>
+              <form id="open-case-form">
+                <div class="field"><label for="workspace-case-id">Case ID</label><input id="workspace-case-id" placeholder="Paste a case UUID" required></div>
+                <div class="form-actions"><button class="button button-secondary" id="open-case" type="submit">Open existing case</button></div>
+              </form>
+              <div class="case-active hidden" id="workspace-active-case">
+                <strong id="workspace-active-name"></strong>
+                <code id="workspace-active-id"></code>
+                <div class="case-active-actions">
+                  <button class="button button-secondary" id="copy-case-link" type="button">Copy case link</button>
+                  <button class="button button-secondary" id="new-case" type="button">New case</button>
+                </div>
+              </div>
+              <p class="workspace-status" id="workspace-case-status" role="status">No user case is open.</p>
+            </article>
+
+            <article class="workspace-card">
+              <span class="workspace-step">Accepted input</span>
+              <h3>Structured at the trust boundary</h3>
+              <p class="workspace-card-copy">JSON and CSV may contain many assertions. Plain text is accepted through Quick entry, where you supply the entity and time needed for a deterministic timeline.</p>
+              <div class="data-contract">Required: entity_id, occurred_at, kind, value.<br>Optional defaults: source_locator, source_text.<br>Original file bytes are parsed locally and are not retained.</div>
+            </article>
+          </div>
+
+          <article class="workspace-card">
+            <div class="workspace-card-header">
+              <div><span class="workspace-step">02 / Evidence</span><h3>Add a source</h3><p class="workspace-card-copy">Every submission becomes one immutable source document with one or more source-specific assertions.</p></div>
+              <div class="mode-tabs" role="tablist" aria-label="Evidence input mode">
+                <button class="mode-tab active" data-input-mode="quick" type="button" role="tab" aria-selected="true" aria-controls="quick-input-mode">Quick entry</button>
+                <button class="mode-tab" data-input-mode="bulk" type="button" role="tab" aria-selected="false" aria-controls="bulk-input-mode">JSON / CSV</button>
+              </div>
+            </div>
+
+            <div id="quick-input-mode">
+              <form id="quick-evidence-form">
+                <div class="field-grid">
+                  <div class="field"><label for="quick-filename">Source filename</label><input id="quick-filename" value="observation.txt" required></div>
+                  <div class="field"><label for="quick-entity">Entity ID</label><input id="quick-entity" placeholder="person-42" required></div>
+                  <div class="field"><label for="quick-occurred">Occurred at</label><input id="quick-occurred" type="datetime-local" required></div>
+                  <div class="field"><label for="quick-kind">Event kind</label><select id="quick-kind"><option>OBSERVED_AT</option><option>CONTACTED</option><option>TRANSFERRED</option><option>MENTIONED</option><option>OTHER</option></select></div>
+                  <div class="field field-wide"><label for="quick-value">Timeline value</label><input id="quick-value" placeholder="Entered Northside Storage" required></div>
+                  <div class="field"><label for="quick-locator">Source locator</label><input id="quick-locator" value="manual:1" required><span class="field-note">Page, paragraph, row, timestamp, or another stable locator.</span></div>
+                  <div class="field field-wide"><label for="quick-source-text">Original source text</label><textarea id="quick-source-text" placeholder="Paste the raw observation or source excerpt here." required></textarea></div>
+                </div>
+                <div class="form-actions"><button class="button button-primary" id="ingest-quick" type="submit">Ingest observation</button><label class="button button-secondary" id="text-file-control" for="text-file" role="button" tabindex="0">Load .txt file</label><input class="hidden" id="text-file" type="file" accept=".txt,text/plain"></div>
+              </form>
+            </div>
+
+            <div class="hidden" id="bulk-input-mode">
+              <input class="hidden" id="evidence-file" type="file" accept=".json,.csv,application/json,text/csv">
+              <label class="drop-zone" id="drop-zone" for="evidence-file" role="button" tabindex="0"><span><strong>Drop JSON or CSV here</strong>or choose a file from your computer</span></label>
+              <div class="field-grid">
+                <div class="field"><label for="bulk-filename">Source filename</label><input id="bulk-filename" value="evidence-import.json"></div>
+                <div class="field field-wide"><label for="bulk-data">Raw JSON or CSV</label><textarea id="bulk-data" placeholder='[{"entity_id":"person-42","occurred_at":"2026-08-02T12:00:00Z","kind":"OBSERVED_AT","value":"..."}]'></textarea></div>
+              </div>
+              <div class="form-actions"><button class="button button-secondary" id="load-example" type="button">Load example</button><button class="button button-secondary" id="validate-bulk" type="button">Validate preview</button><button class="button button-primary" id="ingest-bulk" type="button" disabled>Ingest <span id="bulk-count">0</span> assertions</button></div>
+              <div class="draft-preview hidden" id="draft-preview"><div class="draft-preview-header"><span>Validated assertions</span><span id="draft-summary"></span></div><div class="draft-rows" id="draft-rows"></div></div>
+            </div>
+            <p class="workspace-status" id="workspace-ingest-status" role="status">Create or open a case before adding evidence.</p>
+          </article>
+        </div>
+
+        <div class="workspace-results hidden" id="workspace-results" aria-live="polite">
+          <div class="workspace-results-header"><div><h3 id="workspace-results-title">Case workspace</h3><p id="workspace-results-subtitle"></p></div><span class="status-badge" id="workspace-proof-status">Waiting</span></div>
+          <div class="workspace-metrics">
+            <div class="workspace-metric"><strong id="workspace-doc-count">0</strong><span>Source documents</span></div>
+            <div class="workspace-metric"><strong id="workspace-assertion-count">0</strong><span>Assertions retained</span></div>
+            <div class="workspace-metric"><strong id="workspace-artifact-count">0</strong><span>Entity-day timelines</span></div>
+            <div class="workspace-metric"><strong id="workspace-event-count">0</strong><span>Active events</span></div>
+          </div>
+          <div class="workspace-results-body">
+            <div class="workspace-results-column"><p class="subheading">Source history</p><div class="result-list" id="workspace-documents"></div></div>
+            <div class="workspace-results-column"><p class="subheading">Materialized timelines + lineage</p><div class="result-list" id="workspace-artifacts"></div></div>
+          </div>
+        </div>
+      </section>
+
       <section class="section" id="proof">
         <div class="section-heading">
           <div>
-            <p class="kicker">Execution, not animation</p>
+            <p class="kicker">Live correctness test</p>
             <h2>Watch the invariant hold.</h2>
           </div>
           <p>The interface creates 100 materialized timelines, adds one three-key evidence source, publishes only the affected versions, and checks every result against a deterministic full rebuild.</p>
@@ -553,7 +1023,7 @@
                 <p class="artifact-summary" id="artifact-summary">Waiting for a controlled mutation</p>
               </div>
               <div class="empty-state" id="artifact-empty">
-                <div><strong>No graph fabricated</strong><span>Run the proof to map a real source across its assertions, derived timelines, and exact dependency reads.</span></div>
+                <div><strong>No graph yet</strong><span>Run the proof to map a real source across its assertions, derived timelines, and exact dependency reads.</span></div>
               </div>
               <div class="artifact-content" id="artifact-content">
                 <div class="graph-workspace">
@@ -613,7 +1083,7 @@
         <div class="architecture">
           <article class="principle-card">
             <span class="big-number">SYSTEM INVARIANT</span>
-            <h3>Incremental speed without incremental doubt.</h3>
+            <h3>The maintained state always matches a full rebuild.</h3>
             <p>Every committed mutation advances only its smallest supported partition. Once queued work settles, the maintained artifacts must be byte-for-byte equivalent to rebuilding from every active assertion.</p>
             <div class="invariant-code">incremental(case, revision n)<br>== full_rebuild(active_assertions, revision n)</div>
           </article>
@@ -636,7 +1106,7 @@
     </main>
 
     <footer class="site-footer">
-      <p>Engineering prototype. Synthetic structured evidence only. This demonstrates recomputation semantics, not a production investigation platform or compliance claim.</p>
+      <p>Engineering prototype. User-supplied structured evidence is supported; raw PDFs, OCR, and identity resolution remain outside scope. This is not a production investigation platform or compliance claim.</p>
       <p><a href="https://github.com/Shravankb301/Closure-with-Shravan" target="_blank" rel="noreferrer">Inspect the source</a> / <a href="/docs">explore the API</a></p>
     </footer>
   </div>
@@ -655,9 +1125,18 @@
       worker: null,
       retracted: false,
     };
+    const workspaceState = {
+      caseId: null,
+      data: null,
+      proof: null,
+      draft: null,
+    };
     const byId = (id) => document.getElementById(id);
     const keyInput = byId("demo-key");
-    keyInput.value = sessionStorage.getItem("evidenceDeltaDemoKey") || "";
+    const workspaceKeyInput = byId("workspace-demo-key");
+    const storedDemoKey = sessionStorage.getItem("evidenceDeltaDemoKey") || "";
+    keyInput.value = storedDemoKey;
+    workspaceKeyInput.value = storedDemoKey;
 
     const targetCells = new Set([0, 11, 22]);
     const impactMap = byId("impact-map");
@@ -669,8 +1148,15 @@
     }
 
     function headers() {
-      const value = keyInput.value.trim();
+      const value = workspaceKeyInput.value.trim() || keyInput.value.trim();
       return value ? { "X-Demo-Key": value } : {};
+    }
+
+    function saveDemoKey(value) {
+      const normalized = value.trim();
+      keyInput.value = normalized;
+      workspaceKeyInput.value = normalized;
+      sessionStorage.setItem("evidenceDeltaDemoKey", normalized);
     }
 
     async function api(path, options = {}) {
@@ -706,6 +1192,282 @@
       if (!button.dataset.label) button.dataset.label = button.textContent;
       button.disabled = busy;
       button.textContent = busy ? busyLabel : button.dataset.label;
+    }
+
+    function setWorkspaceStatus(id, message, error = false) {
+      const element = byId(id);
+      element.textContent = message;
+      element.classList.toggle("error", error);
+    }
+
+    function setInputMode(mode) {
+      document.querySelectorAll("[data-input-mode]").forEach((button) => {
+        const selected = button.dataset.inputMode === mode;
+        button.classList.toggle("active", selected);
+        button.setAttribute("aria-selected", String(selected));
+      });
+      byId("quick-input-mode").classList.toggle("hidden", mode !== "quick");
+      byId("bulk-input-mode").classList.toggle("hidden", mode !== "bulk");
+    }
+
+    function caseUrl(caseId) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("case", caseId);
+      url.hash = "workspace";
+      return url;
+    }
+
+    function setCaseInUrl(caseId) {
+      window.history.replaceState({}, "", caseUrl(caseId));
+    }
+
+    function normalizeAssertion(raw, index) {
+      const entityId = String(raw.entity_id ?? "").trim();
+      const kind = String(raw.kind ?? "").trim();
+      const value = String(raw.value ?? "").trim();
+      const occurredAt = new Date(raw.occurred_at);
+      if (!entityId) throw new Error(`Row ${index + 1}: entity_id is required`);
+      if (Number.isNaN(occurredAt.getTime())) throw new Error(`Row ${index + 1}: occurred_at must be a valid date with time`);
+      if (!kind) throw new Error(`Row ${index + 1}: kind is required`);
+      if (!value) throw new Error(`Row ${index + 1}: value is required`);
+      return {
+        entity_id: entityId,
+        occurred_at: occurredAt.toISOString(),
+        kind,
+        value,
+        source_locator: String(raw.source_locator || `row:${index + 1}`).trim(),
+        source_text: String(raw.source_text || value).trim(),
+      };
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let quoted = false;
+      for (let index = 0; index < text.length; index += 1) {
+        const character = text[index];
+        if (character === '"') {
+          if (quoted && text[index + 1] === '"') {
+            field += '"';
+            index += 1;
+          } else {
+            quoted = !quoted;
+          }
+        } else if (character === "," && !quoted) {
+          row.push(field);
+          field = "";
+        } else if ((character === "\n" || character === "\r") && !quoted) {
+          if (character === "\r" && text[index + 1] === "\n") index += 1;
+          row.push(field);
+          if (row.some((item) => item.trim())) rows.push(row);
+          row = [];
+          field = "";
+        } else {
+          field += character;
+        }
+      }
+      if (quoted) throw new Error("CSV contains an unclosed quoted field");
+      row.push(field);
+      if (row.some((item) => item.trim())) rows.push(row);
+      if (rows.length < 2) throw new Error("CSV must include a header and at least one data row");
+      const headers = rows[0].map((item) => item.replace(/^\uFEFF/, "").trim());
+      return rows.slice(1).map((values) => Object.fromEntries(
+        headers.map((header, index) => [header, values[index] ?? ""]),
+      ));
+    }
+
+    function renderDraft(documentInput) {
+      workspaceState.draft = documentInput;
+      byId("bulk-filename").value = documentInput.filename;
+      byId("bulk-count").textContent = documentInput.assertions.length;
+      byId("ingest-bulk").disabled = false;
+      byId("draft-summary").textContent = `${documentInput.assertions.length} valid`;
+      byId("draft-rows").innerHTML = documentInput.assertions.slice(0, 50).map((assertion) => `
+        <div class="draft-row">
+          <span title="${escapeHtml(assertion.entity_id)}">${escapeHtml(assertion.entity_id)}</span>
+          <span title="${escapeHtml(assertion.occurred_at)}">${escapeHtml(assertion.occurred_at)}</span>
+          <span title="${escapeHtml(assertion.value)}">${escapeHtml(assertion.value)}</span>
+        </div>`).join("");
+      byId("draft-preview").classList.remove("hidden");
+      setWorkspaceStatus("workspace-ingest-status", `${documentInput.assertions.length} assertions passed local validation. Ready to ingest.`);
+    }
+
+    function parseBulkEvidence() {
+      const text = byId("bulk-data").value.trim();
+      const fallbackFilename = byId("bulk-filename").value.trim() || "evidence-import.json";
+      if (!text) throw new Error("Paste JSON or CSV data first");
+
+      let payload;
+      if (text.startsWith("[") || text.startsWith("{")) {
+        payload = JSON.parse(text);
+      } else {
+        payload = parseCsv(text);
+      }
+
+      const assertions = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload.assertions)
+          ? payload.assertions
+          : [payload];
+      if (!assertions.length) throw new Error("The import contains no assertions");
+      if (assertions.length > 1000) throw new Error("A single import is limited to 1,000 assertions");
+      const documentInput = {
+        filename: String(payload.filename || fallbackFilename).trim(),
+        source_type: String(payload.source_type || "user_upload").trim(),
+        assertions: assertions.map(normalizeAssertion),
+      };
+      renderDraft(documentInput);
+      return documentInput;
+    }
+
+    async function drainWorkspaceQueue() {
+      try {
+        await api("/workers/drain", { method: "POST", body: "{}" });
+      } catch (error) {
+        if (error.status !== 404) throw error;
+      }
+    }
+
+    function renderWorkspace(data, proof = workspaceState.proof) {
+      workspaceState.data = data;
+      workspaceState.caseId = data.case.id;
+      workspaceState.proof = proof;
+      byId("workspace-active-case").classList.remove("hidden");
+      byId("workspace-active-name").textContent = data.case.name;
+      byId("workspace-active-id").textContent = data.case.id;
+      byId("workspace-results").classList.remove("hidden");
+      byId("workspace-results-title").textContent = data.case.name;
+      byId("workspace-results-subtitle").textContent = `case ${data.case.id} / revision ${data.case.revision}`;
+
+      const assertionCount = data.documents.reduce((total, document) => total + document.assertion_count, 0);
+      const eventCount = data.artifacts.reduce((total, artifact) => total + (artifact.payload?.events?.length || 0), 0);
+      byId("workspace-doc-count").textContent = data.documents.length;
+      byId("workspace-assertion-count").textContent = assertionCount;
+      byId("workspace-artifact-count").textContent = data.artifacts.length;
+      byId("workspace-event-count").textContent = eventCount;
+
+      const proofStatus = byId("workspace-proof-status");
+      if (!data.artifacts.length) {
+        proofStatus.textContent = "Ready for evidence";
+        proofStatus.className = "status-badge";
+      } else if (proof?.equivalent_to_full_rebuild && proof?.queue?.settled) {
+        proofStatus.textContent = "Oracle verified";
+        proofStatus.className = "status-badge current";
+      } else {
+        proofStatus.textContent = "Recomputing";
+        proofStatus.className = "status-badge pending";
+      }
+
+      byId("workspace-documents").innerHTML = data.documents.length ? data.documents.map((document) => `
+        <article class="document-row${document.retracted ? " retracted" : ""}">
+          <div class="result-row-head">
+            <div><strong>${escapeHtml(document.filename)}</strong><code>${escapeHtml(document.id)}</code></div>
+            <span class="result-badge${document.retracted ? " retracted" : ""}">${document.retracted ? "Retracted" : "Active"}</span>
+          </div>
+          <p class="result-meta">${document.assertion_count} assertion${document.assertion_count === 1 ? "" : "s"} / revision ${document.added_at_revision} / ${escapeHtml(document.source_type)}</p>
+          ${document.retracted
+            ? `<p class="result-meta">Reason: ${escapeHtml(document.retraction_reason)}</p>`
+            : `<button class="row-action" data-retract-document="${escapeHtml(document.id)}" type="button">Retract this source</button>`}
+        </article>`).join("") : '<div class="empty-state"><div><strong>No sources yet</strong><span>Add an observation or import a file to begin.</span></div></div>';
+
+      byId("workspace-artifacts").innerHTML = data.artifacts.length ? data.artifacts.map((artifact) => {
+        const events = artifact.payload?.events || [];
+        const lineage = artifact.lineage || [];
+        return `<article class="user-artifact">
+          <div class="result-row-head">
+            <div><strong>${escapeHtml(artifact.artifact_key)}</strong><code>computed at revision ${artifact.computed_at_revision || "pending"}</code></div>
+            <span class="result-badge${artifact.fresh ? "" : " retracted"}">${artifact.fresh ? `Current v${artifact.version}` : "Pending"}</span>
+          </div>
+          <div class="user-artifact-events">${events.length ? events.map((event) => `<div class="user-event"><strong>${escapeHtml(event.value)}</strong><span>${escapeHtml(event.kind)} / ${escapeHtml(event.occurred_at)}</span></div>`).join("") : '<div class="user-event"><strong>No active events</strong><span>The source may be retracted or recomputation may still be pending.</span></div>'}</div>
+          ${lineage.length ? `<p class="user-lineage">Source proof: ${lineage.map((item) => `${escapeHtml(item.document_id)} @ ${escapeHtml(item.source_locator)}`).join(" / ")}</p>` : ""}
+        </article>`;
+      }).join("") : '<div class="empty-state"><div><strong>No timelines yet</strong><span>Materialized artifacts appear here after ingestion.</span></div></div>';
+
+      document.querySelectorAll("[data-retract-document]").forEach((button) => {
+        button.addEventListener("click", () => retractWorkspaceDocument(button.dataset.retractDocument));
+      });
+    }
+
+    async function refreshWorkspace(caseId = workspaceState.caseId) {
+      if (!caseId) return null;
+      const data = await api(`/cases/${caseId}`);
+      let proof = null;
+      if (data.artifacts.length) proof = await api(`/cases/${caseId}/proof`);
+      renderWorkspace(data, proof);
+      return { data, proof };
+    }
+
+    async function waitForWorkspace() {
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        const result = await refreshWorkspace();
+        const artifactsCurrent = result.data.artifacts.length > 0 && result.data.artifacts.every((artifact) => artifact.fresh);
+        if (artifactsCurrent && result.proof?.equivalent_to_full_rebuild && result.proof?.queue?.settled) return result;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      throw new Error("The case did not become current before the processing deadline");
+    }
+
+    async function openWorkspaceCase(caseId) {
+      const normalizedId = String(caseId || "").trim();
+      if (!normalizedId) throw new Error("Enter a case ID");
+      setWorkspaceStatus("workspace-case-status", "Opening case...");
+      const data = await api(`/cases/${normalizedId}`);
+      workspaceState.caseId = normalizedId;
+      setCaseInUrl(normalizedId);
+      let proof = null;
+      if (data.artifacts.length) proof = await api(`/cases/${normalizedId}/proof`);
+      renderWorkspace(data, proof);
+      byId("workspace-case-id").value = normalizedId;
+      setWorkspaceStatus("workspace-case-status", `Open at revision ${data.case.revision}. New evidence will append to this case.`);
+      setWorkspaceStatus("workspace-ingest-status", "Case ready. Add an observation or validate a batch import.");
+    }
+
+    async function ingestWorkspaceDocument(documentInput) {
+      if (!workspaceState.caseId) throw new Error("Create or open a case first");
+      setWorkspaceStatus("workspace-ingest-status", `Ingesting ${documentInput.assertions.length} assertion${documentInput.assertions.length === 1 ? "" : "s"}...`);
+      const mutation = await api(`/cases/${workspaceState.caseId}/documents`, {
+        method: "POST",
+        body: JSON.stringify(documentInput),
+      });
+      await drainWorkspaceQueue();
+      await waitForWorkspace();
+      setWorkspaceStatus(
+        "workspace-ingest-status",
+        mutation.deduplicated
+          ? "This source already exists in the case; no duplicate work was created."
+          : `Published ${mutation.queued_artifacts} affected timeline${mutation.queued_artifacts === 1 ? "" : "s"}; full-rebuild oracle verified.`,
+      );
+      return mutation;
+    }
+
+    async function retractWorkspaceDocument(documentId) {
+      if (!window.confirm("Retract this source? Its assertions will remain auditable, but will be removed from active timelines.")) return;
+      setWorkspaceStatus("workspace-ingest-status", "Appending retraction tombstone and recomputing affected timelines...");
+      try {
+        await api(`/cases/${workspaceState.caseId}/documents/${documentId}/retractions`, {
+          method: "POST",
+          body: JSON.stringify({ reason: "Retracted from interactive workspace" }),
+        });
+        await drainWorkspaceQueue();
+        await waitForWorkspace();
+        setWorkspaceStatus("workspace-ingest-status", "Source retracted. Assertions remain retained and the correctness oracle still matches.");
+      } catch (error) {
+        setWorkspaceStatus("workspace-ingest-status", error.message, true);
+      }
+    }
+
+    async function restoreWorkspaceFromUrl() {
+      const caseId = new URL(window.location.href).searchParams.get("case");
+      if (!caseId || workspaceState.caseId === caseId) return;
+      try {
+        await openWorkspaceCase(caseId);
+      } catch (error) {
+        const message = error.status === 401
+          ? "Enter the hosted demo key above, save it, then reopen this case."
+          : error.message;
+        setWorkspaceStatus("workspace-case-status", message, true);
+      }
     }
 
     function resetRunUI() {
@@ -1008,6 +1770,7 @@
 
     async function runScenario() {
       const button = byId("run-scenario");
+      byId("proof").scrollIntoView({ behavior: "smooth", block: "start" });
       resetRunUI();
       state.retracted = false;
       setButtonBusy(button, true, "Building proof...");
@@ -1106,16 +1869,205 @@
     }
 
     byId("save-key").addEventListener("click", () => {
-      sessionStorage.setItem("evidenceDeltaDemoKey", keyInput.value.trim());
+      saveDemoKey(keyInput.value);
       setActivity("Demo key saved for this browser session.");
       checkHealth();
+      restoreWorkspaceFromUrl();
     });
+    byId("workspace-save-key").addEventListener("click", () => {
+      saveDemoKey(workspaceKeyInput.value);
+      setWorkspaceStatus("workspace-case-status", "Access key saved for this browser session.");
+      checkHealth();
+      restoreWorkspaceFromUrl();
+    });
+    byId("create-case-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = byId("create-case");
+      setButtonBusy(button, true, "Creating...");
+      try {
+        const created = await api("/cases", {
+          method: "POST",
+          body: JSON.stringify({ name: byId("workspace-case-name").value.trim() }),
+        });
+        await openWorkspaceCase(created.id);
+      } catch (error) {
+        setWorkspaceStatus("workspace-case-status", error.message, true);
+      } finally {
+        setButtonBusy(button, false, "");
+      }
+    });
+    byId("open-case-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = byId("open-case");
+      setButtonBusy(button, true, "Opening...");
+      try {
+        await openWorkspaceCase(byId("workspace-case-id").value);
+      } catch (error) {
+        setWorkspaceStatus("workspace-case-status", error.message, true);
+      } finally {
+        setButtonBusy(button, false, "");
+      }
+    });
+    byId("copy-case-link").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(caseUrl(workspaceState.caseId).toString());
+        setWorkspaceStatus("workspace-case-status", "Case link copied. The recipient will also need the hosted access key.");
+      } catch (_error) {
+        setWorkspaceStatus("workspace-case-status", "Clipboard access was blocked by the browser.", true);
+      }
+    });
+    byId("new-case").addEventListener("click", () => {
+      workspaceState.caseId = null;
+      workspaceState.data = null;
+      workspaceState.proof = null;
+      workspaceState.draft = null;
+      const url = new URL(window.location.href);
+      url.searchParams.delete("case");
+      url.hash = "workspace";
+      window.history.replaceState({}, "", url);
+      byId("workspace-active-case").classList.add("hidden");
+      byId("workspace-results").classList.add("hidden");
+      byId("workspace-case-id").value = "";
+      setWorkspaceStatus("workspace-case-status", "No user case is open.");
+      setWorkspaceStatus("workspace-ingest-status", "Create or open a case before adding evidence.");
+    });
+    document.querySelectorAll("[data-input-mode]").forEach((button) => {
+      button.addEventListener("click", () => setInputMode(button.dataset.inputMode));
+    });
+    function activateFileInputOnKeyboard(control, input) {
+      control.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        input.click();
+      });
+    }
+    activateFileInputOnKeyboard(byId("text-file-control"), byId("text-file"));
+    activateFileInputOnKeyboard(byId("drop-zone"), byId("evidence-file"));
+    byId("quick-evidence-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = byId("ingest-quick");
+      setButtonBusy(button, true, "Ingesting...");
+      try {
+        const assertion = normalizeAssertion({
+          entity_id: byId("quick-entity").value,
+          occurred_at: byId("quick-occurred").value,
+          kind: byId("quick-kind").value,
+          value: byId("quick-value").value,
+          source_locator: byId("quick-locator").value,
+          source_text: byId("quick-source-text").value,
+        }, 0);
+        await ingestWorkspaceDocument({
+          filename: byId("quick-filename").value.trim(),
+          source_type: "user_quick_entry",
+          assertions: [assertion],
+        });
+        byId("quick-value").value = "";
+        byId("quick-source-text").value = "";
+        byId("quick-locator").value = `manual:${(workspaceState.data?.documents?.length || 0) + 1}`;
+      } catch (error) {
+        setWorkspaceStatus("workspace-ingest-status", error.message, true);
+      } finally {
+        setButtonBusy(button, false, "");
+      }
+    });
+    byId("text-file").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      byId("quick-filename").value = file.name;
+      byId("quick-source-text").value = text;
+      byId("quick-value").value = text.split(/\r?\n/).find((line) => line.trim())?.trim() || file.name;
+      setInputMode("quick");
+      setWorkspaceStatus("workspace-ingest-status", "Text loaded locally. Add the entity and occurrence time, then ingest.");
+    });
+    async function loadEvidenceFile(file) {
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        setWorkspaceStatus("workspace-ingest-status", "Files are limited to 5 MB in this hosted workspace.", true);
+        return;
+      }
+      byId("bulk-filename").value = file.name;
+      byId("bulk-data").value = await file.text();
+      setInputMode("bulk");
+      try {
+        parseBulkEvidence();
+      } catch (error) {
+        workspaceState.draft = null;
+        byId("ingest-bulk").disabled = true;
+        setWorkspaceStatus("workspace-ingest-status", error.message, true);
+      }
+    }
+    byId("evidence-file").addEventListener("change", (event) => loadEvidenceFile(event.target.files[0]));
+    byId("load-example").addEventListener("click", () => {
+      byId("bulk-filename").value = "closure-example.json";
+      byId("bulk-data").value = JSON.stringify([
+        {
+          entity_id: "account-1042",
+          occurred_at: "2026-08-02T16:20:00Z",
+          kind: "CONTACTED",
+          value: "Customer contacted support about a duplicate charge",
+          source_locator: "ticket:CS-1842/message:1",
+          source_text: "I was charged twice for the same subscription renewal.",
+        },
+        {
+          entity_id: "account-1042",
+          occurred_at: "2026-08-02T17:05:00Z",
+          kind: "TRANSFERRED",
+          value: "Case escalated to billing operations",
+          source_locator: "ticket:CS-1842/message:4",
+          source_text: "Escalating this ticket to billing operations for reconciliation.",
+        },
+      ], null, 2);
+      parseBulkEvidence();
+    });
+    byId("validate-bulk").addEventListener("click", () => {
+      try {
+        parseBulkEvidence();
+      } catch (error) {
+        workspaceState.draft = null;
+        byId("ingest-bulk").disabled = true;
+        byId("draft-preview").classList.add("hidden");
+        setWorkspaceStatus("workspace-ingest-status", error.message, true);
+      }
+    });
+    byId("ingest-bulk").addEventListener("click", async () => {
+      const button = byId("ingest-bulk");
+      setButtonBusy(button, true, "Ingesting batch...");
+      try {
+        const documentInput = workspaceState.draft || parseBulkEvidence();
+        documentInput.filename = byId("bulk-filename").value.trim();
+        await ingestWorkspaceDocument(documentInput);
+        workspaceState.draft = null;
+        byId("bulk-data").value = "";
+        byId("bulk-count").textContent = "0";
+        byId("draft-preview").classList.add("hidden");
+        button.dataset.label = "Ingest 0 assertions";
+      } catch (error) {
+        setWorkspaceStatus("workspace-ingest-status", error.message, true);
+      } finally {
+        setButtonBusy(button, false, "");
+        button.disabled = workspaceState.draft === null;
+      }
+    });
+    const dropZone = byId("drop-zone");
+    ["dragenter", "dragover"].forEach((eventName) => dropZone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      dropZone.classList.add("dragging");
+    }));
+    ["dragleave", "drop"].forEach((eventName) => dropZone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      dropZone.classList.remove("dragging");
+    }));
+    dropZone.addEventListener("drop", (event) => loadEvidenceFile(event.dataTransfer.files[0]));
     byId("run-scenario").addEventListener("click", runScenario);
     byId("retract").addEventListener("click", retractSource);
     byId("copy-report").addEventListener("click", copyReport);
     byId("toggle-raw").addEventListener("click", () => byId("raw-output").classList.toggle("visible"));
+    const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+    byId("quick-occurred").value = localNow;
     resetRunUI();
     checkHealth();
+    restoreWorkspaceFromUrl();
   </script>
 </body>
 </html>

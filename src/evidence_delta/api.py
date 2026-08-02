@@ -92,6 +92,13 @@ def create_app(database_url: str | None = None) -> FastAPI:
         record = service.create_case(body.name)
         return {"id": record.id, "name": record.name, "revision": record.revision}
 
+    @application.get("/cases/{case_id}", dependencies=secured)
+    def get_case_workspace(case_id: str) -> dict:
+        try:
+            return service.case_workspace(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     @application.post("/demo/scenario", status_code=201, dependencies=secured)
     def create_demo_scenario() -> dict:
         return build_selectivity_scenario(service, worker)

@@ -52,6 +52,11 @@ def test_dashboard_serves_the_selectivity_experiment() -> None:
         response = client.get("/")
         assert response.status_code == 200
         assert "Run the live proof" in response.text
+        assert "Bring your own evidence" in response.text
+        assert 'id="quick-evidence-form"' in response.text
+        assert 'id="evidence-file"' in response.text
+        assert "function parseCsv" in response.text
+        assert "Open existing case" in response.text
         assert "Evidence graph" in response.text
         assert 'id="evidence-graph"' in response.text
         assert 'id="graph-inspector"' in response.text
