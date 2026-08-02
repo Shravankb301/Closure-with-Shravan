@@ -383,6 +383,114 @@ class EvidenceService:
             ).all()
             return {key: payload for key, payload in rows}
 
+    def case_proof(self, case_id: str) -> dict:
+        """Return live evidence for the invariants highlighted by the demo UI."""
+
+        incremental = self.incremental_state(case_id)
+        rebuilt = self.full_rebuild_state(case_id)
+
+        with self.database.session() as session:
+            case = session.get(CaseRecord, case_id)
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+
+            retracted = exists().where(
+                DocumentRetractionRecord.document_id == AssertionRecord.document_id
+            )
+            total_assertions = int(
+                session.scalar(
+                    select(func.count(AssertionRecord.id)).where(
+                        AssertionRecord.case_id == case_id
+                    )
+                )
+                or 0
+            )
+            active_assertions = int(
+                session.scalar(
+                    select(func.count(AssertionRecord.id)).where(
+                        AssertionRecord.case_id == case_id,
+                        ~retracted,
+                    )
+                )
+                or 0
+            )
+            retained_retracted_assertions = int(
+                session.scalar(
+                    select(func.count(AssertionRecord.id)).where(
+                        AssertionRecord.case_id == case_id,
+                        retracted,
+                    )
+                )
+                or 0
+            )
+            artifact_count = self._artifact_count(session, case_id)
+            current_artifacts = int(
+                session.scalar(
+                    select(func.count(ArtifactRecord.id)).where(
+                        ArtifactRecord.case_id == case_id,
+                        ArtifactRecord.current_version_id.is_not(None),
+                    )
+                )
+                or 0
+            )
+            artifact_versions = int(
+                session.scalar(
+                    select(func.count(ArtifactVersionRecord.id))
+                    .join(ArtifactRecord, ArtifactRecord.id == ArtifactVersionRecord.artifact_id)
+                    .where(ArtifactRecord.case_id == case_id)
+                )
+                or 0
+            )
+            change_keys = int(
+                session.scalar(
+                    select(func.count(ChangeKeyRecord.id)).where(
+                        ChangeKeyRecord.case_id == case_id
+                    )
+                )
+                or 0
+            )
+            retractions = int(
+                session.scalar(
+                    select(func.count(DocumentRetractionRecord.id)).where(
+                        DocumentRetractionRecord.case_id == case_id
+                    )
+                )
+                or 0
+            )
+            job_counts = {
+                status: count
+                for status, count in session.execute(
+                    select(RecomputeJobRecord.status, func.count(RecomputeJobRecord.id))
+                    .where(RecomputeJobRecord.case_id == case_id)
+                    .group_by(RecomputeJobRecord.status)
+                )
+            }
+
+        return {
+            "case_revision": case.revision,
+            "equivalent_to_full_rebuild": incremental == rebuilt,
+            "artifacts": {
+                "total": artifact_count,
+                "current": current_artifacts,
+                "immutable_versions": artifact_versions,
+                "change_keys": change_keys,
+            },
+            "evidence": {
+                "assertions_total": total_assertions,
+                "assertions_active": active_assertions,
+                "retractions": retractions,
+                "retracted_source_assertions_retained": retained_retracted_assertions,
+            },
+            "queue": {
+                "jobs_total": sum(job_counts.values()),
+                "by_status": job_counts,
+                "settled": all(
+                    status in {"SUCCEEDED", "SUPERSEDED", "FAILED_PERMANENT"}
+                    for status in job_counts
+                ),
+            },
+        }
+
     def current_artifact(self, case_id: str, key: str) -> dict | None:
         with self.database.session() as session:
             row = session.execute(

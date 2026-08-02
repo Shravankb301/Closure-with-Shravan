@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 import secrets
 from contextlib import asynccontextmanager
+from html import escape
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_delta.database import Database
@@ -62,9 +63,17 @@ def create_app(database_url: str | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    static_dir = Path(__file__).parent / "static"
+
     @application.get("/", include_in_schema=False)
-    def dashboard() -> FileResponse:
-        return FileResponse(Path(__file__).parent / "static" / "index.html")
+    def dashboard(request: Request) -> HTMLResponse:
+        origin = escape(str(request.base_url).rstrip("/"), quote=True)
+        html = (static_dir / "index.html").read_text(encoding="utf-8")
+        return HTMLResponse(html.replace("{{SITE_ORIGIN}}", origin))
+
+    @application.get("/og.png", include_in_schema=False)
+    def social_preview() -> FileResponse:
+        return FileResponse(static_dir / "og.png", media_type="image/png")
 
     @application.get("/health")
     def health() -> dict:
@@ -123,6 +132,13 @@ def create_app(database_url: str | None = None) -> FastAPI:
         if result is None:
             raise HTTPException(status_code=404, detail="Artifact not found")
         return result
+
+    @application.get("/cases/{case_id}/proof", dependencies=secured)
+    def get_case_proof(case_id: str) -> dict:
+        try:
+            return service.case_proof(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     application.state.database = database
     application.state.service = service

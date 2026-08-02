@@ -46,13 +46,20 @@ Representative impact:
 Timing in the demo is intentionally labeled as a local illustration, not a
 production-scale benchmark. Correctness is the primary result.
 
-## Interactive control surface
+## Interactive engineering proof
 
-The root route serves a focused browser demonstration. One action creates 100
-independent entity-day artifacts, adds evidence affecting three, and renders the
-selected timeline, exact source lineage, dependency versions, and freshness.
-The same source can then be retracted to show that derived state changes while
-the original assertions remain auditable.
+The root route turns the 3-of-100 scenario into a guided live proof. One action
+materializes 100 independent entity-day artifacts, highlights the exact three
+invalidated partitions, publishes their replacement versions, renders source
+lineage and dependency observations, and verifies every maintained artifact
+against a deterministic full rebuild. The same source can then be retracted to
+show that derived state changes while all three original assertions and prior
+artifact versions remain auditable.
+
+The interface also explains the failure envelope covered by automated tests:
+crash-before-commit rollback, stale-worker fencing, bounded retries, and
+PostgreSQL multi-worker claims. Its link-preview image uses the same impact map,
+so a shared demo URL communicates the result before the page opens.
 
 The hosted demo can require an `X-Demo-Key`. The browser keeps that value in
 session storage only and never places it in a URL.
@@ -123,6 +130,7 @@ Core endpoints:
 | `POST` | `/cases/{case_id}/documents/{document_id}/retractions` | Append a retraction tombstone |
 | `POST` | `/workers/drain` | Process queued recomputations locally |
 | `GET` | `/cases/{case_id}/artifacts/{artifact_key}` | Read a versioned artifact and lineage |
+| `GET` | `/cases/{case_id}/proof` | Verify full-rebuild equivalence and inspect live proof counts |
 
 Interactive API documentation is available at `/docs` while the server runs.
 

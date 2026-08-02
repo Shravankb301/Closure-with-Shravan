@@ -3,416 +3,628 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A provenance-preserving incremental recomputation demonstration.">
-  <title>Evidence Delta Engine</title>
+  <meta name="description" content="A live engineering proof of selective recomputation, source lineage, and deterministic correctness.">
+  <meta property="og:title" content="Evidence Delta Engine | Live Engineering Proof">
+  <meta property="og:description" content="Change 3 facts. Recompute exactly 3 artifacts. Prove the other 97 never moved.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{SITE_ORIGIN}}/">
+  <meta property="og:image" content="{{SITE_ORIGIN}}/og.png">
+  <meta property="og:image:width" content="1731">
+  <meta property="og:image:height" content="909">
+  <meta property="og:image:alt" content="Evidence Delta Engine impact surface with three of one hundred artifacts highlighted">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{{SITE_ORIGIN}}/og.png">
+  <title>Evidence Delta Engine | Live Engineering Proof</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
-      --ink: #07110f;
-      --panel: #0d1a17;
-      --panel-raised: #13231f;
-      --line: #294039;
-      --line-soft: rgba(145, 178, 166, 0.16);
-      --text: #f2f7f4;
-      --muted: #93aaa2;
-      --mint: #61e7b7;
-      --mint-dark: #153f33;
-      --amber: #f1c66d;
-      --red: #ff8a7a;
-      --blue: #8db9ff;
-      --radius: 18px;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --ink: #070907;
+      --surface: #0d110e;
+      --surface-2: #121814;
+      --surface-3: #182019;
+      --line: rgba(219, 239, 221, 0.14);
+      --line-strong: rgba(219, 239, 221, 0.25);
+      --text: #f4f7ed;
+      --muted: #98a395;
+      --acid: #c7f36b;
+      --acid-dark: #283d15;
+      --orange: #ff7849;
+      --cyan: #70d7e8;
+      --red: #ff6d63;
+      --radius-lg: 26px;
+      --radius-md: 17px;
+      --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --sans: "Manrope", "Avenir Next", sans-serif;
+      font-family: var(--sans);
     }
 
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
+      min-width: 320px;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 80% -10%, rgba(97, 231, 183, 0.11), transparent 34rem),
-        linear-gradient(180deg, #07110f 0%, #091512 100%);
       color: var(--text);
+      background:
+        radial-gradient(circle at 84% 8%, rgba(199, 243, 107, 0.10), transparent 27rem),
+        radial-gradient(circle at 12% 35%, rgba(112, 215, 232, 0.07), transparent 30rem),
+        linear-gradient(180deg, #080a08 0%, #0a0e0b 46%, #070907 100%);
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      content: "";
+      opacity: 0.3;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, black, transparent 70%);
     }
 
     button, input { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; text-decoration: none; }
 
-    button:focus-visible, input:focus-visible, a:focus-visible {
-      outline: 3px solid rgba(97, 231, 183, 0.5);
+    button:focus-visible, input:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 3px solid rgba(199, 243, 107, 0.55);
       outline-offset: 3px;
     }
 
-    .shell { max-width: 1420px; margin: 0 auto; padding: 28px; }
+    .shell { width: min(1440px, calc(100% - 48px)); margin: 0 auto; }
+    .mono { font-family: var(--mono); }
+    .muted { color: var(--muted); }
+    .accent { color: var(--acid); }
 
-    header {
+    .site-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 24px;
-      margin-bottom: 30px;
+      min-height: 82px;
+      border-bottom: 1px solid var(--line);
     }
 
     .brand { display: flex; align-items: center; gap: 13px; }
 
-    .mark {
+    .brand-mark {
       display: grid;
       place-items: center;
-      width: 42px;
-      height: 42px;
-      border: 1px solid rgba(97, 231, 183, 0.5);
-      border-radius: 13px;
-      background: linear-gradient(145deg, rgba(97, 231, 183, 0.22), rgba(97, 231, 183, 0.04));
-      color: var(--mint);
-      font: 700 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-      box-shadow: inset 0 0 24px rgba(97, 231, 183, 0.08);
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(199, 243, 107, 0.46);
+      border-radius: 12px;
+      color: var(--acid);
+      background: linear-gradient(145deg, rgba(199, 243, 107, 0.16), rgba(199, 243, 107, 0.02));
+      box-shadow: inset 0 0 24px rgba(199, 243, 107, 0.06);
+      font: 600 17px/1 var(--mono);
     }
 
-    .brand h1 { margin: 0; font-size: 17px; letter-spacing: -0.02em; }
-    .brand p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+    .brand-name { margin: 0; font-size: 14px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand-type { margin: 3px 0 0; color: var(--muted); font: 500 9px/1.3 var(--mono); letter-spacing: 0.13em; text-transform: uppercase; }
 
-    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .header-nav { display: flex; align-items: center; gap: 22px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .header-nav a:hover { color: var(--text); }
 
     .health {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      min-height: 36px;
-      padding: 0 13px;
-      border: 1px solid var(--line-soft);
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
       border-radius: 999px;
-      color: var(--muted);
-      font-size: 12px;
-      background: rgba(13, 26, 23, 0.7);
+      background: rgba(13, 17, 14, 0.8);
+      font: 500 10px/1 var(--mono);
     }
 
-    .health-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
-    .health.ready .health-dot { background: var(--mint); box-shadow: 0 0 12px rgba(97, 231, 183, 0.8); }
+    .health-dot { width: 6px; height: 6px; border-radius: 50%; background: #d4a441; }
+    .health.ready { color: #cceca2; }
+    .health.ready .health-dot { background: var(--acid); box-shadow: 0 0 12px rgba(199, 243, 107, 0.8); }
+    .health.error { color: #ffaaa4; }
     .health.error .health-dot { background: var(--red); }
 
-    a { color: var(--muted); text-decoration: none; }
-    a:hover { color: var(--text); }
-
-    .workspace {
+    .hero {
       display: grid;
-      grid-template-columns: minmax(300px, 0.78fr) minmax(520px, 1.7fr);
-      gap: 22px;
-      align-items: start;
+      grid-template-columns: minmax(0, 1.1fr) minmax(420px, 0.9fr);
+      gap: clamp(48px, 7vw, 104px);
+      align-items: center;
+      min-height: 680px;
+      padding: 68px 0 76px;
     }
 
-    .panel {
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius);
-      background: rgba(13, 26, 23, 0.88);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
-      overflow: hidden;
-    }
-
-    .control-panel { position: sticky; top: 24px; }
-    .panel-section { padding: 24px; border-bottom: 1px solid var(--line-soft); }
-    .panel-section:last-child { border-bottom: 0; }
-
-    .eyebrow {
-      margin: 0 0 9px;
-      color: var(--mint);
-      font: 650 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    .kicker {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 24px;
+      color: var(--acid);
+      font: 600 10px/1.2 var(--mono);
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
-    h2 { margin: 0; font-size: clamp(23px, 3vw, 36px); line-height: 1.08; letter-spacing: -0.04em; }
-    h3 { margin: 0; font-size: 15px; letter-spacing: -0.02em; }
-    .lede { margin: 13px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .kicker::before { width: 30px; height: 1px; content: ""; background: currentColor; }
 
-    label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
-
-    .key-row { display: flex; gap: 8px; }
-
-    input {
-      width: 100%;
-      min-height: 43px;
-      padding: 0 13px;
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      background: #091410;
-      color: var(--text);
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(48px, 6.2vw, 88px);
+      line-height: 0.97;
+      letter-spacing: -0.065em;
     }
 
-    input::placeholder { color: #5e756d; }
+    h1 .outline { color: transparent; -webkit-text-stroke: 1.5px rgba(244, 247, 237, 0.5); }
+    .hero-copy { max-width: 650px; margin: 28px 0 0; color: #aeb8ab; font-size: clamp(15px, 1.5vw, 18px); line-height: 1.75; }
+
+    .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
 
     .button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 9px;
-      min-height: 44px;
-      padding: 0 16px;
+      gap: 10px;
+      min-height: 49px;
+      padding: 0 18px;
       border: 1px solid transparent;
-      border-radius: 11px;
+      border-radius: 13px;
       cursor: pointer;
-      transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
-      font-weight: 700;
-      font-size: 13px;
-    }
-
-    .button:hover:not(:disabled) { transform: translateY(-1px); }
-    .button:disabled { cursor: wait; opacity: 0.55; }
-    .button-primary { width: 100%; background: var(--mint); color: #04100c; }
-    .button-primary:hover:not(:disabled) { background: #7ceec5; }
-    .button-secondary { background: transparent; color: var(--text); border-color: var(--line); }
-    .button-secondary:hover:not(:disabled) { border-color: #49665d; background: rgba(255, 255, 255, 0.03); }
-    .button-danger { color: #ffd4ce; border-color: rgba(255, 138, 122, 0.32); background: rgba(255, 138, 122, 0.07); }
-    .button-small { min-height: 36px; padding: 0 12px; }
-    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
-
-    .scenario-note {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 11px;
-      margin-top: 17px;
-      padding: 13px;
-      border: 1px solid rgba(241, 198, 109, 0.18);
-      border-radius: 12px;
-      background: rgba(241, 198, 109, 0.05);
-      color: #c9b88f;
       font-size: 12px;
-      line-height: 1.5;
+      font-weight: 800;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, opacity 160ms ease;
     }
 
-    .scenario-note strong { color: var(--amber); }
+    .button:hover:not(:disabled) { transform: translateY(-2px); }
+    .button:disabled { cursor: wait; opacity: 0.48; }
+    .button-primary { min-width: 190px; background: var(--acid); color: #0b1007; box-shadow: 0 10px 34px rgba(199, 243, 107, 0.12); }
+    .button-primary:hover:not(:disabled) { background: #d5fa86; }
+    .button-secondary { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.025); }
+    .button-secondary:hover:not(:disabled) { border-color: rgba(199, 243, 107, 0.5); background: rgba(199, 243, 107, 0.05); }
+    .button-danger { border-color: rgba(255, 120, 73, 0.42); color: #ffb59c; background: rgba(255, 120, 73, 0.07); }
 
-    .main-panel { min-height: 720px; }
+    .run-hint { color: #7d897b; font: 500 10px/1.5 var(--mono); }
 
-    .hero {
+    .instrument {
+      position: relative;
+      padding: 18px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(155deg, rgba(24, 32, 25, 0.95), rgba(10, 14, 11, 0.95));
+      box-shadow: 0 50px 120px rgba(0, 0, 0, 0.38), inset 0 1px rgba(255, 255, 255, 0.04);
+      overflow: hidden;
+    }
+
+    .instrument::before {
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      content: "";
+      background: rgba(199, 243, 107, 0.08);
+      filter: blur(46px);
+    }
+
+    .instrument-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
+    .instrument-label { color: #c1c9be; font: 600 10px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+    .instrument-id { color: #647063; font: 500 9px/1 var(--mono); }
+
+    .map-wrap { position: relative; padding: 20px; border: 1px solid var(--line); border-radius: 17px; background: #080b08; }
+
+    .impact-map {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 20px;
-      align-items: end;
-      padding: 28px;
-      border-bottom: 1px solid var(--line-soft);
-      background: linear-gradient(135deg, rgba(97, 231, 183, 0.04), transparent 55%);
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+      aspect-ratio: 1;
     }
 
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 11px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      color: var(--muted);
-      font: 650 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+    .impact-cell {
+      position: relative;
+      border: 1px solid rgba(219, 239, 221, 0.11);
+      border-radius: 4px;
+      background: rgba(219, 239, 221, 0.04);
+      transition: opacity 280ms ease, background 280ms ease, border-color 280ms ease, transform 280ms ease, box-shadow 280ms ease;
     }
 
-    .status-badge.current { color: var(--mint); border-color: rgba(97, 231, 183, 0.28); background: rgba(97, 231, 183, 0.06); }
-    .status-badge.pending { color: var(--amber); border-color: rgba(241, 198, 109, 0.28); }
-
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: var(--line-soft);
-      border-bottom: 1px solid var(--line-soft);
+    .impact-cell.target { border-color: rgba(199, 243, 107, 0.28); }
+    .impact-map.active .impact-cell { opacity: 0.34; }
+    .impact-map.active .impact-cell.target {
+      z-index: 1;
+      opacity: 1;
+      border-color: var(--acid);
+      background: var(--acid);
+      transform: scale(1.12);
+      box-shadow: 0 0 22px rgba(199, 243, 107, 0.45);
+      animation: cell-pulse 1.4s ease 1;
     }
 
-    .metric { padding: 20px; background: var(--panel); }
-    .metric-value { display: block; font-size: 26px; font-weight: 760; letter-spacing: -0.04em; }
-    .metric-value.mint { color: var(--mint); }
-    .metric-value.amber { color: var(--amber); }
-    .metric-label { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
-
-    .trace-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); }
-    .trace-column { min-height: 420px; padding: 24px; }
-    .trace-column + .trace-column { border-left: 1px solid var(--line-soft); }
-
-    .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .muted { color: var(--muted); }
-    .tiny { font-size: 11px; }
-
-    .empty-state {
-      display: grid;
-      place-items: center;
-      min-height: 310px;
-      padding: 34px;
-      border: 1px dashed var(--line);
-      border-radius: 14px;
-      color: var(--muted);
-      text-align: center;
-      line-height: 1.6;
+    .impact-map.retracted .impact-cell.target {
+      border-color: var(--orange);
+      background: transparent;
+      box-shadow: inset 0 0 0 2px rgba(255, 120, 73, 0.28), 0 0 18px rgba(255, 120, 73, 0.2);
     }
 
-    .empty-state strong { display: block; color: var(--text); margin-bottom: 7px; }
-
-    .timeline { position: relative; display: grid; gap: 12px; }
-    .timeline::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 1px; background: var(--line); }
-
-    .event { position: relative; display: grid; grid-template-columns: 18px 1fr; gap: 13px; }
-    .event-dot { z-index: 1; width: 9px; height: 9px; margin-top: 18px; margin-left: 4px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 4px var(--panel), 0 0 13px rgba(97, 231, 183, 0.35); }
-    .event-card { padding: 15px; border: 1px solid var(--line-soft); border-radius: 13px; background: rgba(19, 35, 31, 0.68); }
-    .event-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--muted); font-size: 10px; }
-    .event-value { margin: 0; font-size: 13px; line-height: 1.5; }
-
-    .lineage-list { display: grid; gap: 9px; }
-    .lineage-item { padding: 13px; border: 1px solid var(--line-soft); border-radius: 12px; background: rgba(7, 17, 15, 0.38); }
-    .lineage-source { margin: 0 0 7px; color: var(--blue); font: 650 10px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
-    .lineage-text { margin: 0; color: #c2d1cc; font-size: 12px; line-height: 1.5; }
-
-    .dependency {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 9px;
-      align-items: center;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--line-soft);
-      color: var(--muted);
-      font-size: 10px;
+    @keyframes cell-pulse {
+      0% { transform: scale(0.72); box-shadow: 0 0 0 rgba(199, 243, 107, 0); }
+      55% { transform: scale(1.22); box-shadow: 0 0 32px rgba(199, 243, 107, 0.75); }
+      100% { transform: scale(1.12); }
     }
 
-    .dependency-key { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .version-pair { color: var(--mint); }
+    .map-legend { display: flex; justify-content: space-between; gap: 16px; margin-top: 14px; color: #727d70; font: 500 9px/1.4 var(--mono); }
+    .map-legend span { display: flex; align-items: center; gap: 7px; }
+    .legend-dot { width: 7px; height: 7px; border-radius: 2px; background: rgba(219, 239, 221, 0.18); }
+    .legend-dot.hot { background: var(--acid); box-shadow: 0 0 8px rgba(199, 243, 107, 0.5); }
 
-    .activity {
-      padding: 18px 24px;
-      border-top: 1px solid var(--line-soft);
-      background: rgba(7, 17, 15, 0.42);
-    }
+    .impact-readout { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .readout { padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, 0.018); }
+    .readout-value { display: block; font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.06em; }
+    .readout:first-child .readout-value { color: var(--acid); }
+    .readout-label { display: block; margin-top: 7px; color: #7d897b; font: 500 9px/1 var(--mono); text-transform: uppercase; }
 
-    .activity-line { margin: 0; color: var(--muted); font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .activity-line.error { color: var(--red); }
+    .access-panel { margin-top: 12px; border: 1px solid var(--line); border-radius: 13px; background: rgba(0, 0, 0, 0.18); }
+    .access-panel summary { padding: 13px 15px; cursor: pointer; color: #7f8a7e; font: 500 10px/1.3 var(--mono); list-style: none; }
+    .access-panel summary::-webkit-details-marker { display: none; }
+    .access-panel summary::after { float: right; content: "+"; color: var(--acid); }
+    .access-panel[open] summary::after { content: "-"; }
+    .key-form { display: flex; gap: 8px; padding: 0 12px 12px; }
+    .key-form input { width: 100%; min-width: 0; min-height: 40px; padding: 0 11px; border: 1px solid var(--line); border-radius: 10px; background: #080b08; color: var(--text); font: 500 11px/1 var(--mono); }
+    .key-form .button { min-height: 40px; padding: 0 13px; border-radius: 10px; }
 
-    .raw-output { display: none; margin-top: 12px; max-height: 250px; overflow: auto; padding: 13px; border: 1px solid var(--line); border-radius: 10px; background: #050c0a; color: #a7bbb4; font: 10px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+    .section { padding: 104px 0; border-top: 1px solid var(--line); }
+    .section-heading { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(320px, 0.45fr); gap: 50px; align-items: end; margin-bottom: 46px; }
+    .section-heading h2 { margin: 0; font-size: clamp(38px, 5vw, 68px); line-height: 1; letter-spacing: -0.055em; }
+    .section-heading p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.75; }
+
+    .proof-console { border: 1px solid var(--line-strong); border-radius: var(--radius-lg); background: rgba(13, 17, 14, 0.92); overflow: hidden; box-shadow: 0 32px 90px rgba(0, 0, 0, 0.24); }
+    .console-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.015); }
+    .window-dots { display: flex; gap: 6px; }
+    .window-dots span { width: 7px; height: 7px; border-radius: 50%; background: #354037; }
+    .window-dots span:first-child { background: var(--orange); }
+    .console-status { color: #758074; font: 500 9px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .run-strip { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 1px solid var(--line); }
+    .run-step { position: relative; min-height: 110px; padding: 19px; border-right: 1px solid var(--line); background: rgba(255, 255, 255, 0.008); transition: background 220ms ease; }
+    .run-step:last-child { border-right: 0; }
+    .run-step-index { display: block; margin-bottom: 13px; color: #566056; font: 500 9px/1 var(--mono); }
+    .run-step strong { display: block; font-size: 12px; line-height: 1.4; }
+    .run-step small { display: block; margin-top: 5px; color: #6f796e; font: 500 9px/1.5 var(--mono); }
+    .run-step.running { background: rgba(112, 215, 232, 0.045); }
+    .run-step.running .run-step-index { color: var(--cyan); }
+    .run-step.complete { background: rgba(199, 243, 107, 0.035); }
+    .run-step.complete .run-step-index, .run-step.complete small { color: #aacd68; }
+
+    .proof-metrics { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+    .proof-metric { min-height: 118px; padding: 22px; border-right: 1px solid var(--line); }
+    .proof-metric:last-child { border-right: 0; }
+    .proof-metric-value { display: block; font-size: clamp(27px, 3vw, 40px); font-weight: 800; line-height: 1; letter-spacing: -0.055em; }
+    .proof-metric-label { display: block; margin-top: 10px; color: var(--muted); font: 500 9px/1.45 var(--mono); text-transform: uppercase; }
+    .proof-metric.verified .proof-metric-value { color: var(--acid); }
+
+    .console-body { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(360px, 0.82fr); min-height: 500px; }
+    .artifact-panel, .journal-panel { padding: 28px; }
+    .journal-panel { border-left: 1px solid var(--line); background: rgba(4, 7, 5, 0.35); }
+    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 24px; }
+    .panel-title h3 { margin: 0; font-size: 14px; }
+    .status-badge { padding: 7px 9px; border: 1px solid var(--line); border-radius: 999px; color: #6f796e; font: 600 8px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+    .status-badge.current { border-color: rgba(199, 243, 107, 0.3); color: var(--acid); background: rgba(199, 243, 107, 0.05); }
+    .status-badge.pending { border-color: rgba(255, 120, 73, 0.35); color: #ff9b78; }
+
+    .artifact-identity { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+    .artifact-key { margin: 0; color: var(--cyan); font: 500 10px/1.5 var(--mono); overflow-wrap: anywhere; }
+    .artifact-summary { margin: 7px 0 0; color: #c7cec4; font-size: 19px; font-weight: 700; letter-spacing: -0.03em; }
+
+    .empty-state { display: grid; place-items: center; min-height: 300px; border: 1px dashed var(--line-strong); border-radius: 15px; color: #687367; text-align: center; }
+    .empty-state strong { display: block; margin-bottom: 8px; color: #abb4a8; font-size: 13px; }
+    .empty-state span { display: block; max-width: 330px; font: 500 10px/1.7 var(--mono); }
+
+    .artifact-content { display: none; }
+    .artifact-content.visible { display: grid; grid-template-columns: 1fr 0.9fr; gap: 24px; }
+    .subheading { margin: 0 0 14px; color: #768175; font: 600 9px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+    .timeline, .lineage-list { display: grid; gap: 9px; }
+    .event, .lineage-item { padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.016); }
+    .event-meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; color: #6f796e; font: 500 8px/1.4 var(--mono); }
+    .event-value, .lineage-text { margin: 0; color: #c5cdc2; font-size: 11px; line-height: 1.55; }
+    .lineage-source { margin: 0 0 7px; color: var(--cyan); font: 500 8px/1.5 var(--mono); overflow-wrap: anywhere; }
+    .dependency { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 11px; border: 1px solid rgba(199, 243, 107, 0.17); border-radius: 10px; color: #788276; font: 500 8px/1.4 var(--mono); }
+    .dependency-version { color: var(--acid); white-space: nowrap; }
+
+    .journal { display: grid; gap: 0; }
+    .journal-entry { display: grid; grid-template-columns: 19px 1fr; gap: 12px; min-height: 64px; }
+    .journal-rail { position: relative; display: flex; justify-content: center; }
+    .journal-rail::after { position: absolute; top: 16px; bottom: -4px; width: 1px; content: ""; background: var(--line); }
+    .journal-entry:last-child .journal-rail::after { display: none; }
+    .journal-dot { z-index: 1; width: 7px; height: 7px; margin-top: 5px; border-radius: 50%; background: #465047; box-shadow: 0 0 0 5px #0a0e0b; }
+    .journal-entry.complete .journal-dot { background: var(--acid); box-shadow: 0 0 0 5px #0a0e0b, 0 0 13px rgba(199, 243, 107, 0.55); }
+    .journal-copy { padding-bottom: 18px; }
+    .journal-copy strong { display: block; color: #bbc4b8; font-size: 11px; }
+    .journal-copy span { display: block; margin-top: 5px; color: #687268; font: 500 9px/1.55 var(--mono); }
+
+    .console-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+    .console-actions .button { min-height: 42px; padding: 0 14px; font-size: 10px; }
+    .activity { min-height: 44px; margin: 18px 0 0; color: #7b8679; font: 500 9px/1.65 var(--mono); }
+    .activity.error { color: #ff8c84; }
+    .raw-output { display: none; max-height: 240px; margin: 16px 0 0; padding: 14px; overflow: auto; border: 1px solid var(--line); border-radius: 11px; background: #050705; color: #859183; font: 500 8px/1.55 var(--mono); white-space: pre-wrap; }
     .raw-output.visible { display: block; }
 
-    @media (max-width: 980px) {
-      .workspace { grid-template-columns: 1fr; }
-      .control-panel { position: static; }
-      .main-panel { min-height: 0; }
+    .architecture { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 22px; }
+    .principle-card, .flow-card { border: 1px solid var(--line); border-radius: var(--radius-lg); background: rgba(13, 17, 14, 0.74); }
+    .principle-card { padding: 34px; }
+    .principle-card .big-number { color: var(--acid); font: 500 11px/1 var(--mono); }
+    .principle-card h3 { max-width: 470px; margin: 45px 0 17px; font-size: clamp(30px, 3.5vw, 48px); line-height: 1.05; letter-spacing: -0.05em; }
+    .principle-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.75; }
+    .invariant-code { margin-top: 28px; padding: 15px; border-left: 2px solid var(--acid); background: rgba(199, 243, 107, 0.04); color: #c7d3bd; font: 500 10px/1.6 var(--mono); }
+
+    .flow-card { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
+    .flow-node { position: relative; min-height: 175px; padding: 25px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .flow-node:nth-child(2n) { border-right: 0; }
+    .flow-node:nth-last-child(-n + 2) { border-bottom: 0; }
+    .flow-node-index { color: #687368; font: 500 9px/1 var(--mono); }
+    .flow-node h4 { margin: 34px 0 8px; font-size: 14px; }
+    .flow-node p { margin: 0; color: #788376; font: 500 9px/1.6 var(--mono); }
+    .flow-node:last-child { background: rgba(199, 243, 107, 0.045); }
+    .flow-node:last-child .flow-node-index, .flow-node:last-child h4 { color: var(--acid); }
+
+    .failure-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 22px; }
+    .failure-card { min-height: 255px; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(13, 17, 14, 0.68); }
+    .failure-tag { color: var(--orange); font: 600 8px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+    .failure-card h3 { margin: 52px 0 12px; font-size: 17px; letter-spacing: -0.035em; }
+    .failure-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+    .failure-proof { display: block; margin-top: 19px; color: #a8c86c; font: 500 8px/1.5 var(--mono); }
+
+    .site-footer { display: flex; justify-content: space-between; gap: 30px; padding: 36px 0 52px; border-top: 1px solid var(--line); color: #697468; font: 500 9px/1.6 var(--mono); }
+    .site-footer p { margin: 0; max-width: 650px; }
+    .site-footer a { color: #aeb8ab; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
 
-    @media (max-width: 680px) {
-      .shell { padding: 17px; }
-      header { align-items: flex-start; }
-      .header-actions a { display: none; }
-      .hero { grid-template-columns: 1fr; }
-      .metrics { grid-template-columns: 1fr 1fr; }
-      .trace-grid { grid-template-columns: 1fr; }
-      .trace-column + .trace-column { border-left: 0; border-top: 1px solid var(--line-soft); }
-      .button-row { grid-template-columns: 1fr; }
+    @media (max-width: 1080px) {
+      .hero { grid-template-columns: 1fr; min-height: 0; }
+      .instrument { width: min(620px, 100%); }
+      .console-body { grid-template-columns: 1fr; }
+      .journal-panel { border-top: 1px solid var(--line); border-left: 0; }
+      .architecture { grid-template-columns: 1fr; }
+      .failure-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 28px, 1440px); }
+      .site-header { min-height: 72px; }
+      .header-nav > a { display: none; }
+      .health { max-width: 150px; overflow: hidden; }
+      .health span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .hero { gap: 44px; padding: 56px 0 66px; }
+      h1 { font-size: clamp(45px, 14vw, 70px); }
+      .instrument { padding: 13px; border-radius: 20px; }
+      .map-wrap { padding: 15px; }
+      .impact-map { gap: 4px; }
+      .section { padding: 76px 0; }
+      .section-heading { grid-template-columns: 1fr; gap: 20px; }
+      .run-strip { grid-template-columns: 1fr; }
+      .run-step { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
+      .run-step:last-child { border-bottom: 0; }
+      .proof-metrics { grid-template-columns: 1fr 1fr; }
+      .proof-metric:nth-child(2) { border-right: 0; }
+      .proof-metric:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+      .artifact-panel, .journal-panel { padding: 20px; }
+      .artifact-content.visible { grid-template-columns: 1fr; }
+      .failure-grid { grid-template-columns: 1fr; }
+      .failure-card { min-height: 210px; }
+      .failure-card h3 { margin-top: 38px; }
+      .site-footer { flex-direction: column; }
     }
   </style>
 </head>
 <body>
   <div class="shell">
-    <header>
-      <div class="brand">
-        <div class="mark" aria-hidden="true">Δ</div>
-        <div>
-          <h1>Evidence Delta Engine</h1>
-          <p>Selective recomputation with source-level proof</p>
-        </div>
-      </div>
-      <div class="header-actions">
-        <div class="health" id="health"><span class="health-dot"></span><span>Checking service</span></div>
-        <a href="/docs">API reference ↗</a>
-      </div>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Evidence Delta Engine home">
+        <span class="brand-mark" aria-hidden="true">D</span>
+        <span>
+          <span class="brand-name">Evidence Delta Engine</span>
+          <span class="brand-type">Correctness kernel / 0.1</span>
+        </span>
+      </a>
+      <nav class="header-nav" aria-label="Primary navigation">
+        <a href="#proof">Live proof</a>
+        <a href="#architecture">Architecture</a>
+        <a href="https://github.com/Shravankb301/Closure-with-Shravan" target="_blank" rel="noreferrer">Source</a>
+        <a href="/docs">API reference</a>
+        <div class="health" id="health"><span class="health-dot"></span><span>Connecting</span></div>
+      </nav>
     </header>
 
-    <main class="workspace">
-      <aside class="panel control-panel">
-        <section class="panel-section">
-          <p class="eyebrow">Controlled experiment</p>
-          <h2>Change the evidence.<br>Prove the result.</h2>
-          <p class="lede">Build 100 independent entity-day timelines, add one source that touches three, then retract it without deleting provenance.</p>
-        </section>
-
-        <section class="panel-section">
-          <label for="demo-key">Demo access key</label>
-          <div class="key-row">
-            <input id="demo-key" type="password" autocomplete="current-password" placeholder="Required on hosted demo">
-            <button class="button button-secondary button-small" id="save-key" type="button">Save</button>
+    <main id="top">
+      <section class="hero">
+        <div>
+          <p class="kicker">Live systems engineering demo</p>
+          <h1>Change <span class="accent">3</span> facts.<br>Recompute <span class="accent">3</span>.<br><span class="outline">Prove the other 97.</span></h1>
+          <p class="hero-copy">A deterministic evidence engine that tracks the exact inputs every artifact reads, invalidates only what changed, and proves the result against a full rebuild.</p>
+          <div class="hero-actions">
+            <button class="button button-primary" id="run-scenario" type="button">Run the live proof <span aria-hidden="true">-&gt;</span></button>
+            <a class="button button-secondary" href="#architecture">See the architecture</a>
+            <span class="run-hint">Synthetic data / real transactions</span>
           </div>
-          <p class="muted tiny">Held only for this browser session. Leave blank when running locally.</p>
-        </section>
+        </div>
 
-        <section class="panel-section">
-          <button class="button button-primary" id="run-scenario" type="button">Run 3-of-100 scenario</button>
-          <div class="button-row">
-            <button class="button button-danger" id="retract" type="button" disabled>Retract source</button>
-            <button class="button button-secondary" id="copy-report" type="button" disabled>Copy audit JSON</button>
+        <aside class="instrument" aria-label="Artifact impact surface">
+          <div class="instrument-bar">
+            <span class="instrument-label">Artifact impact surface</span>
+            <span class="instrument-id">10 entities x 10 days</span>
           </div>
-          <div class="scenario-note">
-            <strong>Invariant</strong>
-            <span>After queued work drains, incremental state must equal a deterministic full rebuild.</span>
+          <div class="map-wrap">
+            <div class="impact-map" id="impact-map" aria-label="100 artifact grid"></div>
+            <div class="map-legend">
+              <span><i class="legend-dot hot"></i> invalidated</span>
+              <span><i class="legend-dot"></i> untouched</span>
+            </div>
           </div>
-        </section>
+          <div class="impact-readout">
+            <div class="readout"><span class="readout-value" id="hero-affected">3</span><span class="readout-label">Recomputed</span></div>
+            <div class="readout"><span class="readout-value" id="hero-untouched">97</span><span class="readout-label">Never touched</span></div>
+          </div>
+          <details class="access-panel">
+            <summary>Hosted demo access</summary>
+            <div class="key-form">
+              <input id="demo-key" type="password" autocomplete="current-password" aria-label="Demo access key" placeholder="Demo key (if required)">
+              <button class="button button-secondary" id="save-key" type="button">Save</button>
+            </div>
+          </details>
+        </aside>
+      </section>
 
-        <section class="panel-section">
-          <div class="section-heading">
-            <h3>Run context</h3>
-            <button class="button button-secondary button-small" id="toggle-raw" type="button">Raw JSON</button>
-          </div>
-          <p class="activity-line" id="case-context">No case initialized.</p>
-          <pre class="raw-output" id="raw-output"></pre>
-        </section>
-      </aside>
-
-      <section class="panel main-panel" aria-live="polite">
-        <div class="hero">
+      <section class="section" id="proof">
+        <div class="section-heading">
           <div>
-            <p class="eyebrow">Current artifact</p>
-            <h2 id="artifact-title">Waiting for a controlled mutation</h2>
-            <p class="lede mono" id="artifact-key">timeline:entity:date</p>
+            <p class="kicker">Execution, not animation</p>
+            <h2>Watch the invariant hold.</h2>
           </div>
-          <div class="status-badge" id="freshness">Not computed</div>
+          <p>The interface creates 100 materialized timelines, adds one three-key evidence source, publishes only the affected versions, and checks every result against a deterministic full rebuild.</p>
         </div>
 
-        <div class="metrics">
-          <div class="metric"><span class="metric-value mint" id="affected">0</span><span class="metric-label">Affected artifacts</span></div>
-          <div class="metric"><span class="metric-value" id="untouched">0</span><span class="metric-label">Untouched artifacts</span></div>
-          <div class="metric"><span class="metric-value amber" id="revision">0</span><span class="metric-label">Case revision</span></div>
-          <div class="metric"><span class="metric-value" id="version">0</span><span class="metric-label">Artifact version</span></div>
-        </div>
-
-        <div class="trace-grid">
-          <div class="trace-column">
-            <div class="section-heading">
-              <h3>Derived timeline</h3>
-              <span class="muted tiny" id="event-count">0 events</span>
-            </div>
-            <div id="timeline-empty" class="empty-state">
-              <div><strong>No derived state yet</strong>Run the scenario to compute a timeline and its exact evidence lineage.</div>
-            </div>
-            <div class="timeline" id="timeline"></div>
+        <div class="proof-console" aria-live="polite">
+          <div class="console-top">
+            <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+            <span class="console-status" id="console-status">Proof harness / idle</span>
           </div>
 
-          <div class="trace-column">
-            <div class="section-heading">
-              <h3>Source lineage</h3>
-              <span class="muted tiny">Court-reviewable</span>
+          <div class="run-strip">
+            <div class="run-step" data-step="baseline"><span class="run-step-index">01</span><strong>Materialize baseline</strong><small>100 immutable artifacts</small></div>
+            <div class="run-step" data-step="invalidate"><span class="run-step-index">02</span><strong>Advance change keys</strong><small>3 exact dependency reads</small></div>
+            <div class="run-step" data-step="publish"><span class="run-step-index">03</span><strong>Publish atomically</strong><small>version + lineage + pointer</small></div>
+            <div class="run-step" data-step="inspect"><span class="run-step-index">04</span><strong>Inspect provenance</strong><small>source-level audit trail</small></div>
+            <div class="run-step" data-step="verify"><span class="run-step-index">05</span><strong>Run the oracle</strong><small>incremental == full rebuild</small></div>
+          </div>
+
+          <div class="proof-metrics">
+            <div class="proof-metric"><span class="proof-metric-value" id="metric-selectivity">--</span><span class="proof-metric-label">Selectivity<br>artifacts avoided</span></div>
+            <div class="proof-metric"><span class="proof-metric-value" id="metric-versions">--</span><span class="proof-metric-label">Immutable<br>artifact versions</span></div>
+            <div class="proof-metric"><span class="proof-metric-value" id="metric-retained">--</span><span class="proof-metric-label">Retracted assertions<br>still auditable</span></div>
+            <div class="proof-metric" id="oracle-metric"><span class="proof-metric-value" id="metric-oracle">Pending</span><span class="proof-metric-label">Full-rebuild<br>equivalence oracle</span></div>
+          </div>
+
+          <div class="console-body">
+            <div class="artifact-panel">
+              <div class="panel-title">
+                <h3>Materialized artifact inspector</h3>
+                <span class="status-badge" id="freshness">Not computed</span>
+              </div>
+              <div class="artifact-identity">
+                <p class="artifact-key" id="artifact-key">timeline:entity:date</p>
+                <p class="artifact-summary" id="artifact-summary">Waiting for a controlled mutation</p>
+              </div>
+              <div class="empty-state" id="artifact-empty">
+                <div><strong>No state fabricated</strong><span>Run the proof to read a versioned artifact and its exact source lineage from the backend.</span></div>
+              </div>
+              <div class="artifact-content" id="artifact-content">
+                <div>
+                  <p class="subheading" id="event-count">Derived timeline</p>
+                  <div class="timeline" id="timeline"></div>
+                </div>
+                <div>
+                  <p class="subheading">Exact source lineage</p>
+                  <div class="lineage-list" id="lineage"></div>
+                  <div id="dependency"></div>
+                </div>
+              </div>
             </div>
-            <div id="lineage-empty" class="empty-state">
-              <div><strong>No lineage recorded</strong>Every derived event will point back to its source document and locator.</div>
-            </div>
-            <div class="lineage-list" id="lineage"></div>
-            <div id="dependency"></div>
+
+            <aside class="journal-panel">
+              <div class="panel-title">
+                <h3>Transaction journal</h3>
+                <span class="mono muted" id="case-revision" style="font-size: 8px;">revision --</span>
+              </div>
+              <div class="journal" id="journal">
+                <div class="journal-entry" data-journal="ready"><div class="journal-rail"><span class="journal-dot"></span></div><div class="journal-copy"><strong>Harness ready</strong><span>Awaiting a live evidence mutation.</span></div></div>
+                <div class="journal-entry" data-journal="baseline"><div class="journal-rail"><span class="journal-dot"></span></div><div class="journal-copy"><strong>Baseline materialized</strong><span>100 independent entity-day timelines.</span></div></div>
+                <div class="journal-entry" data-journal="delta"><div class="journal-rail"><span class="journal-dot"></span></div><div class="journal-copy"><strong>Evidence delta committed</strong><span>Three versioned keys advance in one transaction.</span></div></div>
+                <div class="journal-entry" data-journal="worker"><div class="journal-rail"><span class="journal-dot"></span></div><div class="journal-copy"><strong>Durable jobs published</strong><span>Exact read set checked before atomic commit.</span></div></div>
+                <div class="journal-entry" data-journal="oracle"><div class="journal-rail"><span class="journal-dot"></span></div><div class="journal-copy"><strong>Correctness oracle</strong><span>Waiting to compare every artifact.</span></div></div>
+              </div>
+              <div class="console-actions">
+                <button class="button button-danger" id="retract" type="button" disabled>Retract source</button>
+                <button class="button button-secondary" id="copy-report" type="button" disabled>Copy proof JSON</button>
+                <button class="button button-secondary" id="toggle-raw" type="button">Raw state</button>
+              </div>
+              <p class="activity" id="activity">Ready. All displayed evidence is synthetic; all displayed state is live.</p>
+              <pre class="raw-output" id="raw-output"></pre>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="architecture">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">The engineering underneath</p>
+            <h2>Correctness is the feature.</h2>
+          </div>
+          <p>The system is deliberately small at the infrastructure layer and uncompromising at the consistency boundary: PostgreSQL transactions, pure derivation, exact dependency reads, and immutable publication.</p>
+        </div>
+
+        <div class="architecture">
+          <article class="principle-card">
+            <span class="big-number">SYSTEM INVARIANT</span>
+            <h3>Incremental speed without incremental doubt.</h3>
+            <p>Every committed mutation advances only its smallest supported partition. Once queued work settles, the maintained artifacts must be byte-for-byte equivalent to rebuilding from every active assertion.</p>
+            <div class="invariant-code">incremental(case, revision n)<br>== full_rebuild(active_assertions, revision n)</div>
+          </article>
+
+          <div class="flow-card" aria-label="System architecture flow">
+            <article class="flow-node"><span class="flow-node-index">01 / INPUT</span><h4>Append-only assertions</h4><p>Source-specific facts remain immutable. Retraction adds a tombstone.</p></article>
+            <article class="flow-node"><span class="flow-node-index">02 / IMPACT</span><h4>Versioned change keys</h4><p>Fine-grained keys locate only artifacts that actually read changed data.</p></article>
+            <article class="flow-node"><span class="flow-node-index">03 / COMPUTE</span><h4>Fenced durable queue</h4><p>Leases, claim tokens, bounded retries, and stale-worker rejection.</p></article>
+            <article class="flow-node"><span class="flow-node-index">04 / PROOF</span><h4>Immutable publication</h4><p>Version, lineage, dependencies, pointer, and success commit together.</p></article>
           </div>
         </div>
 
-        <div class="activity">
-          <p class="activity-line" id="activity">Ready. The demo uses synthetic structured assertions only.</p>
+        <div class="failure-grid">
+          <article class="failure-card"><span class="failure-tag">Crash recovery</span><h3>Death before commit leaves nothing behind.</h3><p>A forced worker crash after flush rolls back the version, dependencies, pointer, and job success as one unit.</p><span class="failure-proof">AUTOMATED: crash-after-flush test</span></article>
+          <article class="failure-card"><span class="failure-tag">Race safety</span><h3>A stale worker cannot publish old truth.</h3><p>Dependency versions are locked and compared immediately before publication. Advanced work becomes superseded.</p><span class="failure-proof">AUTOMATED: compute/publish race test</span></article>
+          <article class="failure-card"><span class="failure-tag">Provenance</span><h3>Retraction never erases the record.</h3><p>Derived state changes while original assertions, source locators, and prior artifact versions remain auditable.</p><span class="failure-proof">LIVE: use Retract source above</span></article>
+          <article class="failure-card"><span class="failure-tag">Concurrency</span><h3>Four workers claim each job once.</h3><p>PostgreSQL SKIP LOCKED enables parallel claims while transactional publication preserves at-least-once safety.</p><span class="failure-proof">CI: PostgreSQL multi-worker test</span></article>
         </div>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <p>Engineering prototype. Synthetic structured evidence only. This demonstrates recomputation semantics, not a production investigation platform or compliance claim.</p>
+      <p><a href="https://github.com/Shravankb301/Closure-with-Shravan" target="_blank" rel="noreferrer">Inspect the source</a> / <a href="/docs">explore the API</a></p>
+    </footer>
   </div>
 
   <script>
-    const state = { caseId: null, documentId: null, artifactKey: null, mutation: null, artifact: null };
+    const state = {
+      caseId: null,
+      documentId: null,
+      artifactKey: null,
+      mutation: null,
+      artifact: null,
+      proof: null,
+      worker: null,
+      retracted: false,
+    };
     const byId = (id) => document.getElementById(id);
     const keyInput = byId("demo-key");
     keyInput.value = sessionStorage.getItem("evidenceDeltaDemoKey") || "";
+
+    const targetCells = new Set([0, 11, 22]);
+    const impactMap = byId("impact-map");
+    for (let index = 0; index < 100; index += 1) {
+      const cell = document.createElement("span");
+      cell.className = `impact-cell${targetCells.has(index) ? " target" : ""}`;
+      cell.setAttribute("aria-label", targetCells.has(index) ? `Artifact ${index + 1}, affected` : `Artifact ${index + 1}, untouched`);
+      impactMap.appendChild(cell);
+    }
 
     function headers() {
       const value = keyInput.value.trim();
@@ -443,62 +655,118 @@
         .replaceAll("'", "&#039;");
     }
 
-    function setBusy(button, busy, label) {
-      if (!button.dataset.label) button.dataset.label = button.textContent;
-      button.disabled = busy;
-      button.textContent = busy ? label : button.dataset.label;
-    }
-
     function setActivity(message, error = false) {
       byId("activity").textContent = message;
       byId("activity").classList.toggle("error", error);
     }
 
+    function setButtonBusy(button, busy, busyLabel) {
+      if (!button.dataset.label) button.dataset.label = button.textContent;
+      button.disabled = busy;
+      button.textContent = busy ? busyLabel : button.dataset.label;
+    }
+
+    function resetRunUI() {
+      state.mutation = null;
+      state.artifact = null;
+      state.proof = null;
+      state.worker = null;
+      document.querySelectorAll(".run-step").forEach((step) => step.classList.remove("running", "complete"));
+      document.querySelectorAll(".journal-entry").forEach((entry) => entry.classList.remove("complete"));
+      document.querySelector('[data-journal="ready"]').classList.add("complete");
+      impactMap.classList.remove("active", "retracted");
+      byId("artifact-empty").style.display = "grid";
+      byId("artifact-content").classList.remove("visible");
+      byId("freshness").className = "status-badge";
+      byId("freshness").textContent = "Not computed";
+      byId("metric-selectivity").textContent = "--";
+      byId("metric-versions").textContent = "--";
+      byId("metric-retained").textContent = "--";
+      byId("metric-oracle").textContent = "Pending";
+      byId("oracle-metric").classList.remove("verified");
+      byId("retract").dataset.label = "Retract source";
+      byId("retract").textContent = "Retract source";
+      updateRawState();
+    }
+
+    function setRunStep(name, status) {
+      const step = document.querySelector(`[data-step="${name}"]`);
+      step.classList.remove("running", "complete");
+      if (status) step.classList.add(status);
+    }
+
+    function completeJournal(name, detail) {
+      const entry = document.querySelector(`[data-journal="${name}"]`);
+      entry.classList.add("complete");
+      if (detail) entry.querySelector("span").textContent = detail;
+    }
+
     function renderMutation(mutation) {
       state.mutation = mutation;
-      byId("affected").textContent = mutation.queued_artifacts;
-      byId("untouched").textContent = mutation.untouched_artifacts;
-      byId("revision").textContent = mutation.revision;
+      state.artifactKey = mutation.affected_keys[0] || state.artifactKey;
       byId("artifact-key").textContent = state.artifactKey;
-      byId("artifact-title").textContent = mutation.operation === "RETRACT_DOCUMENT" ? "Source retracted, provenance retained" : "New evidence selectively invalidated";
-      byId("freshness").textContent = "Recompute pending";
+      byId("case-revision").textContent = `revision ${mutation.revision}`;
+      byId("hero-affected").textContent = mutation.queued_artifacts;
+      byId("hero-untouched").textContent = mutation.untouched_artifacts;
+      byId("metric-selectivity").textContent = `${mutation.untouched_artifacts}%`;
       byId("freshness").className = "status-badge pending";
-      byId("case-context").textContent = `case ${state.caseId} · document ${state.documentId}`;
-      byId("raw-output").textContent = JSON.stringify({ mutation, artifact: state.artifact }, null, 2);
+      byId("freshness").textContent = "Recompute pending";
+      byId("artifact-summary").textContent = mutation.operation === "RETRACT_DOCUMENT"
+        ? "Source withdrawn; recomputation pending"
+        : "Three dependency keys advanced";
+      impactMap.classList.add("active");
+      if (mutation.operation === "RETRACT_DOCUMENT") impactMap.classList.add("retracted");
+      updateRawState();
     }
 
     function renderArtifact(artifact) {
       state.artifact = artifact;
-      byId("version").textContent = artifact.version;
-      byId("freshness").textContent = artifact.fresh ? "Current" : "Stale";
+      byId("freshness").textContent = artifact.fresh ? `Current / v${artifact.version}` : `Stale / v${artifact.version}`;
       byId("freshness").className = `status-badge ${artifact.fresh ? "current" : "pending"}`;
+      byId("artifact-summary").textContent = state.retracted
+        ? "Timeline recomputed without the withdrawn source"
+        : "Selective recomputation published with exact lineage";
 
       const events = artifact.payload?.events || [];
       const lineage = artifact.lineage || [];
-      byId("event-count").textContent = `${events.length} event${events.length === 1 ? "" : "s"}`;
-      byId("timeline-empty").style.display = events.length ? "none" : "grid";
-      byId("lineage-empty").style.display = lineage.length ? "none" : "grid";
+      byId("event-count").textContent = `Derived timeline / ${events.length} event${events.length === 1 ? "" : "s"}`;
       byId("timeline").innerHTML = events.map((event) => `
         <article class="event">
-          <span class="event-dot"></span>
-          <div class="event-card">
-            <div class="event-meta"><span>${escapeHtml(event.kind)}</span><span>${escapeHtml(event.occurred_at)}</span></div>
-            <p class="event-value">${escapeHtml(event.value)}</p>
-          </div>
+          <div class="event-meta"><span>${escapeHtml(event.kind)}</span><span>${escapeHtml(event.occurred_at)}</span></div>
+          <p class="event-value">${escapeHtml(event.value)}</p>
         </article>`).join("");
       byId("lineage").innerHTML = lineage.map((source) => `
         <article class="lineage-item">
-          <p class="lineage-source">${escapeHtml(source.document_id)} · ${escapeHtml(source.source_locator)}</p>
+          <p class="lineage-source">${escapeHtml(source.document_id)} / ${escapeHtml(source.source_locator)}</p>
           <p class="lineage-text">${escapeHtml(source.source_text)}</p>
         </article>`).join("");
-
-      const dependencies = artifact.dependency_versions || [];
-      byId("dependency").innerHTML = dependencies.map((dependency) => `
+      byId("dependency").innerHTML = (artifact.dependency_versions || []).map((dependency) => `
         <div class="dependency">
-          <span class="dependency-key mono" title="${escapeHtml(dependency.key)}">${escapeHtml(dependency.key)}</span>
-          <span class="version-pair mono">v${escapeHtml(dependency.observed)} / v${escapeHtml(dependency.current)}</span>
+          <span title="${escapeHtml(dependency.key)}">read: ${escapeHtml(dependency.key)}</span>
+          <span class="dependency-version">observed v${escapeHtml(dependency.observed)} == current v${escapeHtml(dependency.current)}</span>
         </div>`).join("");
-      byId("raw-output").textContent = JSON.stringify({ mutation: state.mutation, artifact }, null, 2);
+      byId("artifact-empty").style.display = "none";
+      byId("artifact-content").classList.add("visible");
+      updateRawState();
+    }
+
+    function renderProof(proof) {
+      state.proof = proof;
+      byId("metric-versions").textContent = proof.artifacts.immutable_versions;
+      byId("metric-retained").textContent = proof.evidence.retracted_source_assertions_retained;
+      byId("metric-oracle").textContent = proof.equivalent_to_full_rebuild ? "Verified" : "Mismatch";
+      byId("oracle-metric").classList.toggle("verified", proof.equivalent_to_full_rebuild);
+      byId("case-revision").textContent = `revision ${proof.case_revision}`;
+      updateRawState();
+    }
+
+    function updateRawState() {
+      byId("raw-output").textContent = JSON.stringify({
+        mutation: state.mutation,
+        worker: state.worker,
+        artifact: state.artifact,
+        proof: state.proof,
+      }, null, 2);
     }
 
     async function pollArtifact() {
@@ -508,49 +776,91 @@
           renderArtifact(artifact);
           if (artifact.fresh) return artifact;
         } catch (error) {
-          if (!error.message.includes("Artifact not found")) throw error;
+          if (error.status !== 404) throw error;
         }
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
       throw new Error("Artifact did not become current before the polling deadline");
     }
 
+    async function waitForVerifiedProof() {
+      let latest = null;
+      for (let attempt = 0; attempt < 50; attempt += 1) {
+        latest = await api(`/cases/${state.caseId}/proof`);
+        renderProof(latest);
+        if (latest.equivalent_to_full_rebuild && latest.queue.settled) return latest;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      throw new Error("The queue did not settle before the correctness deadline");
+    }
+
     async function requestManualDrainWhenAvailable() {
       try {
-        await api("/workers/drain", { method: "POST", body: "{}" });
+        const result = await api("/workers/drain", { method: "POST", body: "{}" });
+        state.worker = result;
+        updateRawState();
+        return result;
       } catch (error) {
         if (error.status !== 404) throw error;
+        return null;
       }
     }
 
     async function runScenario() {
       const button = byId("run-scenario");
-      setBusy(button, true, "Building 100 artifacts…");
-      setActivity("Creating ten entities across ten days, then injecting a three-key evidence delta.");
+      resetRunUI();
+      state.retracted = false;
+      setButtonBusy(button, true, "Building proof...");
+      byId("retract").disabled = true;
+      byId("copy-report").disabled = true;
+      byId("console-status").textContent = "Proof harness / executing";
+      setRunStep("baseline", "running");
+      setActivity("Materializing ten entities across ten days, then committing one three-key evidence delta.");
+
       try {
         const mutation = await api("/demo/scenario", { method: "POST", body: "{}" });
         state.caseId = mutation.case_id;
         state.documentId = mutation.document_id;
-        state.artifactKey = mutation.affected_keys[0];
         renderMutation(mutation);
+        setRunStep("baseline", "complete");
+        completeJournal("baseline", `${mutation.baseline_artifacts} baseline artifacts published.`);
+
+        setRunStep("invalidate", "complete");
+        completeJournal("delta", `${mutation.affected_keys.length} keys advanced at case revision ${mutation.revision}; ${mutation.untouched_artifacts} artifacts skipped.`);
+
+        setRunStep("publish", "running");
+        const worker = await requestManualDrainWhenAvailable();
+        await pollArtifact();
+        setRunStep("publish", "complete");
+        const processed = worker ? worker.processed : mutation.queued_artifacts;
+        completeJournal("worker", `${processed} queued artifacts processed; publication committed atomically.`);
+
+        setRunStep("inspect", "complete");
+        setRunStep("verify", "running");
+        const proof = await waitForVerifiedProof();
+        setRunStep("verify", "complete");
+        completeJournal("oracle", `${proof.artifacts.current}/${proof.artifacts.total} artifacts match a full deterministic rebuild.`);
+
+        byId("console-status").textContent = "Proof harness / verified";
         byId("retract").disabled = false;
         byId("copy-report").disabled = false;
-        await requestManualDrainWhenAvailable();
-        await pollArtifact();
-        setActivity("Verified: 3 artifacts recomputed, 97 stayed untouched, and the selected artifact is current.");
+        setActivity("Verified live: 3 artifacts recomputed, 97 stayed untouched, and all 100 match a full rebuild.");
       } catch (error) {
+        byId("console-status").textContent = "Proof harness / failed";
         setActivity(error.message, true);
       } finally {
-        setBusy(button, false, "");
+        setButtonBusy(button, false, "");
       }
     }
 
     async function retractSource() {
       if (!state.caseId || !state.documentId) return;
       const button = byId("retract");
-      setBusy(button, true, "Retracting…");
-      setActivity("Appending a retraction tombstone. No assertion rows are deleted.");
+      setButtonBusy(button, true, "Retracting...");
+      setActivity("Appending a retraction tombstone. The three source assertions will not be deleted.");
+      byId("console-status").textContent = "Proof harness / retracting";
       try {
+        state.retracted = true;
         const mutation = await api(`/cases/${state.caseId}/documents/${state.documentId}/retractions`, {
           method: "POST",
           body: JSON.stringify({ reason: "Demonstration source withdrawn" }),
@@ -558,20 +868,26 @@
         renderMutation(mutation);
         await requestManualDrainWhenAvailable();
         await pollArtifact();
-        setActivity("Retraction verified: derived state changed, original assertions remained auditable.");
+        const proof = await waitForVerifiedProof();
+        completeJournal("delta", `Retraction tombstone committed at revision ${mutation.revision}; three keys advanced again.`);
+        completeJournal("worker", "Three replacement versions published; prior versions remain immutable.");
+        completeJournal("oracle", `${proof.evidence.retracted_source_assertions_retained} withdrawn assertions retained; full rebuild still matches.`);
+        byId("console-status").textContent = "Proof harness / retraction verified";
+        button.dataset.label = "Source retracted";
         button.textContent = "Source retracted";
         button.disabled = true;
+        setActivity("Retraction verified: derived state changed, all three original assertions remain auditable, and the oracle still matches.");
       } catch (error) {
         setActivity(error.message, true);
-        setBusy(button, false, "");
+        setButtonBusy(button, false, "");
       }
     }
 
     async function copyReport() {
-      const report = JSON.stringify({ mutation: state.mutation, artifact: state.artifact }, null, 2);
+      const report = byId("raw-output").textContent;
       try {
         await navigator.clipboard.writeText(report);
-        setActivity("Audit JSON copied to clipboard.");
+        setActivity("Live proof JSON copied to clipboard.");
       } catch (_error) {
         setActivity("Clipboard access was blocked by the browser.", true);
       }
@@ -582,7 +898,7 @@
       try {
         const health = await api("/health");
         element.className = "health ready";
-        element.lastElementChild.textContent = `${health.database} · ${health.worker_mode}`;
+        element.lastElementChild.textContent = `${health.database} / ${health.worker_mode}`;
       } catch (_error) {
         element.className = "health error";
         element.lastElementChild.textContent = "Service unavailable";
@@ -592,11 +908,13 @@
     byId("save-key").addEventListener("click", () => {
       sessionStorage.setItem("evidenceDeltaDemoKey", keyInput.value.trim());
       setActivity("Demo key saved for this browser session.");
+      checkHealth();
     });
     byId("run-scenario").addEventListener("click", runScenario);
     byId("retract").addEventListener("click", retractSource);
     byId("copy-report").addEventListener("click", copyReport);
     byId("toggle-raw").addEventListener("click", () => byId("raw-output").classList.toggle("visible"));
+    resetRunUI();
     checkHealth();
   </script>
 </body>

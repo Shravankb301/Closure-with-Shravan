@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from time import monotonic, sleep
 
 import pytest
@@ -50,8 +51,12 @@ def test_dashboard_serves_the_selectivity_experiment() -> None:
     with TestClient(app) as client:
         response = client.get("/")
         assert response.status_code == 200
-        assert "Run 3-of-100 scenario" in response.text
-        assert "Source lineage" in response.text
+        assert "Run the live proof" in response.text
+        assert "Exact source lineage" in response.text
+        assert 'content="http://testserver/og.png"' in response.text
+        preview = client.get("/og.png")
+        assert preview.status_code == 200
+        assert preview.headers["content-type"] == "image/png"
 
 
 def test_dashboard_scenario_runs_addition_and_retraction() -> None:
@@ -70,6 +75,22 @@ def test_dashboard_scenario_runs_addition_and_retraction() -> None:
         assert added.json()["fresh"] is True
         assert len(added.json()["payload"]["events"]) == 2
 
+        addition_proof = client.get(f"/cases/{scenario['case_id']}/proof")
+        assert addition_proof.status_code == 200
+        assert addition_proof.json()["equivalent_to_full_rebuild"] is True
+        assert addition_proof.json()["artifacts"] == {
+            "total": 100,
+            "current": 100,
+            "immutable_versions": 103,
+            "change_keys": 100,
+        }
+        assert addition_proof.json()["evidence"] == {
+            "assertions_total": 103,
+            "assertions_active": 103,
+            "retractions": 0,
+            "retracted_source_assertions_retained": 0,
+        }
+
         retracted = client.post(
             f"/cases/{scenario['case_id']}/documents/{scenario['document_id']}/retractions",
             json={"reason": "dashboard test"},
@@ -80,22 +101,36 @@ def test_dashboard_scenario_runs_addition_and_retraction() -> None:
         client.post("/workers/drain")
         assert len(client.get(artifact_path).json()["payload"]["events"]) == 1
 
+        retraction_proof = client.get(f"/cases/{scenario['case_id']}/proof").json()
+        assert retraction_proof["equivalent_to_full_rebuild"] is True
+        assert retraction_proof["artifacts"]["immutable_versions"] == 106
+        assert retraction_proof["evidence"] == {
+            "assertions_total": 103,
+            "assertions_active": 100,
+            "retractions": 1,
+            "retracted_source_assertions_retained": 3,
+        }
 
-def test_worker_loop_processes_durable_queue(database: Database) -> None:
+
+def test_worker_loop_processes_durable_queue(tmp_path: Path) -> None:
+    database = Database(f"sqlite+pysqlite:///{tmp_path / 'runtime.db'}")
+    database.create_schema()
     service = EvidenceService(database)
     case = service.create_case("Runtime worker")
     mutation = service.ingest_document(case.id, document(1, "entity-1", 3))
     runtime = WorkerLoop(RecomputeWorker(database), poll_seconds=0.01)
     runtime.start()
 
-    deadline = monotonic() + 2
     artifact = None
-    while monotonic() < deadline:
-        artifact = service.current_artifact(case.id, mutation.affected_keys[0])
-        if artifact is not None and artifact["fresh"]:
-            break
-        sleep(0.01)
-    runtime.stop()
+    try:
+        deadline = monotonic() + 5
+        while monotonic() < deadline:
+            artifact = service.current_artifact(case.id, mutation.affected_keys[0])
+            if artifact is not None and artifact["fresh"]:
+                break
+            sleep(0.01)
+    finally:
+        runtime.stop()
 
     assert artifact is not None
     assert artifact["fresh"] is True
