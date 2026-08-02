@@ -56,6 +56,7 @@ def test_dashboard_serves_the_selectivity_experiment() -> None:
         assert 'id="evidence-graph"' in response.text
         assert 'id="graph-inspector"' in response.text
         assert "Withdrawn evidence stays visible" in response.text
+        assert 'entry.querySelector(".journal-copy span")' in response.text
         assert 'content="http://testserver/og.png"' in response.text
         preview = client.get("/og.png")
         assert preview.status_code == 200

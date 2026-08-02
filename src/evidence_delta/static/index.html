@@ -746,7 +746,7 @@
     function completeJournal(name, detail) {
       const entry = document.querySelector(`[data-journal="${name}"]`);
       entry.classList.add("complete");
-      if (detail) entry.querySelector("span").textContent = detail;
+      if (detail) entry.querySelector(".journal-copy span").textContent = detail;
     }
 
     function renderMutation(mutation) {
