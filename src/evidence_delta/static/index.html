@@ -14,7 +14,7 @@
   <meta property="og:image:alt" content="Evidence Delta Engine impact surface with three of one hundred artifacts highlighted">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="{{SITE_ORIGIN}}/og.png">
-  <meta name="theme-color" content="#f2efe6">
+  <meta name="theme-color" content="#1e1e1e">
   <title>Evidence Delta Engine | Live Engineering Proof</title>
   <style>
     :root {
@@ -821,11 +821,659 @@
       .failure-card:nth-child(2) { border-bottom: 1px solid var(--line); }
       .failure-card:last-child { border-bottom: 0; }
     }
+    /* Obsidian-inspired application shell. */
+    :root {
+      color-scheme: dark;
+      --obsidian-bg: #1e1e1e;
+      --obsidian-bg-alt: #181818;
+      --obsidian-bg-soft: #242424;
+      --obsidian-bg-hover: #2d2d2d;
+      --obsidian-bg-active: #36343f;
+      --obsidian-border: #383838;
+      --obsidian-border-soft: #303030;
+      --obsidian-text: #dcddde;
+      --obsidian-muted: #9b9b9b;
+      --obsidian-faint: #707070;
+      --obsidian-purple: #a48cf2;
+      --obsidian-purple-strong: #7c5ce7;
+      --obsidian-purple-soft: rgba(164, 140, 242, 0.14);
+      --obsidian-green: #6fbf73;
+      --obsidian-red: #e06c75;
+      --obsidian-yellow: #e5b566;
+      --text: var(--obsidian-text);
+      --muted: var(--obsidian-muted);
+      --acid: var(--obsidian-purple);
+      --acid-dark: var(--obsidian-purple);
+      --cyan: #78a9ff;
+      --orange: var(--obsidian-yellow);
+      --red: var(--obsidian-red);
+      --line: var(--obsidian-border);
+      --line-strong: #4a4a4a;
+      --surface: var(--obsidian-bg-soft);
+      --surface-2: var(--obsidian-bg-alt);
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    html, body { height: 100%; background: var(--obsidian-bg-alt); }
+    body { overflow: hidden; color: var(--obsidian-text); font-size: 14px; }
+    ::selection { color: #fff; background: rgba(124, 92, 231, 0.72); }
+    button, input, textarea, select { color: inherit; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible, label:focus-visible {
+      outline: 2px solid var(--obsidian-purple);
+      outline-offset: 2px;
+    }
+
+    .obsidian-app {
+      --left-sidebar: 248px;
+      --right-sidebar: 250px;
+      display: grid;
+      grid-template-rows: 38px minmax(0, 1fr) 24px;
+      height: 100vh;
+      background: var(--obsidian-bg);
+    }
+    .app-titlebar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(260px, 430px) minmax(260px, 1fr);
+      align-items: center;
+      gap: 12px;
+      padding: 0 10px;
+      border-bottom: 1px solid #111;
+      background: #151515;
+      user-select: none;
+    }
+    .titlebar-leading, .titlebar-actions { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .titlebar-actions { justify-content: flex-end; }
+    .window-controls { display: flex; gap: 7px; margin-right: 8px; }
+    .window-controls i { width: 11px; height: 11px; border-radius: 50%; background: #555; }
+    .window-controls i:first-child { background: #ed6a5f; }
+    .window-controls i:nth-child(2) { background: #f4bd4f; }
+    .window-controls i:last-child { background: #61c454; }
+    .vault-identity { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--obsidian-muted); font-size: 12px; }
+    .vault-glyph { color: var(--obsidian-purple); font-size: 16px; }
+    .vault-identity strong { overflow: hidden; color: var(--obsidian-text); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .vault-identity span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chrome-button {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 5px;
+      color: var(--obsidian-muted);
+      background: transparent;
+      cursor: pointer;
+    }
+    .chrome-button:hover { color: var(--obsidian-text); background: var(--obsidian-bg-hover); }
+    .command-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      width: 100%;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--obsidian-border);
+      border-radius: 6px;
+      color: var(--obsidian-muted);
+      background: #202020;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .command-trigger:hover { color: var(--obsidian-text); border-color: #505050; background: #272727; }
+    .command-trigger kbd, .keyboard-hint {
+      padding: 2px 6px;
+      border: 1px solid #454545;
+      border-radius: 4px;
+      color: var(--obsidian-faint);
+      background: #171717;
+      font: 500 10px/1.3 var(--sans);
+      box-shadow: 0 1px 0 #050505;
+    }
+    .sync-state { display: flex; align-items: center; gap: 6px; color: var(--obsidian-faint); font-size: 11px; }
+    .sync-state i { width: 6px; height: 6px; border-radius: 50%; background: var(--obsidian-green); }
+
+    .app-body {
+      display: grid;
+      grid-template-columns: 44px var(--left-sidebar) minmax(0, 1fr) var(--right-sidebar);
+      min-height: 0;
+      overflow: hidden;
+    }
+    .app-ribbon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 0;
+      border-right: 1px solid var(--obsidian-border-soft);
+      background: #151515;
+    }
+    .ribbon-spacer { flex: 1; }
+    .ribbon-action {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 5px;
+      color: #858585;
+      background: transparent;
+      cursor: pointer;
+      font: 600 15px/1 var(--sans);
+      text-decoration: none;
+    }
+    .ribbon-action:hover, .ribbon-action.active { color: var(--obsidian-text); background: var(--obsidian-bg-hover); }
+    .ribbon-action.active { color: var(--obsidian-purple); }
+
+    .vault-sidebar, .context-sidebar {
+      min-width: 0;
+      overflow: hidden;
+      border-right: 1px solid var(--obsidian-border);
+      background: var(--obsidian-bg-alt);
+      transition: opacity 140ms ease;
+    }
+    .context-sidebar { border-right: 0; border-left: 1px solid var(--obsidian-border); }
+    .sidebar-tabs {
+      display: flex;
+      align-items: end;
+      height: 42px;
+      padding: 0 8px;
+      border-bottom: 1px solid var(--obsidian-border);
+      background: #1b1b1b;
+    }
+    .sidebar-tab {
+      flex: 1;
+      height: 34px;
+      padding: 0 8px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      color: var(--obsidian-faint);
+      background: transparent;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .sidebar-tab.active { color: var(--obsidian-text); border-color: var(--obsidian-purple); }
+    .sidebar-content { height: calc(100% - 42px); padding: 12px 10px; overflow-y: auto; }
+    .vault-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 0 4px; }
+    .vault-heading strong { font-size: 12px; font-weight: 600; }
+    .sidebar-search {
+      width: 100%;
+      min-height: 30px;
+      margin-bottom: 12px;
+      padding: 5px 9px;
+      border: 1px solid var(--obsidian-border);
+      border-radius: 5px;
+      color: var(--obsidian-text);
+      background: #242424;
+      font-size: 12px;
+    }
+    .sidebar-search::placeholder { color: var(--obsidian-faint); }
+    .tree-section { margin: 10px 0; }
+    .tree-label, .context-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 14px 4px 6px;
+      color: var(--obsidian-faint);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .tree-label::before { content: "⌄"; font-size: 12px; }
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 30px;
+      padding: 4px 8px;
+      border-radius: 5px;
+      color: var(--obsidian-muted);
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .tree-item::before { color: var(--obsidian-faint); content: "◇"; font-size: 11px; }
+    .tree-item:hover { color: var(--obsidian-text); background: var(--obsidian-bg-hover); }
+    .tree-item.active { color: #fff; background: var(--obsidian-bg-active); }
+    .tree-item.active::before { color: var(--obsidian-purple); content: "◆"; }
+    .tree-item.indent { margin-left: 12px; }
+    .sidebar-quick-action {
+      width: 100%;
+      min-height: 32px;
+      margin-top: 8px;
+      padding: 0 10px;
+      border: 1px solid var(--obsidian-border);
+      border-radius: 5px;
+      color: var(--obsidian-muted);
+      background: #222;
+      cursor: pointer;
+      text-align: left;
+      font-size: 11px;
+    }
+    .sidebar-quick-action:hover { color: var(--obsidian-text); border-color: #555; background: var(--obsidian-bg-hover); }
+
+    .shell {
+      width: auto;
+      min-width: 0;
+      height: 100%;
+      margin: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: var(--obsidian-bg);
+      scrollbar-color: #505050 transparent;
+      scrollbar-width: thin;
+    }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      justify-content: flex-start;
+      gap: 0;
+      min-height: 42px;
+      padding: 0 8px;
+      border-bottom: 1px solid var(--obsidian-border);
+      background: #1a1a1a;
+      box-shadow: none;
+    }
+    .brand {
+      align-self: stretch;
+      gap: 8px;
+      min-width: 190px;
+      padding: 0 12px;
+      border-right: 1px solid var(--obsidian-border);
+      border-radius: 6px 6px 0 0;
+      color: var(--obsidian-text);
+      background: var(--obsidian-bg);
+    }
+    .brand::before { color: var(--obsidian-purple); content: "◆"; font-size: 10px; }
+    .brand-mark, .brand-type { display: none; }
+    .brand-name { color: var(--obsidian-text); font-size: 12px; font-weight: 500; }
+    .header-nav { flex: 1; align-self: stretch; gap: 0; color: var(--obsidian-muted); font-size: 11px; overflow-x: auto; }
+    .header-nav > a {
+      display: flex;
+      align-items: center;
+      min-width: max-content;
+      padding: 0 14px;
+      border: 0;
+      border-right: 1px solid var(--obsidian-border-soft);
+      color: var(--obsidian-muted);
+    }
+    .header-nav > a:hover { color: var(--obsidian-text); border-color: var(--obsidian-border-soft); background: var(--obsidian-bg-hover); }
+    .health {
+      min-width: max-content;
+      min-height: 41px;
+      margin-left: auto;
+      padding: 0 12px;
+      border: 0;
+      border-left: 1px solid var(--obsidian-border);
+      border-radius: 0;
+      color: var(--obsidian-muted);
+      background: #1a1a1a;
+      font-size: 9px;
+    }
+    .health.ready { color: #91c894; }
+    .health-dot, .health.ready .health-dot { box-shadow: none; }
+
+    main { display: block; }
+    .hero, .section, .site-footer { width: min(1080px, calc(100% - 64px)); margin-inline: auto; }
+    .hero {
+      grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+      gap: clamp(38px, 6vw, 80px);
+      min-height: 0;
+      padding: 76px 0 86px;
+    }
+    .kicker { gap: 8px; margin-bottom: 18px; color: var(--obsidian-purple); font-size: 10px; letter-spacing: 0.09em; }
+    .kicker::before { width: 6px; height: 6px; border-radius: 2px; background: currentColor; }
+    h1 { max-width: 670px; color: #f1f1f1; font-size: clamp(46px, 5.2vw, 66px); line-height: 0.98; letter-spacing: -0.055em; }
+    h1 .outline { color: var(--obsidian-text); -webkit-text-stroke: 0; }
+    .accent { color: var(--obsidian-purple); }
+    .hero-copy { max-width: 610px; margin-top: 26px; color: var(--obsidian-muted); font-size: 17px; line-height: 1.62; }
+    .hero-actions { gap: 9px; margin-top: 30px; }
+    .run-hint { width: 100%; margin-top: 4px; color: var(--obsidian-faint); font-size: 10px; }
+    .button {
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid var(--obsidian-border);
+      border-radius: 5px;
+      color: var(--obsidian-text);
+      background: var(--obsidian-bg-soft);
+      box-shadow: none;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .button:hover:not(:disabled) { color: #fff; border-color: #555; background: var(--obsidian-bg-hover); transform: none; }
+    .button-primary, .button-primary:hover:not(:disabled) { color: #fff; border-color: var(--obsidian-purple-strong); background: var(--obsidian-purple-strong); }
+    .button-primary:hover:not(:disabled) { background: #8b6bee; }
+    .button-danger { color: #f18a91; border-color: rgba(224, 108, 117, 0.45); background: rgba(224, 108, 117, 0.08); }
+
+    .instrument {
+      padding: 15px;
+      border: 1px solid var(--obsidian-border);
+      border-radius: 8px;
+      color: var(--obsidian-text);
+      background: #191919;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.28);
+    }
+    .instrument::before { display: none; }
+    .instrument-label { color: var(--obsidian-text); font-size: 10px; }
+    .instrument-id { color: var(--obsidian-faint); font-size: 9px; }
+    .map-wrap { padding: 16px; border-color: var(--obsidian-border); border-radius: 6px; background: #141414; }
+    .impact-cell { border-color: #383838; border-radius: 2px; background: #2a2a2a; }
+    .impact-cell.target { border-color: rgba(164, 140, 242, 0.58); }
+    .impact-map.active .impact-cell.target { border-color: var(--obsidian-purple); background: var(--obsidian-purple); box-shadow: 0 0 14px rgba(164, 140, 242, 0.34); }
+    .legend-dot { border-radius: 2px; background: #4b4b4b; }
+    .legend-dot.hot { background: var(--obsidian-purple); box-shadow: none; }
+    .map-legend { color: var(--obsidian-faint); font-size: 9px; }
+    .readout { border-color: var(--obsidian-border); border-radius: 6px; background: #222; }
+    .readout:first-child .readout-value { color: var(--obsidian-purple); }
+    .readout-value { color: var(--obsidian-text); font-size: 27px; }
+    .readout-label { color: var(--obsidian-faint); font-size: 9px; }
+    .access-panel { border-color: var(--obsidian-border); border-radius: 5px; background: #1c1c1c; }
+    .access-panel summary { min-height: 38px; color: var(--obsidian-muted); font-size: 10px; }
+    .key-form input { min-height: 38px; border-color: var(--obsidian-border); border-radius: 5px; color: var(--obsidian-text); background: #151515; }
+    .instrument .button-secondary { color: var(--obsidian-text); border-color: var(--obsidian-border); }
+
+    .section { padding: 76px 0 84px; border-top: 1px solid var(--obsidian-border); }
+    .section-heading { grid-template-columns: minmax(0, 0.76fr) minmax(280px, 0.42fr); gap: 52px; margin-bottom: 38px; }
+    .section-heading h2 { color: #efefef; font-size: clamp(38px, 4.8vw, 62px); line-height: 1; letter-spacing: -0.055em; }
+    .section-heading p { color: var(--obsidian-muted); font-size: 14px; line-height: 1.65; }
+    .workspace-app { grid-template-columns: minmax(260px, 0.62fr) minmax(0, 1.38fr); gap: 14px; }
+    .workspace-stack { gap: 14px; }
+    .workspace-card {
+      padding: 22px;
+      border: 1px solid var(--obsidian-border);
+      border-top: 1px solid var(--obsidian-border);
+      border-radius: 7px;
+      color: var(--obsidian-text);
+      background: var(--obsidian-bg-soft);
+      box-shadow: none;
+    }
+    .workspace-card-header { margin-bottom: 20px; }
+    .workspace-step { color: var(--obsidian-purple); font-size: 9px; }
+    .workspace-card h3 { color: #eee; font-size: 19px; }
+    .workspace-card-copy { color: var(--obsidian-muted); font-size: 12px; line-height: 1.6; }
+    .field-grid { gap: 12px; }
+    .field label { margin-bottom: 6px; color: var(--obsidian-muted); font-size: 10px; }
+    .field input, .field textarea, .field select {
+      min-height: 38px;
+      padding: 9px 10px;
+      border-color: var(--obsidian-border);
+      border-radius: 5px;
+      color: var(--obsidian-text);
+      background: #181818;
+      font: 500 12px/1.5 var(--sans);
+    }
+    .field input:hover, .field textarea:hover, .field select:hover { border-color: #505050; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--obsidian-purple); }
+    .field textarea { min-height: 100px; }
+    .field input::placeholder, .field textarea::placeholder { color: var(--obsidian-faint); }
+    .field-note { color: var(--obsidian-faint); font-size: 9px; }
+    .form-actions .button { min-height: 36px; font-size: 11px; }
+    .form-divider { color: var(--obsidian-faint); font-size: 9px; }
+    .case-active { border-color: rgba(164, 140, 242, 0.35); border-radius: 6px; background: var(--obsidian-purple-soft); }
+    .case-active strong, .result-row-head strong, .user-event strong { color: var(--obsidian-text); }
+    .case-active code { color: #c4b7f7; font-size: 9px; }
+    .case-active-actions .button { min-height: 32px; font-size: 9px; }
+    .workspace-status { color: var(--obsidian-muted); font-size: 10px; }
+    .mode-tabs { padding: 3px; border-color: var(--obsidian-border); border-radius: 6px; background: #181818; }
+    .mode-tab { min-height: 31px; border-radius: 4px; color: var(--obsidian-faint); font-size: 9px; }
+    .mode-tab + .mode-tab { border-left: 0; }
+    .mode-tab.active { color: var(--obsidian-text); background: #383838; }
+    .drop-zone { min-height: 126px; border-color: #4a4a4a; border-radius: 6px; color: var(--obsidian-muted); background: #1b1b1b; }
+    .drop-zone:hover, .drop-zone.dragging { border-color: var(--obsidian-purple); background: var(--obsidian-purple-soft); }
+    .drop-zone strong { color: var(--obsidian-text); font-size: 12px; }
+    .drop-zone span { font-size: 9px; }
+    .data-contract { border-color: var(--obsidian-purple); color: #bdb5d8; background: rgba(164, 140, 242, 0.08); font-size: 9px; }
+    .draft-preview, .workspace-results { border-color: var(--obsidian-border); border-radius: 7px; color: var(--obsidian-text); background: var(--obsidian-bg-soft); }
+    .draft-preview-header, .draft-row, .workspace-results-header p { color: var(--obsidian-muted); font-size: 9px; }
+    .workspace-results-header h3 { color: var(--obsidian-text); font-size: 18px; }
+    .workspace-metric strong { color: var(--obsidian-text); font-size: 25px; }
+    .workspace-metric:first-child strong { color: var(--obsidian-purple); }
+    .workspace-metric span { color: var(--obsidian-faint); font-size: 9px; }
+    .document-row, .user-artifact { border-radius: 6px; color: var(--obsidian-text); background: #1d1d1d; }
+    .result-row-head code, .result-meta, .user-event span, .user-lineage { color: var(--obsidian-muted); font-size: 9px; }
+    .result-badge, .status-badge { border-radius: 4px; color: #c7bcf6; border-color: rgba(164, 140, 242, 0.35); background: rgba(164, 140, 242, 0.1); font-size: 8px; }
+    .user-event { border-color: var(--obsidian-purple); background: rgba(164, 140, 242, 0.07); }
+
+    .proof-console { border: 1px solid var(--obsidian-border); border-radius: 8px; color: var(--obsidian-text); background: var(--obsidian-bg-soft); box-shadow: none; }
+    .console-top { min-height: 41px; border-color: var(--obsidian-border); color: var(--obsidian-text); background: #191919; }
+    .window-dots { display: flex; }
+    .window-dots span { width: 6px; height: 6px; background: #4a4a4a; }
+    .window-dots span:first-child { background: var(--obsidian-purple); }
+    .console-status { color: var(--obsidian-faint); font-size: 9px; }
+    .run-step { min-height: 104px; padding: 17px; background: transparent; }
+    .run-step-index { color: var(--obsidian-faint); font-size: 9px; }
+    .run-step strong { color: var(--obsidian-text); font-size: 11px; }
+    .run-step small { color: var(--obsidian-faint); font-size: 9px; }
+    .run-step.running { background: rgba(120, 169, 255, 0.08); }
+    .run-step.complete { background: var(--obsidian-purple-soft); }
+    .run-step.complete .run-step-index, .run-step.complete small { color: #c0b1f5; }
+    .proof-metric { min-height: 108px; }
+    .proof-metric-label { color: var(--obsidian-faint); font-size: 9px; }
+    .proof-metric.verified .proof-metric-value { color: var(--obsidian-purple); }
+    .journal-panel { background: #1b1b1b; }
+    .artifact-summary { color: var(--obsidian-text); }
+    .artifact-key { color: #9abcf8; font-size: 10px; }
+    .empty-state { border-radius: 6px; color: var(--obsidian-faint); }
+    .empty-state strong { color: var(--obsidian-text); }
+    .empty-state span { font-size: 10px; }
+    .graph-workspace, .inspector-fact { border-radius: 6px; background: #191919; }
+    .graph-toolbar, .graph-inspector { background: #202020; }
+    .graph-legend, .graph-hint { color: var(--obsidian-faint); font-size: 8px; }
+    .graph-canvas { background-color: #151515; background-image: radial-gradient(circle, #3b3b3b 1px, transparent 1px); }
+    .graph-node { border-radius: 5px; color: var(--obsidian-text); background: #242424; box-shadow: 0 5px 16px rgba(0, 0, 0, 0.28); }
+    .graph-node:hover, .graph-node.selected { border-color: var(--obsidian-purple); box-shadow: 0 0 0 1px rgba(164, 140, 242, 0.2), 0 8px 24px rgba(0, 0, 0, 0.36); }
+    .graph-node-type, .graph-node-detail, .inspector-fact span { color: var(--obsidian-faint); }
+    .graph-node-title, .inspector-title, .inspector-fact strong { color: var(--obsidian-text); }
+    .journal-copy strong { color: var(--obsidian-text); font-size: 10px; }
+    .journal-copy span, .activity { color: var(--obsidian-muted); font-size: 9px; }
+    .journal-dot { border-radius: 50%; background: #555; box-shadow: 0 0 0 5px #1b1b1b; }
+    .journal-entry.complete .journal-dot { background: var(--obsidian-purple); box-shadow: 0 0 0 5px #1b1b1b; }
+    .raw-output { border-radius: 5px; color: #b4b4b4; background: #121212; }
+
+    .principle-card, .flow-card { border-color: var(--obsidian-border); border-radius: 7px; color: var(--obsidian-text); background: var(--obsidian-bg-soft); }
+    .principle-card { color: var(--obsidian-text); background: #191919; }
+    .principle-card .big-number { color: var(--obsidian-purple); }
+    .principle-card p { color: var(--obsidian-muted); font-size: 12px; }
+    .invariant-code { border-left-color: var(--obsidian-purple); color: #c8c8c8; background: #222; }
+    .flow-node-index, .flow-node p { color: var(--obsidian-muted); font-size: 9px; }
+    .flow-node:last-child { background: var(--obsidian-purple-soft); }
+    .flow-node:last-child .flow-node-index, .flow-node:last-child h4 { color: #c5b9f7; }
+    .failure-grid { gap: 10px; margin-top: 14px; border: 0; }
+    .failure-card { min-height: 220px; border: 1px solid var(--obsidian-border); border-radius: 7px; color: var(--obsidian-text); background: var(--obsidian-bg-soft); }
+    .failure-card:last-child { border-right: 1px solid var(--obsidian-border); }
+    .failure-tag { color: var(--obsidian-purple); font-size: 9px; }
+    .failure-card p { color: var(--obsidian-muted); font-size: 11px; }
+    .failure-proof { color: #9ccf9f; font-size: 9px; }
+    .site-footer { padding: 30px 0 48px; border-color: var(--obsidian-border); color: var(--obsidian-faint); font-size: 9px; }
+    .site-footer a { color: var(--obsidian-muted); border-bottom: 0; }
+    .site-footer a:hover { color: var(--obsidian-purple); }
+
+    .context-block { padding: 4px 4px 12px; border-bottom: 1px solid var(--obsidian-border-soft); }
+    .property-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 8px; padding: 5px 4px; color: var(--obsidian-muted); font-size: 10px; }
+    .property-row span:first-child { color: var(--obsidian-faint); }
+    .property-value { overflow: hidden; color: var(--obsidian-text); text-overflow: ellipsis; white-space: nowrap; }
+    .tag-chip { display: inline-flex; margin: 2px; padding: 3px 7px; border-radius: 10px; color: #c5b9f7; background: var(--obsidian-purple-soft); font-size: 9px; }
+    .outline-link { display: block; padding: 5px 6px; border-left: 1px solid var(--obsidian-border); color: var(--obsidian-muted); font-size: 10px; text-decoration: none; }
+    .outline-link:hover { color: var(--obsidian-text); border-color: var(--obsidian-purple); }
+    .backlink-card { margin: 6px 0; padding: 8px; border: 1px solid var(--obsidian-border-soft); border-radius: 5px; color: var(--obsidian-muted); background: #202020; font-size: 10px; line-height: 1.5; }
+    .backlink-card strong { display: block; margin-bottom: 3px; color: var(--obsidian-text); }
+
+    .app-statusbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      padding: 0 10px;
+      border-top: 1px solid #111;
+      color: var(--obsidian-faint);
+      background: #151515;
+      font-size: 9px;
+      user-select: none;
+    }
+    .statusbar-primary { margin-right: auto; color: var(--obsidian-muted); }
+    .app-statusbar span { white-space: nowrap; }
+    .status-ok { color: #91c894; }
+
+    .command-palette {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: start center;
+      padding-top: min(18vh, 150px);
+      background: rgba(0, 0, 0, 0.52);
+      backdrop-filter: blur(3px);
+    }
+    .command-palette.hidden { display: none; }
+    .command-dialog {
+      width: min(620px, calc(100% - 32px));
+      padding: 8px;
+      border: 1px solid #4b4b4b;
+      border-radius: 9px;
+      background: #252525;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+    }
+    .command-search-wrap { display: flex; align-items: center; gap: 9px; padding: 0 8px 8px; border-bottom: 1px solid var(--obsidian-border); }
+    .command-search-wrap span { color: var(--obsidian-purple); }
+    .command-search {
+      flex: 1;
+      min-height: 40px;
+      border: 0;
+      color: var(--obsidian-text);
+      background: transparent;
+      font-size: 15px;
+    }
+    .command-search:focus { outline: 0; }
+    .command-results { max-height: 340px; padding-top: 7px; overflow-y: auto; }
+    .command-group-label { padding: 6px 10px; color: var(--obsidian-faint); font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    .command-item {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 42px;
+      padding: 5px 10px;
+      border: 0;
+      border-radius: 5px;
+      color: var(--obsidian-muted);
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      font-size: 12px;
+    }
+    .command-item:hover, .command-item:focus { color: var(--obsidian-text); background: var(--obsidian-bg-active); outline: 0; }
+    .command-item > span:first-child { color: var(--obsidian-purple); text-align: center; }
+    .command-item small { color: var(--obsidian-faint); font-size: 9px; }
+    .command-empty { padding: 24px; color: var(--obsidian-faint); text-align: center; font-size: 11px; }
+
+    .obsidian-app.left-collapsed { --left-sidebar: 0px; }
+    .obsidian-app.right-collapsed { --right-sidebar: 0px; }
+    .obsidian-app.left-collapsed .vault-sidebar, .obsidian-app.right-collapsed .context-sidebar { opacity: 0; pointer-events: none; }
+
+    @media (max-width: 1280px) {
+      .obsidian-app { --right-sidebar: 0px; }
+      .context-sidebar { display: none; }
+      .titlebar-actions .sync-state, #toggle-right-sidebar { display: none; }
+    }
+    @media (max-width: 980px) {
+      .obsidian-app { --left-sidebar: 0px; }
+      .app-titlebar { grid-template-columns: auto minmax(180px, 1fr) auto; }
+      .vault-sidebar { display: none; }
+      #toggle-left-sidebar { display: none; }
+      .vault-identity span:last-child, .window-controls { display: none; }
+      .hero, .section, .site-footer { width: min(100% - 40px, 1080px); }
+      .hero { grid-template-columns: 1fr; }
+      .instrument { width: min(600px, 100%); }
+      .workspace-app, .workspace-results-body, .console-body, .architecture { grid-template-columns: 1fr; }
+      .workspace-results-column + .workspace-results-column, .journal-panel { border-top: 1px solid var(--obsidian-border); border-left: 0; }
+    }
+    @media (max-width: 700px) {
+      .obsidian-app { grid-template-rows: 42px minmax(0, 1fr) 24px; }
+      .app-titlebar { grid-template-columns: minmax(0, 1fr) auto; padding: 0 8px; }
+      .titlebar-leading { overflow: hidden; }
+      .command-trigger { width: 34px; padding: 0; justify-content: center; }
+      .command-trigger span { display: none; }
+      .command-trigger kbd { border: 0; background: transparent; box-shadow: none; }
+      .titlebar-actions { display: none; }
+      .app-body { grid-template-columns: minmax(0, 1fr); }
+      .app-ribbon { display: none; }
+      .site-header { overflow-x: auto; }
+      .brand { min-width: 154px; }
+      .header-nav > a { display: flex; }
+      .header-nav > a:nth-of-type(n + 4), .health { display: none; }
+      .hero, .section, .site-footer { width: min(100% - 28px, 1080px); }
+      .hero { padding: 54px 0 62px; }
+      h1 { font-size: clamp(44px, 13vw, 66px); }
+      .hero-copy { font-size: 15px; }
+      .section { padding: 60px 0 68px; }
+      .section-heading { grid-template-columns: 1fr; gap: 18px; }
+      .workspace-card { padding: 18px; }
+      .workspace-card-header { flex-direction: column; }
+      .mode-tabs { width: 100%; }
+      .mode-tab { flex: 1; }
+      .run-strip { grid-template-columns: 1fr; }
+      .proof-metrics, .workspace-metrics { grid-template-columns: 1fr 1fr; }
+      .failure-grid { grid-template-columns: 1fr; }
+      .failure-card { min-height: 190px; }
+      .app-statusbar span:nth-child(n + 3) { display: none; }
+    }
   </style>
 </head>
 <body>
   <a class="skip-link" href="#top">Skip to main content</a>
-  <div class="shell">
+  <div class="obsidian-app" id="obsidian-app">
+    <header class="app-titlebar" aria-label="Application title bar">
+      <div class="titlebar-leading">
+        <div class="window-controls" aria-hidden="true"><i></i><i></i><i></i></div>
+        <button class="chrome-button" id="toggle-left-sidebar" type="button" aria-label="Toggle file explorer" aria-expanded="true">☰</button>
+        <div class="vault-identity"><span class="vault-glyph" aria-hidden="true">◈</span><strong>Closure vault</strong><span>Evidence Delta Engine</span></div>
+      </div>
+      <button class="command-trigger" id="command-trigger" type="button" aria-haspopup="dialog" aria-controls="command-palette"><span>Search or run a command</span><kbd>⌘ P</kbd></button>
+      <div class="titlebar-actions">
+        <span class="sync-state"><i></i> Changes saved</span>
+        <button class="chrome-button" id="toggle-right-sidebar" type="button" aria-label="Toggle context sidebar" aria-expanded="true">◫</button>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <nav class="app-ribbon" aria-label="Quick actions">
+        <a class="ribbon-action active" href="#overview" aria-label="Open overview" title="Overview">⌂</a>
+        <a class="ribbon-action" href="#workspace" aria-label="Open evidence workspace" title="Evidence workspace">◇</a>
+        <button class="ribbon-action" id="ribbon-command" type="button" aria-label="Open command palette" title="Command palette">⌘</button>
+        <button class="ribbon-action" id="ribbon-run-proof" type="button" aria-label="Run live proof" title="Run live proof">▶</button>
+        <div class="ribbon-spacer"></div>
+        <a class="ribbon-action" href="/docs" aria-label="Open API documentation" title="API documentation">?</a>
+        <a class="ribbon-action" href="https://github.com/Shravankb301/Closure-with-Shravan" target="_blank" rel="noreferrer" aria-label="Open source repository" title="Source repository">⌁</a>
+      </nav>
+
+      <aside class="vault-sidebar" aria-label="Vault navigation">
+        <div class="sidebar-tabs" role="tablist" aria-label="Left sidebar views">
+          <button class="sidebar-tab active" type="button" role="tab" aria-selected="true">Files</button>
+          <button class="sidebar-tab" type="button" role="tab" aria-selected="false" id="sidebar-search-tab">Search</button>
+        </div>
+        <div class="sidebar-content">
+          <div class="vault-heading"><strong>Closure vault</strong><span class="keyboard-hint">6 notes</span></div>
+          <input class="sidebar-search" id="vault-filter" type="search" aria-label="Filter vault files" placeholder="Filter files...">
+          <div class="tree-section" id="vault-tree">
+            <div class="tree-label">Core</div>
+            <a class="tree-item active" href="#overview" data-tree-label="Start here overview">Start here.md</a>
+            <a class="tree-item" href="#workspace" data-tree-label="Evidence workspace cases">Evidence workspace.md</a>
+            <div class="tree-label">Proofs</div>
+            <a class="tree-item indent" href="#proof" data-tree-label="Live invariant proof">Live invariant proof.md</a>
+            <a class="tree-item indent" href="#architecture" data-tree-label="System architecture">System architecture.md</a>
+            <div class="tree-label">References</div>
+            <a class="tree-item indent" href="/docs" data-tree-label="API reference">API reference.md</a>
+            <a class="tree-item indent" href="https://github.com/Shravankb301/Closure-with-Shravan" target="_blank" rel="noreferrer" data-tree-label="Source repository">Source repository.md</a>
+          </div>
+          <button class="sidebar-quick-action" id="sidebar-new-case" type="button">＋ Create a new case</button>
+          <button class="sidebar-quick-action" id="sidebar-run-proof" type="button">▶ Run the live proof</button>
+        </div>
+      </aside>
+
+      <div class="shell">
     <header class="site-header">
       <a class="brand" href="#top" aria-label="Evidence Delta Engine home">
         <span class="brand-mark" aria-hidden="true">D</span>
@@ -845,7 +1493,7 @@
     </header>
 
     <main id="top">
-      <section class="hero">
+      <section class="hero" id="overview">
         <div>
           <p class="kicker">Selective recomputation, proved live</p>
           <h1>Change <span class="accent">3</span> facts.<br>Recompute <span class="accent">3</span>.<br><span class="outline">Prove the other 97.</span></h1>
@@ -1109,6 +1757,68 @@
       <p>Engineering prototype. User-supplied structured evidence is supported; raw PDFs, OCR, and identity resolution remain outside scope. This is not a production investigation platform or compliance claim.</p>
       <p><a href="https://github.com/Shravankb301/Closure-with-Shravan" target="_blank" rel="noreferrer">Inspect the source</a> / <a href="/docs">explore the API</a></p>
     </footer>
+      </div>
+
+      <aside class="context-sidebar" aria-label="Context sidebar">
+        <div class="sidebar-tabs" role="tablist" aria-label="Right sidebar views">
+          <button class="sidebar-tab active" id="properties-tab" type="button" role="tab" aria-selected="true" data-context-target="context-properties">Properties</button>
+          <button class="sidebar-tab" id="backlinks-tab" type="button" role="tab" aria-selected="false" data-context-target="context-backlinks">Backlinks</button>
+        </div>
+        <div class="sidebar-content">
+          <div class="context-block" id="context-properties">
+            <div class="context-label">Properties</div>
+            <div class="property-row"><span>type</span><span class="property-value">engineering-proof</span></div>
+            <div class="property-row"><span>engine</span><span class="property-value">PostgreSQL</span></div>
+            <div class="property-row"><span>mode</span><span class="property-value">incremental</span></div>
+            <div class="property-row"><span>status</span><span class="property-value status-ok">live</span></div>
+            <div class="property-row"><span>artifacts</span><span class="property-value">100</span></div>
+          </div>
+          <div class="context-block">
+            <div class="context-label">Tags</div>
+            <span class="tag-chip">#correctness</span>
+            <span class="tag-chip">#lineage</span>
+            <span class="tag-chip">#recompute</span>
+          </div>
+          <div class="context-block">
+            <div class="context-label">Outline</div>
+            <a class="outline-link" href="#overview">Overview</a>
+            <a class="outline-link" href="#workspace">Evidence workspace</a>
+            <a class="outline-link" href="#proof">Live correctness test</a>
+            <a class="outline-link" href="#architecture">Architecture</a>
+          </div>
+          <div class="context-block" id="context-backlinks">
+            <div class="context-label">Linked mentions</div>
+            <div class="backlink-card"><strong>Live invariant proof.md</strong>Recomputes only the three timelines that read the changed source.</div>
+            <div class="backlink-card"><strong>System architecture.md</strong>Records every dependency read before publishing a new artifact version.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="app-statusbar" aria-label="Application status">
+      <span class="statusbar-primary">Closure vault</span>
+      <span class="status-ok">● Online</span>
+      <span>PostgreSQL</span>
+      <span>100 artifacts</span>
+      <span>0 unresolved links</span>
+    </footer>
+
+    <div class="command-palette hidden" id="command-palette" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="command-palette-title">
+      <div class="command-dialog">
+        <div class="command-search-wrap"><span aria-hidden="true">⌕</span><input class="command-search" id="command-search" type="search" autocomplete="off" placeholder="Type a command or search the vault"><kbd class="keyboard-hint">Esc</kbd></div>
+        <div class="command-results" id="command-results">
+          <div class="command-group-label" id="command-palette-title">Suggested commands</div>
+          <button class="command-item" type="button" data-command-target="#workspace" data-command-label="Open evidence workspace create case add source"><span>◇</span><span>Open evidence workspace</span><small>Navigate</small></button>
+          <button class="command-item" type="button" data-command-action="new-case" data-command-label="Create a new case workspace"><span>＋</span><span>Create a new case</span><small>Action</small></button>
+          <button class="command-item" type="button" data-command-action="run-proof" data-command-label="Run live proof invariant test"><span>▶</span><span>Run the live proof</span><small>Action</small></button>
+          <button class="command-item" type="button" data-command-target="#proof" data-command-label="Open proof graph provenance"><span>⌁</span><span>Open evidence graph</span><small>Navigate</small></button>
+          <button class="command-item" type="button" data-command-target="#architecture" data-command-label="Open system architecture"><span>▦</span><span>Open system architecture</span><small>Navigate</small></button>
+          <button class="command-item" type="button" data-command-action="toggle-left" data-command-label="Toggle file explorer left sidebar"><span>☰</span><span>Toggle file explorer</span><small>View</small></button>
+          <button class="command-item" type="button" data-command-action="toggle-right" data-command-label="Toggle properties context right sidebar"><span>◫</span><span>Toggle context sidebar</span><small>View</small></button>
+          <div class="command-empty hidden" id="command-empty">No matching commands</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1867,6 +2577,156 @@
         element.lastElementChild.textContent = "Service unavailable";
       }
     }
+
+    const obsidianApp = byId("obsidian-app");
+    const commandPalette = byId("command-palette");
+    const commandSearch = byId("command-search");
+    let paletteReturnTarget = null;
+
+    function setSidebarCollapsed(side, collapsed = null) {
+      const className = `${side}-collapsed`;
+      const nextCollapsed = collapsed ?? !obsidianApp.classList.contains(className);
+      obsidianApp.classList.toggle(className, nextCollapsed);
+      const toggle = byId(`toggle-${side}-sidebar`);
+      if (toggle) toggle.setAttribute("aria-expanded", String(!nextCollapsed));
+    }
+
+    function setCommandPaletteOpen(open, returnTarget = document.activeElement) {
+      commandPalette.classList.toggle("hidden", !open);
+      commandPalette.setAttribute("aria-hidden", String(!open));
+      if (open) {
+        paletteReturnTarget = returnTarget;
+        commandSearch.value = "";
+        filterCommands("");
+        window.setTimeout(() => commandSearch.focus(), 0);
+      } else if (paletteReturnTarget instanceof HTMLElement) {
+        paletteReturnTarget.focus();
+      }
+    }
+
+    function filterCommands(query) {
+      const normalized = query.trim().toLowerCase();
+      let visibleCount = 0;
+      document.querySelectorAll(".command-item").forEach((item) => {
+        const visible = !normalized || item.dataset.commandLabel.includes(normalized);
+        item.classList.toggle("hidden", !visible);
+        if (visible) visibleCount += 1;
+      });
+      byId("command-empty").classList.toggle("hidden", visibleCount > 0);
+    }
+
+    function navigateToSection(target) {
+      const section = document.querySelector(target);
+      if (!section) return;
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function createNewWorkspaceCase() {
+      if (workspaceState.caseId) byId("new-case").click();
+      navigateToSection("#workspace");
+      window.setTimeout(() => byId("workspace-case-name").focus(), 350);
+    }
+
+    function triggerLiveProof() {
+      byId("run-scenario").click();
+    }
+
+    byId("toggle-left-sidebar").addEventListener("click", () => setSidebarCollapsed("left"));
+    byId("toggle-right-sidebar").addEventListener("click", () => setSidebarCollapsed("right"));
+    byId("command-trigger").addEventListener("click", (event) => setCommandPaletteOpen(true, event.currentTarget));
+    byId("ribbon-command").addEventListener("click", (event) => setCommandPaletteOpen(true, event.currentTarget));
+    byId("ribbon-run-proof").addEventListener("click", triggerLiveProof);
+    byId("sidebar-run-proof").addEventListener("click", triggerLiveProof);
+    byId("sidebar-new-case").addEventListener("click", createNewWorkspaceCase);
+    commandSearch.addEventListener("input", () => filterCommands(commandSearch.value));
+    commandSearch.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      const firstVisible = document.querySelector(".command-item:not(.hidden)");
+      if (firstVisible) firstVisible.click();
+    });
+    commandPalette.addEventListener("mousedown", (event) => {
+      if (event.target === commandPalette) setCommandPaletteOpen(false);
+    });
+    commandPalette.addEventListener("keydown", (event) => {
+      if (event.key !== "Tab") return;
+      const focusable = [...commandPalette.querySelectorAll('input, button:not(.hidden)')];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && ["p", "k"].includes(event.key.toLowerCase())) {
+        event.preventDefault();
+        setCommandPaletteOpen(commandPalette.classList.contains("hidden"));
+      } else if (event.key === "Escape" && !commandPalette.classList.contains("hidden")) {
+        event.preventDefault();
+        setCommandPaletteOpen(false);
+      }
+    });
+    document.querySelectorAll(".command-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const { commandAction, commandTarget } = item.dataset;
+        setCommandPaletteOpen(false);
+        if (commandTarget) navigateToSection(commandTarget);
+        if (commandAction === "new-case") createNewWorkspaceCase();
+        if (commandAction === "run-proof") triggerLiveProof();
+        if (commandAction === "toggle-left") setSidebarCollapsed("left");
+        if (commandAction === "toggle-right") setSidebarCollapsed("right");
+      });
+    });
+
+    byId("vault-filter").addEventListener("input", (event) => {
+      const query = event.target.value.trim().toLowerCase();
+      document.querySelectorAll("#vault-tree .tree-item").forEach((item) => {
+        item.classList.toggle("hidden", Boolean(query) && !item.dataset.treeLabel.toLowerCase().includes(query));
+      });
+    });
+    byId("sidebar-search-tab").addEventListener("click", () => {
+      document.querySelectorAll(".vault-sidebar .sidebar-tab").forEach((tab) => {
+        const active = tab === byId("sidebar-search-tab");
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", String(active));
+      });
+      byId("vault-filter").focus();
+    });
+    document.querySelector(".vault-sidebar .sidebar-tab:first-child").addEventListener("click", (event) => {
+      document.querySelectorAll(".vault-sidebar .sidebar-tab").forEach((tab) => {
+        const active = tab === event.currentTarget;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", String(active));
+      });
+      byId("vault-filter").value = "";
+      byId("vault-filter").dispatchEvent(new Event("input"));
+    });
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+      if (!visible) return;
+      const target = `#${visible.target.id}`;
+      document.querySelectorAll("#vault-tree .tree-item, .app-ribbon a").forEach((item) => {
+        item.classList.toggle("active", item.getAttribute("href") === target);
+      });
+    }, { root: document.querySelector(".shell"), rootMargin: "-15% 0px -65%", threshold: [0.05, 0.3, 0.6] });
+    [byId("overview"), byId("workspace"), byId("proof"), byId("architecture")].forEach((section) => sectionObserver.observe(section));
+    document.querySelectorAll(".context-sidebar [data-context-target]").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".context-sidebar .sidebar-tab").forEach((item) => {
+          const active = item === tab;
+          item.classList.toggle("active", active);
+          item.setAttribute("aria-selected", String(active));
+        });
+        byId(tab.dataset.contextTarget).scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
 
     byId("save-key").addEventListener("click", () => {
       saveDemoKey(keyInput.value);
