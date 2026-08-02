@@ -325,15 +325,43 @@
     .empty-state span { display: block; max-width: 330px; font: 500 10px/1.7 var(--mono); }
 
     .artifact-content { display: none; }
-    .artifact-content.visible { display: grid; grid-template-columns: 1fr 0.9fr; gap: 24px; }
-    .subheading { margin: 0 0 14px; color: #768175; font: 600 9px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
-    .timeline, .lineage-list { display: grid; gap: 9px; }
-    .event, .lineage-item { padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.016); }
-    .event-meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; color: #6f796e; font: 500 8px/1.4 var(--mono); }
-    .event-value, .lineage-text { margin: 0; color: #c5cdc2; font-size: 11px; line-height: 1.55; }
-    .lineage-source { margin: 0 0 7px; color: var(--cyan); font: 500 8px/1.5 var(--mono); overflow-wrap: anywhere; }
-    .dependency { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 11px; border: 1px solid rgba(199, 243, 107, 0.17); border-radius: 10px; color: #788276; font: 500 8px/1.4 var(--mono); }
-    .dependency-version { color: var(--acid); white-space: nowrap; }
+    .artifact-content.visible { display: block; }
+    .graph-workspace { overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: #080b08; }
+    .graph-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 13px; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.018); }
+    .graph-legend { display: flex; flex-wrap: wrap; gap: 12px; color: #778276; font: 500 8px/1 var(--mono); text-transform: uppercase; }
+    .graph-legend span { display: flex; align-items: center; gap: 6px; }
+    .graph-legend i { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); }
+    .graph-legend .claim i { background: var(--orange); }
+    .graph-legend .view i { background: var(--acid); }
+    .graph-legend .key i { background: #9d89f5; }
+    .graph-hint { color: #596359; font: 500 8px/1 var(--mono); white-space: nowrap; }
+    .graph-viewport { overflow-x: auto; }
+    .graph-canvas { position: relative; min-width: 720px; min-height: 500px; isolation: isolate; background-image: radial-gradient(circle, rgba(219, 239, 221, 0.13) 1px, transparent 1px); background-size: 19px 19px; }
+    .graph-canvas::after { position: absolute; inset: 0; z-index: -2; content: ""; background: radial-gradient(circle at 45% 48%, rgba(112, 215, 232, 0.055), transparent 38%); pointer-events: none; }
+    .graph-edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .graph-edge { fill: none; stroke: rgba(136, 157, 137, 0.34); stroke-width: 1.4; vector-effect: non-scaling-stroke; transition: opacity 180ms ease, stroke 180ms ease; }
+    .graph-edge.changed { stroke: rgba(255, 120, 73, 0.58); }
+    .graph-edge.dependency { stroke: rgba(157, 137, 245, 0.42); stroke-dasharray: 5 5; }
+    .graph-edge.withdrawn { stroke: rgba(255, 120, 73, 0.52); stroke-dasharray: 4 6; }
+    .graph-edge.is-muted { opacity: 0.1; }
+    .graph-node { position: absolute; z-index: 2; width: 118px; min-height: 58px; padding: 9px 10px; transform: translate(-50%, -50%); border: 1px solid rgba(112, 215, 232, 0.35); border-radius: 10px; color: var(--text); background: rgba(13, 19, 15, 0.96); box-shadow: 0 9px 25px rgba(0, 0, 0, 0.28); cursor: pointer; text-align: left; transition: opacity 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+    .graph-node:hover, .graph-node.selected { z-index: 3; border-color: var(--acid); box-shadow: 0 0 0 1px rgba(199, 243, 107, 0.2), 0 10px 30px rgba(0, 0, 0, 0.44); transform: translate(-50%, -50%) scale(1.04); }
+    .graph-node.is-muted { opacity: 0.22; }
+    .graph-node.claim { border-color: rgba(255, 120, 73, 0.48); }
+    .graph-node.view { border-color: rgba(199, 243, 107, 0.48); }
+    .graph-node.key { border-color: rgba(157, 137, 245, 0.42); }
+    .graph-node.withdrawn { opacity: 0.56; border-style: dashed; border-color: var(--orange); background: rgba(38, 20, 14, 0.92); }
+    .graph-node.withdrawn::after { position: absolute; top: 7px; right: 7px; width: 6px; height: 6px; border-radius: 50%; content: ""; background: var(--orange); box-shadow: 0 0 8px rgba(255, 120, 73, 0.55); }
+    .graph-node-type { display: block; margin-bottom: 6px; color: #788478; font: 600 7px/1 var(--mono); letter-spacing: 0.09em; text-transform: uppercase; }
+    .graph-node-title { display: block; overflow: hidden; color: #dce3d8; font: 600 9px/1.35 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+    .graph-node-detail { display: block; margin-top: 4px; overflow: hidden; color: #687368; font: 500 7px/1.35 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+    .graph-inspector { display: grid; grid-template-columns: minmax(120px, 0.34fr) 1fr; gap: 16px; min-height: 108px; padding: 14px; border-top: 1px solid var(--line); background: rgba(255, 255, 255, 0.018); }
+    .inspector-kind { margin: 0; color: var(--acid); font: 600 8px/1.3 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+    .inspector-title { margin: 7px 0 0; color: #e5eae1; font-size: 12px; line-height: 1.4; }
+    .inspector-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .inspector-fact { min-width: 0; padding: 8px 9px; border: 1px solid var(--line); border-radius: 8px; background: rgba(0, 0, 0, 0.15); }
+    .inspector-fact span { display: block; color: #596459; font: 600 7px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+    .inspector-fact strong { display: block; margin-top: 5px; overflow-wrap: anywhere; color: #aeb8ab; font: 500 8px/1.45 var(--mono); }
 
     .journal { display: grid; gap: 0; }
     .journal-entry { display: grid; grid-template-columns: 19px 1fr; gap: 12px; min-height: 64px; }
@@ -416,7 +444,9 @@
       .proof-metric:nth-child(2) { border-right: 0; }
       .proof-metric:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
       .artifact-panel, .journal-panel { padding: 20px; }
-      .artifact-content.visible { grid-template-columns: 1fr; }
+      .graph-toolbar, .graph-inspector { align-items: flex-start; }
+      .graph-toolbar { flex-direction: column; }
+      .graph-inspector { grid-template-columns: 1fr; }
       .failure-grid { grid-template-columns: 1fr; }
       .failure-card { min-height: 210px; }
       .failure-card h3 { margin-top: 38px; }
@@ -515,25 +545,34 @@
           <div class="console-body">
             <div class="artifact-panel">
               <div class="panel-title">
-                <h3>Materialized artifact inspector</h3>
+                <h3>Evidence graph</h3>
                 <span class="status-badge" id="freshness">Not computed</span>
               </div>
               <div class="artifact-identity">
-                <p class="artifact-key" id="artifact-key">timeline:entity:date</p>
+                <p class="artifact-key" id="artifact-key">source -> assertion -> timeline -> dependency</p>
                 <p class="artifact-summary" id="artifact-summary">Waiting for a controlled mutation</p>
               </div>
               <div class="empty-state" id="artifact-empty">
-                <div><strong>No state fabricated</strong><span>Run the proof to read a versioned artifact and its exact source lineage from the backend.</span></div>
+                <div><strong>No graph fabricated</strong><span>Run the proof to map a real source across its assertions, derived timelines, and exact dependency reads.</span></div>
               </div>
               <div class="artifact-content" id="artifact-content">
-                <div>
-                  <p class="subheading" id="event-count">Derived timeline</p>
-                  <div class="timeline" id="timeline"></div>
-                </div>
-                <div>
-                  <p class="subheading">Exact source lineage</p>
-                  <div class="lineage-list" id="lineage"></div>
-                  <div id="dependency"></div>
+                <div class="graph-workspace">
+                  <div class="graph-toolbar">
+                    <div class="graph-legend" aria-label="Evidence graph legend">
+                      <span><i></i>Source</span>
+                      <span class="claim"><i></i>Assertion</span>
+                      <span class="view"><i></i>Timeline</span>
+                      <span class="key"><i></i>Dependency</span>
+                    </div>
+                    <span class="graph-hint">Select a node to inspect its proof</span>
+                  </div>
+                  <div class="graph-viewport">
+                    <div class="graph-canvas" id="evidence-graph" aria-label="Interactive evidence relationship graph">
+                      <svg class="graph-edges" id="graph-edges" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-hidden="true"></svg>
+                      <div id="graph-nodes"></div>
+                    </div>
+                  </div>
+                  <div class="graph-inspector" id="graph-inspector" aria-live="polite"></div>
                 </div>
               </div>
             </div>
@@ -609,6 +648,9 @@
       artifactKey: null,
       mutation: null,
       artifact: null,
+      artifacts: [],
+      claims: [],
+      selectedNodeId: null,
       proof: null,
       worker: null,
       retracted: false,
@@ -669,6 +711,9 @@
     function resetRunUI() {
       state.mutation = null;
       state.artifact = null;
+      state.artifacts = [];
+      state.claims = [];
+      state.selectedNodeId = null;
       state.proof = null;
       state.worker = null;
       document.querySelectorAll(".run-step").forEach((step) => step.classList.remove("running", "complete"));
@@ -677,6 +722,9 @@
       impactMap.classList.remove("active", "retracted");
       byId("artifact-empty").style.display = "grid";
       byId("artifact-content").classList.remove("visible");
+      byId("graph-nodes").innerHTML = "";
+      byId("graph-edges").innerHTML = "";
+      byId("graph-inspector").innerHTML = "";
       byId("freshness").className = "status-badge";
       byId("freshness").textContent = "Not computed";
       byId("metric-selectivity").textContent = "--";
@@ -704,7 +752,7 @@
     function renderMutation(mutation) {
       state.mutation = mutation;
       state.artifactKey = mutation.affected_keys[0] || state.artifactKey;
-      byId("artifact-key").textContent = state.artifactKey;
+      byId("artifact-key").textContent = `${mutation.affected_keys.length} affected timelines / ${mutation.untouched_artifacts} untouched`;
       byId("case-revision").textContent = `revision ${mutation.revision}`;
       byId("hero-affected").textContent = mutation.queued_artifacts;
       byId("hero-untouched").textContent = mutation.untouched_artifacts;
@@ -719,32 +767,180 @@
       updateRawState();
     }
 
-    function renderArtifact(artifact) {
-      state.artifact = artifact;
-      byId("freshness").textContent = artifact.fresh ? `Current / v${artifact.version}` : `Stale / v${artifact.version}`;
-      byId("freshness").className = `status-badge ${artifact.fresh ? "current" : "pending"}`;
-      byId("artifact-summary").textContent = state.retracted
-        ? "Timeline recomputed without the withdrawn source"
-        : "Selective recomputation published with exact lineage";
-
-      const events = artifact.payload?.events || [];
-      const lineage = artifact.lineage || [];
-      byId("event-count").textContent = `Derived timeline / ${events.length} event${events.length === 1 ? "" : "s"}`;
-      byId("timeline").innerHTML = events.map((event) => `
-        <article class="event">
-          <div class="event-meta"><span>${escapeHtml(event.kind)}</span><span>${escapeHtml(event.occurred_at)}</span></div>
-          <p class="event-value">${escapeHtml(event.value)}</p>
-        </article>`).join("");
-      byId("lineage").innerHTML = lineage.map((source) => `
-        <article class="lineage-item">
-          <p class="lineage-source">${escapeHtml(source.document_id)} / ${escapeHtml(source.source_locator)}</p>
-          <p class="lineage-text">${escapeHtml(source.source_text)}</p>
-        </article>`).join("");
-      byId("dependency").innerHTML = (artifact.dependency_versions || []).map((dependency) => `
-        <div class="dependency">
-          <span title="${escapeHtml(dependency.key)}">read: ${escapeHtml(dependency.key)}</span>
-          <span class="dependency-version">observed v${escapeHtml(dependency.observed)} == current v${escapeHtml(dependency.current)}</span>
+    function nodeFacts(items) {
+      return items.map(([label, value]) => `
+        <div class="inspector-fact">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
         </div>`).join("");
+    }
+
+    function renderGraphInspector(node) {
+      byId("graph-inspector").innerHTML = `
+        <div>
+          <p class="inspector-kind">${escapeHtml(node.kind)}</p>
+          <p class="inspector-title">${escapeHtml(node.title)}</p>
+        </div>
+        <div class="inspector-facts">${nodeFacts(node.facts)}</div>`;
+    }
+
+    function graphPath(from, to) {
+      const x1 = from.x * 10;
+      const y1 = from.y * 5.6;
+      const x2 = to.x * 10;
+      const y2 = to.y * 5.6;
+      const bend = Math.max(35, Math.abs(x2 - x1) * 0.46);
+      const direction = x2 >= x1 ? 1 : -1;
+      return `M ${x1} ${y1} C ${x1 + bend * direction} ${y1}, ${x2 - bend * direction} ${y2}, ${x2} ${y2}`;
+    }
+
+    function renderEvidenceGraph(artifacts) {
+      const rows = artifacts.slice().sort((left, right) => left.artifact_key.localeCompare(right.artifact_key));
+      if (!state.retracted) {
+        const claims = rows.map((artifact) => {
+          const lineage = (artifact.lineage || []).find((item) => item.document_id === state.documentId);
+          const event = (artifact.payload?.events || []).find((item) => item.assertion_id === lineage?.assertion_id);
+          return lineage && event ? {
+            assertionId: lineage.assertion_id,
+            entityId: artifact.payload.entity_id,
+            day: artifact.payload.date,
+            locator: lineage.source_locator,
+            sourceText: lineage.source_text,
+            kind: event.kind,
+            value: event.value,
+            occurredAt: event.occurred_at,
+          } : null;
+        }).filter(Boolean);
+        if (claims.length) state.claims = claims;
+      }
+
+      const nodes = [{
+        id: "source",
+        type: "source",
+        kind: state.retracted ? "Withdrawn source" : "Source document",
+        title: "new_witness_statement.json",
+        detail: state.retracted ? "Retained as an audit record" : "3 structured assertions",
+        x: 10,
+        y: 50,
+        withdrawn: state.retracted,
+        facts: [
+          ["Document ID", state.documentId || "pending"],
+          ["Status", state.retracted ? "Retracted, not deleted" : "Active"],
+          ["Assertions", state.claims.length || 3],
+          ["Role", "Primary evidence source"],
+        ],
+      }];
+      const edges = [];
+      const yPositions = [18, 50, 82];
+
+      rows.forEach((artifact, index) => {
+        const y = yPositions[index] || 50;
+        const claim = state.claims[index] || {
+          assertionId: `withdrawn-${index + 1}`,
+          entityId: artifact.payload?.entity_id,
+          day: artifact.payload?.date,
+          locator: `paragraph:${index + 1}`,
+          value: "Withdrawn witness observation",
+          occurredAt: artifact.payload?.date,
+        };
+        const dependency = (artifact.dependency_versions || [])[0] || {};
+        nodes.push({
+          id: `claim-${index}`,
+          type: "claim",
+          kind: state.retracted ? "Withdrawn assertion" : "Evidence assertion",
+          title: claim.value,
+          detail: `${claim.entityId} / ${claim.day}`,
+          x: 36,
+          y,
+          withdrawn: state.retracted,
+          facts: [
+            ["Assertion ID", claim.assertionId],
+            ["Entity", claim.entityId],
+            ["Occurred", claim.occurredAt],
+            ["Source locator", claim.locator],
+          ],
+        });
+        nodes.push({
+          id: `view-${index}`,
+          type: "view",
+          kind: "Derived entity-day timeline",
+          title: artifact.artifact_key,
+          detail: `v${artifact.version} / ${artifact.payload?.events?.length || 0} events`,
+          x: 65,
+          y,
+          facts: [
+            ["Entity", artifact.payload?.entity_id],
+            ["Date", artifact.payload?.date],
+            ["Current version", `v${artifact.version}`],
+            ["Active events", artifact.payload?.events?.length || 0],
+          ],
+        });
+        nodes.push({
+          id: `key-${index}`,
+          type: "key",
+          kind: "Recorded dependency read",
+          title: dependency.key || artifact.artifact_key,
+          detail: `observed v${dependency.observed ?? "?"} / current v${dependency.current ?? "?"}`,
+          x: 90,
+          y,
+          facts: [
+            ["Change key", dependency.key || artifact.artifact_key],
+            ["Observed", `v${dependency.observed ?? "?"}`],
+            ["Current", `v${dependency.current ?? "?"}`],
+            ["Fresh", artifact.fresh ? "Yes" : "No"],
+          ],
+        });
+        edges.push({ from: "source", to: `claim-${index}`, type: state.retracted ? "withdrawn" : "changed" });
+        edges.push({ from: `claim-${index}`, to: `view-${index}`, type: state.retracted ? "withdrawn" : "changed" });
+        edges.push({ from: `key-${index}`, to: `view-${index}`, type: "dependency" });
+      });
+
+      const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+      byId("graph-edges").innerHTML = edges.map((edge) => `
+        <path class="graph-edge ${edge.type}" data-from="${edge.from}" data-to="${edge.to}" d="${graphPath(nodeMap.get(edge.from), nodeMap.get(edge.to))}"></path>`).join("");
+      byId("graph-nodes").innerHTML = nodes.map((node) => `
+        <button class="graph-node ${node.type}${node.withdrawn ? " withdrawn" : ""}" type="button" data-node-id="${node.id}" style="left:${node.x}%;top:${node.y}%" aria-label="Inspect ${escapeHtml(node.kind)}: ${escapeHtml(node.title)}">
+          <span class="graph-node-type">${escapeHtml(node.kind)}</span>
+          <span class="graph-node-title">${escapeHtml(node.title)}</span>
+          <span class="graph-node-detail">${escapeHtml(node.detail)}</span>
+        </button>`).join("");
+
+      function selectNode(nodeId) {
+        state.selectedNodeId = nodeId;
+        const connected = new Set([nodeId]);
+        edges.forEach((edge) => {
+          if (edge.from === nodeId || edge.to === nodeId) {
+            connected.add(edge.from);
+            connected.add(edge.to);
+          }
+        });
+        document.querySelectorAll(".graph-node").forEach((element) => {
+          element.classList.toggle("selected", element.dataset.nodeId === nodeId);
+          element.classList.toggle("is-muted", !connected.has(element.dataset.nodeId));
+        });
+        document.querySelectorAll(".graph-edge").forEach((element) => {
+          element.classList.toggle("is-muted", element.dataset.from !== nodeId && element.dataset.to !== nodeId);
+        });
+        renderGraphInspector(nodeMap.get(nodeId));
+      }
+
+      document.querySelectorAll(".graph-node").forEach((element) => {
+        element.addEventListener("click", () => selectNode(element.dataset.nodeId));
+      });
+      selectNode(nodeMap.has(state.selectedNodeId) ? state.selectedNodeId : "source");
+    }
+
+    function renderArtifacts(artifacts) {
+      state.artifacts = artifacts;
+      state.artifact = artifacts[0] || null;
+      const allFresh = artifacts.length > 0 && artifacts.every((artifact) => artifact.fresh);
+      const highestVersion = Math.max(...artifacts.map((artifact) => artifact.version));
+      byId("freshness").textContent = allFresh ? `Graph current / v${highestVersion}` : "Graph has stale views";
+      byId("freshness").className = `status-badge ${allFresh ? "current" : "pending"}`;
+      byId("artifact-summary").textContent = state.retracted
+        ? "Withdrawn evidence stays visible while derived timelines recompute without it"
+        : "Trace the witness source into three assertions, three timelines, and their recorded reads";
+      renderEvidenceGraph(artifacts);
       byId("artifact-empty").style.display = "none";
       byId("artifact-content").classList.add("visible");
       updateRawState();
@@ -764,23 +960,27 @@
       byId("raw-output").textContent = JSON.stringify({
         mutation: state.mutation,
         worker: state.worker,
-        artifact: state.artifact,
+        artifacts: state.artifacts,
         proof: state.proof,
       }, null, 2);
     }
 
-    async function pollArtifact() {
+    async function pollArtifacts() {
+      const keys = state.mutation?.affected_keys || [];
       for (let attempt = 0; attempt < 50; attempt += 1) {
-        try {
-          const artifact = await api(`/cases/${state.caseId}/artifacts/${encodeURIComponent(state.artifactKey)}`);
-          renderArtifact(artifact);
-          if (artifact.fresh) return artifact;
-        } catch (error) {
-          if (error.status !== 404) throw error;
-        }
+        const artifacts = (await Promise.all(keys.map(async (key) => {
+          try {
+            return await api(`/cases/${state.caseId}/artifacts/${encodeURIComponent(key)}`);
+          } catch (error) {
+            if (error.status === 404) return null;
+            throw error;
+          }
+        }))).filter(Boolean);
+        if (artifacts.length) renderArtifacts(artifacts);
+        if (artifacts.length === keys.length && artifacts.every((artifact) => artifact.fresh)) return artifacts;
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
-      throw new Error("Artifact did not become current before the polling deadline");
+      throw new Error("Affected timelines did not become current before the polling deadline");
     }
 
     async function waitForVerifiedProof() {
@@ -830,7 +1030,7 @@
 
         setRunStep("publish", "running");
         const worker = await requestManualDrainWhenAvailable();
-        await pollArtifact();
+        await pollArtifacts();
         setRunStep("publish", "complete");
         const processed = worker ? worker.processed : mutation.queued_artifacts;
         completeJournal("worker", `${processed} queued artifacts processed; publication committed atomically.`);
@@ -867,7 +1067,7 @@
         });
         renderMutation(mutation);
         await requestManualDrainWhenAvailable();
-        await pollArtifact();
+        await pollArtifacts();
         const proof = await waitForVerifiedProof();
         completeJournal("delta", `Retraction tombstone committed at revision ${mutation.revision}; three keys advanced again.`);
         completeJournal("worker", "Three replacement versions published; prior versions remain immutable.");
