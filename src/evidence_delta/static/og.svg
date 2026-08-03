@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#334049" stroke-width="1" opacity="0.35"/>
+    </pattern>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b252c"/>
+      <stop offset="1" stop-color="#11171c"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="8" dy="8" stdDeviation="0" flood-color="#080b0e" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="#11171c"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <circle cx="1050" cy="-10" r="270" fill="#de4936" opacity="0.08"/>
+  <path d="M0 82H1200M700 82V630" stroke="#4a565e" stroke-width="1"/>
+
+  <rect x="48" y="27" width="42" height="42" fill="#de4936" stroke="#f2efe7" filter="url(#shadow)"/>
+  <text x="69" y="53" text-anchor="middle" fill="#fff" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="700">B-15</text>
+  <text x="108" y="44" fill="#f2efe7" font-family="DejaVu Sans, sans-serif" font-size="15" font-weight="700" letter-spacing="1">EVIDENCE COMMAND BOARD</text>
+  <text x="108" y="61" fill="#93a0a5" font-family="DejaVu Sans Mono, monospace" font-size="8" letter-spacing="2">PUBLIC-RECORD RECONSTRUCTION</text>
+  <text x="1148" y="49" text-anchor="end" fill="#8fd8a0" font-family="DejaVu Sans Mono, monospace" font-size="9" font-weight="700" letter-spacing="1">FULL-REBUILD VERIFIED</text>
+
+  <text x="55" y="175" fill="#f2efe7" font-family="DejaVu Sans, sans-serif" font-size="72" font-weight="800" letter-spacing="-4">BOSTON</text>
+  <text x="55" y="246" fill="#f2efe7" font-family="DejaVu Sans, sans-serif" font-size="72" font-weight="800" letter-spacing="-4">EVIDENCE</text>
+  <text x="55" y="317" fill="#de4936" font-family="DejaVu Sans, sans-serif" font-size="72" font-weight="800" letter-spacing="-4">COMMAND</text>
+  <text x="55" y="388" fill="#de4936" font-family="DejaVu Sans, sans-serif" font-size="72" font-weight="800" letter-spacing="-4">BOARD</text>
+  <text x="59" y="429" fill="#b9c1c1" font-family="DejaVu Sans, sans-serif" font-size="19">Reconstruct the case. Prove every claim.</text>
+  <text x="59" y="461" fill="#7f8b8f" font-family="DejaVu Sans Mono, monospace" font-size="10" letter-spacing="1">SOURCE -&gt; ASSERTION -&gt; ENTITY -&gt; TIMELINE -&gt; HANDOFF</text>
+
+  <g transform="translate(735 122)">
+    <rect width="414" height="360" rx="4" fill="url(#panel)" stroke="#536069"/>
+    <text x="24" y="32" fill="#e68e80" font-family="DejaVu Sans Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">EVIDENCE RELATIONSHIP MAP</text>
+    <g stroke="#71828a" stroke-width="2" opacity="0.7">
+      <path d="M92 99L205 84L323 123"/>
+      <path d="M92 99L205 204L323 123"/>
+      <path d="M205 84L205 204L323 278"/>
+      <path d="M205 204L323 278"/>
+    </g>
+    <path d="M205 204L323 123" stroke="#d09048" stroke-width="2.5" stroke-dasharray="7 5"/>
+    <path d="M92 277L205 204" stroke="#75a688" stroke-width="2.5"/>
+    <g font-family="DejaVu Sans, sans-serif">
+      <g transform="translate(28 66)"><rect width="128" height="66" rx="3" fill="#233139" stroke="#61717a"/><text x="12" y="21" fill="#97a5aa" font-size="8">PERSON</text><text x="12" y="44" fill="#fff" font-size="12" font-weight="700">Subject record</text><text x="12" y="57" fill="#d5a76e" font-size="8">1 event</text></g>
+      <g transform="translate(141 51)"><rect width="128" height="66" rx="3" fill="#233139" stroke="#61717a"/><text x="12" y="21" fill="#97a5aa" font-size="8">PERSON</text><text x="12" y="44" fill="#fff" font-size="12" font-weight="700">Associate A</text><text x="12" y="57" fill="#d5a76e" font-size="8">5 events</text></g>
+      <g transform="translate(259 90)"><rect width="128" height="66" rx="3" fill="#27393b" stroke="#4e8990"/><text x="12" y="21" fill="#97a5aa" font-size="8">LOCATION</text><text x="12" y="44" fill="#fff" font-size="12" font-weight="700">Dorm room</text><text x="12" y="57" fill="#d5a76e" font-size="8">1 event</text></g>
+      <g transform="translate(141 171)"><rect width="128" height="66" rx="3" fill="#233139" stroke="#61717a"/><text x="12" y="21" fill="#97a5aa" font-size="8">PERSON</text><text x="12" y="44" fill="#fff" font-size="12" font-weight="700">Associate B</text><text x="12" y="57" fill="#d5a76e" font-size="8">4 events</text></g>
+      <g transform="translate(259 245)"><rect width="128" height="66" rx="3" fill="#432c25" stroke="#a76754"/><text x="12" y="21" fill="#c9a297" font-size="8">OBJECT</text><text x="12" y="44" fill="#fff" font-size="12" font-weight="700">Backpack</text><text x="12" y="57" fill="#d5a76e" font-size="8">7 events</text></g>
+      <g transform="translate(28 244)"><rect width="128" height="66" rx="3" fill="#27392a" stroke="#688260"/><text x="12" y="21" fill="#a8b6a6" font-size="8">SOURCE</text><text x="12" y="44" fill="#fff" font-size="12" font-weight="700">Court record</text><text x="12" y="57" fill="#8fd8a0" font-size="8">Established</text></g>
+    </g>
+  </g>
+
+  <g transform="translate(55 516)" font-family="DejaVu Sans Mono, monospace">
+    <rect width="1094" height="77" fill="#f2efe7"/>
+    <path d="M220 0V77M440 0V77M660 0V77M880 0V77" stroke="#c8c2b5"/>
+    <text x="24" y="34" fill="#de4936" font-family="DejaVu Sans, sans-serif" font-size="26" font-weight="800">4</text><text x="24" y="53" fill="#626b68" font-size="8">OFFICIAL SOURCES</text>
+    <text x="244" y="34" fill="#11171c" font-family="DejaVu Sans, sans-serif" font-size="26" font-weight="800">25</text><text x="244" y="53" fill="#626b68" font-size="8">TRACEABLE ASSERTIONS</text>
+    <text x="464" y="34" fill="#11171c" font-family="DejaVu Sans, sans-serif" font-size="26" font-weight="800">15</text><text x="464" y="53" fill="#626b68" font-size="8">MATERIALIZED TIMELINES</text>
+    <text x="684" y="34" fill="#4b8b69" font-family="DejaVu Sans, sans-serif" font-size="21" font-weight="800">VERIFIED</text><text x="684" y="53" fill="#626b68" font-size="8">CORRECTNESS ORACLE</text>
+    <text x="904" y="34" fill="#11171c" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="800">OFFICER READY</text><text x="904" y="53" fill="#626b68" font-size="8">ASSIGN - REVIEW - HANDOFF</text>
+  </g>
+</svg>

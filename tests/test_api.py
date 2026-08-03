@@ -37,6 +37,7 @@ def test_api_vertical_slice() -> None:
         pending_workspace = client.get(f"/cases/{case_id}")
         assert pending_workspace.status_code == 200
         assert pending_workspace.json()["case"]["name"] == "API case"
+        assert pending_workspace.json()["case"]["assigned_officer"] is None
         assert pending_workspace.json()["documents"] == [
             {
                 "id": added.json()["document_id"],
@@ -52,6 +53,21 @@ def test_api_vertical_slice() -> None:
             }
         ]
         assert pending_workspace.json()["artifacts"][0]["fresh"] is False
+
+        assigned = client.put(
+            f"/cases/{case_id}/assignment",
+            json={
+                "assigned_officer": "Officer Elena Ruiz",
+                "assigned_badge": "B-417",
+                "assigned_unit": "Evidence Review Unit",
+                "handoff_note": "Verify the disposal window against carrier records.",
+            },
+        )
+        assert assigned.status_code == 200
+        assert assigned.json()["assigned_officer"] == "Officer Elena Ruiz"
+        assigned_workspace = client.get(f"/cases/{case_id}").json()
+        assert assigned_workspace["case"]["assigned_badge"] == "B-417"
+        assert assigned_workspace["case"]["handoff_note"].startswith("Verify")
 
         drained = client.post("/workers/drain")
         assert drained.status_code == 200

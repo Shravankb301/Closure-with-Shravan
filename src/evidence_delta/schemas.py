@@ -52,6 +52,23 @@ class CaseInput(BaseModel):
     name: str = Field(min_length=1, max_length=200)
 
 
+class CaseAssignmentInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    assigned_officer: str | None = Field(default=None, max_length=160)
+    assigned_badge: str | None = Field(default=None, max_length=80)
+    assigned_unit: str | None = Field(default=None, max_length=160)
+    handoff_note: str | None = Field(default=None, max_length=10_000)
+
+    @field_validator("assigned_officer", "assigned_badge", "assigned_unit", "handoff_note")
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+
 class RetractionInput(BaseModel):
     reason: str = Field(min_length=1)
 

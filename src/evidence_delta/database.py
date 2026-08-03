@@ -61,6 +61,19 @@ class Database:
 
         with self.engine.begin() as connection:
             inspector = inspect(connection)
+            case_columns = {column["name"] for column in inspector.get_columns("cases")}
+            case_upgrades = {
+                "assigned_officer": "VARCHAR(160)",
+                "assigned_badge": "VARCHAR(80)",
+                "assigned_unit": "VARCHAR(160)",
+                "handoff_note": "TEXT",
+            }
+            for column, definition in case_upgrades.items():
+                if column not in case_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE cases ADD COLUMN {column} {definition}")
+                    )
+
             document_columns = {column["name"] for column in inspector.get_columns("documents")}
             if "source_uri" not in document_columns:
                 connection.execute(

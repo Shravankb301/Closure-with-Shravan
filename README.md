@@ -1,6 +1,20 @@
-# Evidence Delta Engine
+# Boston Evidence Command Board
 
-A small backend prototype for one question:
+A source-backed public-record investigation workspace built on a deterministic
+evidence recomputation engine.
+
+The root application is organized around the Boston Marathon bombing
+investigation's evidence-disposal and obstruction sequence. It gives a reviewer
+one operational surface for:
+
+- tracing each displayed claim to an immutable source locator,
+- separating complaint and indictment allegations from later court outcomes,
+- inspecting a shared-source relationship graph and chronological reconstruction,
+- assigning an officer or analyst and persisting handoff context,
+- adding or retracting evidence without erasing the audit trail, and
+- verifying maintained timelines against a deterministic full rebuild.
+
+The trusted engine underneath still answers one central technical question:
 
 > When evidence is added or retracted, can derived investigative artifacts be
 > updated selectively without changing the result of a full rebuild?
@@ -10,9 +24,9 @@ evidence. It records the exact keys each artifact reads, queues only affected
 artifacts, preserves source lineage, and verifies incremental state against a
 full rebuild after every mutation.
 
-This is an incremental-computation experiment, not an investigation platform.
-It includes a curated public-record case but does not perform raw evidence
-extraction, make investigative conclusions, or claim CJIS compliance.
+This is an analytical demonstration, not an official law-enforcement system.
+It does not perform raw evidence extraction, identify new suspects, make
+investigative conclusions, or claim CJIS compliance.
 
 ## The demonstration
 
@@ -46,6 +60,18 @@ Representative impact:
 
 Timing in the demo is intentionally labeled as a local illustration, not a
 production-scale benchmark. Correctness is the primary result.
+
+## Investigation workspace
+
+The root route opens the **Boston Evidence Command Board**. The official-record
+action materializes 25 assertions from four official records into 15
+entity-day timelines. The command board renders live case metrics, a source-
+supported relationship map, an event chronology, a legal-status distribution,
+an officer review queue, a source ledger, evidence intake, and persistent case
+assignment/handoff metadata.
+
+The original incremental-computation demonstration remains available at
+`/engineering`.
 
 ## Interactive engineering proof
 
@@ -167,6 +193,7 @@ Core endpoints:
 |---|---|---|
 | `POST` | `/cases` | Create an isolated durable case |
 | `GET` | `/cases/{case_id}` | Reopen a case with its source history and current artifacts |
+| `PUT` | `/cases/{case_id}/assignment` | Persist assigned officer, unit, and handoff context |
 | `POST` | `/demo/real-case/boston-obstruction` | Materialize the curated official-record case |
 | `POST` | `/cases/{case_id}/documents` | Add structured assertions idempotently |
 | `POST` | `/cases/{case_id}/documents/{document_id}/retractions` | Append a retraction tombstone |

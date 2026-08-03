@@ -55,6 +55,10 @@ def test_local_sqlite_schema_upgrades_legacy_evidence_columns(tmp_path: Path) ->
     assert "time_precision" in {
         column["name"] for column in schema.get_columns("assertions")
     }
+    case_columns = {column["name"] for column in schema.get_columns("cases")}
+    assert {"assigned_officer", "assigned_badge", "assigned_unit", "handoff_note"} <= (
+        case_columns
+    )
 
 
 def test_demo_key_protects_stateful_routes(monkeypatch) -> None:
@@ -80,32 +84,33 @@ def test_hosted_mode_refuses_to_start_without_demo_key(monkeypatch) -> None:
         create_app("sqlite+pysqlite:///:memory:")
 
 
-def test_dashboard_serves_the_selectivity_experiment() -> None:
+def test_dashboard_serves_the_boston_evidence_command_board() -> None:
     app = create_app("sqlite+pysqlite:///:memory:")
     with TestClient(app) as client:
         response = client.get("/")
         assert response.status_code == 200
-        assert "Run the live proof" in response.text
-        assert "Open the real case" in response.text
-        assert "Boston evidence-disposal case" in response.text
-        assert "Enter the hosted demo key" in response.text
+        assert "Boston Evidence Command Board" in response.text
+        assert "Reconstruct the case" in response.text
+        assert "Open official-record case" in response.text
+        assert "Evidence relationship graph" in response.text
+        assert "Officer review queue" in response.text
+        assert "Assign case ownership" in response.text
+        assert 'id="evidence-form"' in response.text
+        assert 'id="evidence-graph"' in response.text
+        assert 'id="graph-inspector"' in response.text
+        assert "function parseCsv" in response.text
         assert (
             'const REAL_CASE_TEMPLATE_ID = "boston-obstruction-public-record-v1"'
             in response.text
         )
-        assert "recoverMissingCase" in response.text
-        assert "navigationId" in response.text
-        assert "Bring your own evidence" in response.text
-        assert 'id="quick-evidence-form"' in response.text
-        assert 'id="evidence-file"' in response.text
-        assert "function parseCsv" in response.text
-        assert "Open existing case" in response.text
-        assert "Evidence graph" in response.text
-        assert 'id="evidence-graph"' in response.text
-        assert 'id="graph-inspector"' in response.text
-        assert "Withdrawn evidence stays visible" in response.text
-        assert 'entry.querySelector(".journal-copy span")' in response.text
         assert 'content="http://testserver/og.png"' in response.text
+
+        engineering = client.get("/engineering")
+        assert engineering.status_code == 200
+        assert "Run the live proof" in engineering.text
+        assert "Withdrawn evidence stays visible" in engineering.text
+        assert 'entry.querySelector(".journal-copy span")' in engineering.text
+
         preview = client.get("/og.png")
         assert preview.status_code == 200
         assert preview.headers["content-type"] == "image/png"

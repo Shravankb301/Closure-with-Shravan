@@ -27,7 +27,7 @@ from evidence_delta.models import (
     DocumentRetractionRecord,
     RecomputeJobRecord,
 )
-from evidence_delta.schemas import DocumentInput, MutationResult
+from evidence_delta.schemas import CaseAssignmentInput, DocumentInput, MutationResult
 
 
 def new_id() -> str:
@@ -43,6 +43,27 @@ class EvidenceService:
             record = CaseRecord(id=new_id(), name=name, revision=0)
             session.add(record)
         return record
+
+    def assign_case(self, case_id: str, assignment: CaseAssignmentInput) -> dict:
+        with self.database.session() as session, session.begin():
+            case = session.scalar(
+                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
+            )
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+            values = assignment.model_dump()
+            case.assigned_officer = values["assigned_officer"]
+            case.assigned_badge = values["assigned_badge"]
+            case.assigned_unit = values["assigned_unit"]
+            case.handoff_note = values["handoff_note"]
+            session.flush()
+            return {
+                "case_id": case.id,
+                "assigned_officer": case.assigned_officer,
+                "assigned_badge": case.assigned_badge,
+                "assigned_unit": case.assigned_unit,
+                "handoff_note": case.handoff_note,
+            }
 
     @staticmethod
     def _document_hash(document: DocumentInput) -> str:
@@ -441,6 +462,10 @@ class EvidenceService:
                 "id": case.id,
                 "name": case.name,
                 "revision": case.revision,
+                "assigned_officer": case.assigned_officer,
+                "assigned_badge": case.assigned_badge,
+                "assigned_unit": case.assigned_unit,
+                "handoff_note": case.handoff_note,
                 "created_at": case.created_at.isoformat(),
             }
 

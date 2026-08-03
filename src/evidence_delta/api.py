@@ -15,7 +15,12 @@ from evidence_delta.database import Database
 from evidence_delta.real_case import build_boston_obstruction_case
 from evidence_delta.runtime import WorkerLoop
 from evidence_delta.scenario import build_selectivity_scenario
-from evidence_delta.schemas import CaseInput, DocumentInput, RetractionInput
+from evidence_delta.schemas import (
+    CaseAssignmentInput,
+    CaseInput,
+    DocumentInput,
+    RetractionInput,
+)
 from evidence_delta.service import EvidenceService
 from evidence_delta.worker import RecomputeWorker
 
@@ -69,6 +74,12 @@ def create_app(database_url: str | None = None) -> FastAPI:
     @application.get("/", include_in_schema=False)
     def dashboard(request: Request) -> HTMLResponse:
         origin = escape(str(request.base_url).rstrip("/"), quote=True)
+        html = (static_dir / "investigation.html").read_text(encoding="utf-8")
+        return HTMLResponse(html.replace("{{SITE_ORIGIN}}", origin))
+
+    @application.get("/engineering", include_in_schema=False)
+    def engineering_proof(request: Request) -> HTMLResponse:
+        origin = escape(str(request.base_url).rstrip("/"), quote=True)
         html = (static_dir / "index.html").read_text(encoding="utf-8")
         return HTMLResponse(html.replace("{{SITE_ORIGIN}}", origin))
 
@@ -97,6 +108,13 @@ def create_app(database_url: str | None = None) -> FastAPI:
     def get_case_workspace(case_id: str) -> dict:
         try:
             return service.case_workspace(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @application.put("/cases/{case_id}/assignment", dependencies=secured)
+    def assign_case(case_id: str, body: CaseAssignmentInput) -> dict:
+        try:
+            return service.assign_case(case_id, body)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 

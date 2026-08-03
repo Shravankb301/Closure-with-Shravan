@@ -29,6 +29,10 @@ class CaseRecord(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    assigned_officer: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    assigned_badge: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    assigned_unit: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    handoff_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
