@@ -176,10 +176,12 @@ def _extract_deterministic(excerpt: str) -> list[dict]:
     proposals: list[dict] = []
     for index, span in enumerate(_sentences(excerpt), start=1):
         lowered = span.lower()
-        kind = next(
-            (label for pattern, label in _KEYWORD_KINDS if re.search(pattern, lowered)),
-            None,
-        )
+        kind = None
+        for pattern, label in _KEYWORD_KINDS:
+            match = re.search(pattern, lowered)
+            if match is not None and not _match_is_negated(lowered, match.start()):
+                kind = label
+                break
         if kind is None:
             continue
         occurred_at, precision = _parse_date(span)
@@ -204,6 +206,21 @@ def _extract_deterministic(excerpt: str) -> list[dict]:
             }
         )
     return proposals
+
+
+def _match_is_negated(text: str, match_start: int) -> bool:
+    """Reject simple negated keyword matches in the offline fallback.
+
+    This extractor is deliberately conservative: skipping a possible proposal
+    is safer than suggesting the opposite of what a source sentence says. The
+    human-confirmation boundary remains required for every accepted assertion.
+    """
+
+    prefix = text[max(0, match_start - 80):match_start]
+    return re.search(
+        r"\b(?:no|not|never|without)\b(?:\W+\w+){0,6}\W*$",
+        prefix,
+    ) is not None
 
 
 def _finalize(item: dict, excerpt: str) -> dict:

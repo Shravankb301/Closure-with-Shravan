@@ -104,6 +104,8 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         assert "Boston Evidence Command Board" in response.text
         assert "Reconstruct the case" in response.text
         assert "Open official-record case" in response.text
+        assert "Run guided case briefing" in response.text
+        assert "AI proposes. A reviewer decides." in response.text
         assert "Evidence relationship graph" in response.text
         assert "Officer review queue" in response.text
         assert "Assign case ownership" in response.text

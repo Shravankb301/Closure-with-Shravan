@@ -63,6 +63,15 @@ Representative impact:
 Timing in the demo is intentionally labeled as a local illustration, not a
 production-scale benchmark. Correctness is the primary result.
 
+For a reviewer, the fastest path is the **Run guided case briefing** action on
+the opening screen. It walks through the case state, cross-source findings,
+human-confirmed AI intake, append-only retraction, and officer handoff without
+requiring prior knowledge of the architecture.
+
+An outcome-first live-demo script, technical deep-dive prompts, honest
+limitations, and likely FDE interview follow-ups are in
+[INTERVIEW_DEMO.md](INTERVIEW_DEMO.md).
+
 ## Investigation workspace
 
 The root route opens the **Boston Evidence Command Board**. The official-record

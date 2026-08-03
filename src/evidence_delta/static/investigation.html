@@ -370,6 +370,33 @@
     .access-body .field label { color: #aab3b6; }
     .access-body p { color: #96a2a6; font-size: 9px; line-height: 1.5; }
 
+    .tour-bar {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      left: 18px;
+      z-index: 50;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 22px;
+      align-items: center;
+      width: min(760px, calc(100vw - 36px));
+      padding: 18px 20px;
+      color: #eef1ef;
+      border: 1px solid #536169;
+      background: rgba(17, 23, 28, 0.98);
+      box-shadow: 0 24px 70px rgba(4, 8, 11, 0.38);
+      backdrop-filter: blur(18px);
+    }
+    .tour-copy { min-width: 0; }
+    .tour-progress { color: #e68e80; font: 600 8px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; }
+    .tour-copy strong { display: block; margin-top: 7px; font-size: 14px; }
+    .tour-copy p { margin: 5px 0 0; color: #aab5b8; font-size: 10px; line-height: 1.55; }
+    .tour-actions { display: flex; flex-wrap: wrap; gap: 7px; justify-content: flex-end; }
+    .tour-actions .button-ghost { color: #dfe5e4; border-color: #536169; }
+    .tour-focus { position: relative; z-index: 1; outline: 3px solid var(--amber); outline-offset: 5px; box-shadow: 0 0 0 9px rgba(226, 169, 59, 0.13), var(--shadow); }
+    body.tour-active .access-drawer { display: none; }
+
     footer { display: flex; justify-content: space-between; gap: 20px; padding: 24px clamp(22px, 4vw, 62px); color: #939da1; background: #0d1216; font: 500 8px/1.6 var(--mono); }
     footer a { color: #dbe0df; }
 
@@ -400,6 +427,8 @@
       .field.full { grid-column: auto; }
       .timeline-event { grid-template-columns: 1fr; }
       .status-key { grid-template-columns: 1fr 1fr; }
+      .tour-bar { grid-template-columns: 1fr; gap: 14px; }
+      .tour-actions { justify-content: flex-start; }
       footer { flex-direction: column; }
     }
     .ai-mode-badge { align-self: flex-start; padding: 4px 10px; border-radius: 999px; font: 600 9px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); }
@@ -443,6 +472,7 @@
         <p class="launch-lede">An officer-facing workspace for tracing what the public record says, which source supports it, how entities connect, what changed, and which questions still require human review.</p>
         <div class="launch-actions">
           <button class="button button-primary" id="build-case" type="button">Open official-record case</button>
+          <button class="button button-dark" id="start-tour" type="button">Run guided case briefing <span class="mono">90 sec</span></button>
           <button class="button button-ghost" id="open-case-toggle" type="button">Open existing case</button>
         </div>
         <form class="hidden" id="open-case-form" style="max-width:620px;margin-top:18px">
@@ -660,6 +690,19 @@
     </section>
   </main>
 
+  <aside class="tour-bar hidden" id="tour-bar" aria-live="polite" aria-label="Guided case briefing">
+    <div class="tour-copy">
+      <span class="tour-progress" id="tour-progress">Briefing 1 of 5</span>
+      <strong id="tour-title">Defensible case state</strong>
+      <p id="tour-description"></p>
+    </div>
+    <div class="tour-actions">
+      <button class="button button-ghost button-small" id="tour-exit" type="button">Exit</button>
+      <button class="button button-ghost button-small" id="tour-back" type="button">Back</button>
+      <button class="button button-primary button-small" id="tour-next" type="button">Next</button>
+    </div>
+  </aside>
+
   <div class="access-drawer">
     <details>
       <summary>Hosted access key</summary>
@@ -694,7 +737,7 @@
       ["azamat-tazhayakov", "backpack", "agreement", 0, 20],
       ["dias-kadyrbayev", "laptop-computer", "concealment", 0, 18],
     ];
-    const state = { caseId: null, data: null, proof: null, findings: null, selectedEntity: null, timelineTier: "all", batch: null, navigationId: 0 };
+    const state = { caseId: null, data: null, proof: null, findings: null, selectedEntity: null, timelineTier: "all", batch: null, navigationId: 0, tourIndex: -1 };
     const TIER_LABELS = { court: "Court established", allegation: "Allegation", agency: "Agency record", officer: "Officer evidence" };
     const byId = (id) => document.getElementById(id);
     const storedKey = sessionStorage.getItem("evidenceCommandKey") || "";
@@ -1338,13 +1381,15 @@
       setStatus("launch-status", recovered ? "The prior case is unavailable. Rebuilding from the official record..." : "Materializing source-backed timelines and checking the full-rebuild oracle...");
       try {
         const result = await api("/demo/real-case/boston-obstruction", { method: "POST", body: "{}" });
-        if (navigationId !== state.navigationId) return;
+        if (navigationId !== state.navigationId) return false;
         await openCase(result.case_id, navigationId);
         setStatus("launch-status", `Official case ready: ${result.official_sources} sources, ${result.assertions} assertions, ${result.materialized_timelines} timelines.`);
         byId("case-app").scrollIntoView({ behavior: "smooth" });
+        return true;
       } catch (error) {
         setStatus("launch-status", error.status === 401 ? "Enter the hosted access key, save it, then open the official case again." : error.message, true);
         if (error.status === 401) document.querySelector(".access-drawer details").open = true;
+        return false;
       } finally {
         setBusy(button, false, "");
       }
@@ -1514,6 +1559,91 @@
       byId("case-app").scrollIntoView({ behavior: "smooth" });
     }
 
+    const TOUR_STEPS = [
+      {
+        panel: "command",
+        selector: ".metric-grid",
+        title: "Defensible case state",
+        description: "Start with the operational answer: every claim is source-backed, legal status is explicit, and the current timelines match a deterministic full rebuild.",
+      },
+      {
+        panel: "findings",
+        selector: "[data-panel='findings'] .findings-grid",
+        title: "Make uncertainty actionable",
+        description: "Cross-source structure surfaces contradictions, corroboration, and single-source exposure as review prompts—not automated conclusions.",
+      },
+      {
+        panel: "ai-intake",
+        selector: "[data-panel='ai-intake'] .work-grid",
+        title: "AI proposes. A reviewer decides.",
+        description: "Unstructured evidence becomes editable, verbatim-cited proposals. Nothing enters the immutable ledger until a human confirms it.",
+        enter() {
+          if (!byId("ai-text").value.trim()) {
+            byId("ai-filename").value = "sample-investigative-note.txt";
+            byId("ai-source-hint").value = "Public-record evidence review";
+            byId("ai-text").value = "On April 19, 2013, the backpack was placed in a garbage bag and put in a trash dumpster.";
+          }
+        },
+      },
+      {
+        panel: "sources",
+        selector: "[data-panel='sources'] .source-grid",
+        title: "Correct the record without erasing it",
+        description: "Retraction is an append-only tombstone. The source stays auditable while active reasoning and only the affected timelines are recomputed.",
+      },
+      {
+        panel: "officer",
+        selector: "[data-panel='officer'] .work-grid",
+        title: "Own the outcome through handoff",
+        description: "Case ownership, the priority question, and the next action survive the deployment. The handoff stays source-aware and never upgrades allegations into facts.",
+      },
+    ];
+
+    function clearTourFocus() {
+      document.querySelectorAll(".tour-focus").forEach((element) => element.classList.remove("tour-focus"));
+    }
+
+    function renderTourStep() {
+      const step = TOUR_STEPS[state.tourIndex];
+      if (!step) return endTour();
+      clearTourFocus();
+      switchPanel(step.panel);
+      if (step.enter) step.enter();
+      byId("tour-progress").textContent = `Guided briefing ${state.tourIndex + 1} of ${TOUR_STEPS.length}`;
+      byId("tour-title").textContent = step.title;
+      byId("tour-description").textContent = step.description;
+      byId("tour-back").disabled = state.tourIndex === 0;
+      byId("tour-next").textContent = state.tourIndex === TOUR_STEPS.length - 1 ? "Finish" : "Next";
+      const focus = document.querySelector(step.selector);
+      if (focus) {
+        focus.classList.add("tour-focus");
+        focus.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
+    function beginTour() {
+      if (!state.data) return;
+      state.tourIndex = 0;
+      document.body.classList.add("tour-active");
+      byId("tour-bar").classList.remove("hidden");
+      renderTourStep();
+    }
+
+    function endTour() {
+      clearTourFocus();
+      state.tourIndex = -1;
+      document.body.classList.remove("tour-active");
+      byId("tour-bar").classList.add("hidden");
+    }
+
+    async function startGuidedTour() {
+      if (!state.data) {
+        const ready = await buildOfficialCase();
+        if (!ready) return;
+      }
+      beginTour();
+    }
+
     async function restoreFromUrl() {
       const url = new URL(window.location.href);
       const caseId = url.searchParams.get("case");
@@ -1548,6 +1678,7 @@
       startGraphLoop();
     });
     byId("build-case").addEventListener("click", () => buildOfficialCase());
+    byId("start-tour").addEventListener("click", startGuidedTour);
     byId("new-review").addEventListener("click", () => buildOfficialCase());
     byId("open-case-toggle").addEventListener("click", () => byId("open-case-form").classList.toggle("hidden"));
     byId("open-case-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await openCase(byId("open-case-id").value.trim()); byId("case-app").scrollIntoView({ behavior: "smooth" }); } catch (error) { setStatus("launch-status", error.message, true); } });
@@ -1572,6 +1703,9 @@
     byId("ai-confirm").addEventListener("click", confirmProposals);
     byId("add-demo-tip").addEventListener("click", appendDemoTip);
     byId("copy-handoff").addEventListener("click", async () => { try { await navigator.clipboard.writeText(handoffText()); setStatus("handoff-status", "Handoff summary copied."); } catch (_error) { setStatus("handoff-status", "Clipboard permission was blocked.", true); } });
+    byId("tour-exit").addEventListener("click", endTour);
+    byId("tour-back").addEventListener("click", () => { if (state.tourIndex > 0) { state.tourIndex -= 1; renderTourStep(); } });
+    byId("tour-next").addEventListener("click", () => { if (state.tourIndex >= TOUR_STEPS.length - 1) endTour(); else { state.tourIndex += 1; renderTourStep(); } });
 
     byId("text-file").addEventListener("change", async (event) => { const file = event.target.files[0]; if (!file) return; const text = await file.text(); byId("evidence-filename").value = file.name; byId("evidence-source-text").value = text; if (!byId("evidence-value").value) byId("evidence-value").value = text.split(/\r?\n/).find((line) => line.trim())?.trim() || file.name; });
     byId("evidence-form").addEventListener("submit", async (event) => {

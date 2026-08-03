@@ -55,6 +55,19 @@ def test_unverified_model_span_is_flagged(monkeypatch) -> None:
     assert result["proposals"][0]["provenance_verified"] is False
 
 
+def test_deterministic_extraction_does_not_invert_simple_negation(monkeypatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    excerpt = (
+        "On April 19, 2013, the laptop was not discarded with the backpack. "
+        "The laptop was concealed at the apartment."
+    )
+
+    proposals = extract_assertions(excerpt)["proposals"]
+
+    assert [proposal["kind"] for proposal in proposals] == ["REPORTED_CONCEALMENT"]
+    assert proposals[0]["entity_id"] == "laptop-computer"
+
+
 def test_extract_endpoint_returns_proposals(monkeypatch) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     app = create_app("sqlite+pysqlite:///:memory:")
