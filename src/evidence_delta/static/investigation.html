@@ -8,6 +8,7 @@
   <meta property="og:title" content="Evidence Delta | Case Operations">
   <meta property="og:description" content="Inspect the complete path from evidence mutation to verified case artifact.">
   <meta property="og:image" content="{{SITE_ORIGIN}}/og.png">
+  <link rel="icon" href="/og.png" type="image/png">
   <style>
     :root {
       --ink: #11171c;
@@ -813,6 +814,7 @@
     footer a { color: #365c80; }
 
     @media (max-width: 1050px) {
+      .launch { grid-template-columns: 1fr; }
       .brief-panel { min-height: auto; margin: 0; border-right: 0; border-left: 0; border-radius: 0; }
       .capability-heading, .case-thesis { grid-template-columns: 1fr; }
       .capability-flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1032,7 +1034,7 @@
           <div class="acquisition-flow" id="acquisition-flow"></div>
           <div class="acquisition-grid" id="acquisition-sources"></div>
           <p class="acquisition-boundary" id="acquisition-boundary"></p>
-          <p class="acquisition-note">Resolution path: download a constrained artifact through an approved browser, then import it here. The backend fingerprints, stores, reads, verifies, and appends the new attempt to its custody chain without changing the evidentiary revision.</p>
+          <p class="acquisition-note" id="acquisition-note">Resolution path: download a constrained artifact through an approved browser, then import it here. The backend fingerprints, stores, reads, verifies, and appends the new attempt to its custody chain without changing the evidentiary revision.</p>
           <input class="hidden" id="artifact-import-file" type="file" accept="application/pdf,text/html,text/plain,.pdf,.html,.htm,.txt">
           <p class="form-status" id="artifact-import-status" role="status"></p>
         </article>
@@ -1391,10 +1393,11 @@
       const machineReadable = acquisitionRows.filter((source) => source.acquisition.extracted_characters > 0).length;
       const verifiedSpans = acquisitionRows.reduce((total, source) => total + source.acquisition.assertions_verified, 0);
       const totalSpans = acquisitionRows.reduce((total, source) => total + source.acquisition.assertions_total, 0);
-      const organized = report.sources.reduce((total, source) => total + source.assertions_organized, 0);
+      const organized = state.data.documents.reduce((total, document) => total + document.assertion_count, 0);
+      const verificationTotal = totalSpans || organized;
       const mappedRelationships = state.graph?.edges?.length || 0;
       const constrained = acquisitionRows.filter((source) => source.acquisition.status !== "FETCHED" || source.acquisition.extraction_method?.includes("REQUIRES_OCR")).length;
-      const unmatchedSpans = Math.max(totalSpans - verifiedSpans, 0);
+      const unmatchedSpans = Math.max(verificationTotal - verifiedSpans, 0);
       const labels = {
         FETCH: "Retrieve official URL",
         FINGERPRINT: "Hash source bytes",
@@ -1407,13 +1410,13 @@
         FETCH: { className: attempted ? "live" : "blocked", detail: `${attempted} attempted` },
         FINGERPRINT: { className: hashed ? "live" : "blocked", detail: `${hashed} hashed` },
         READ: { className: machineReadable ? "live" : "blocked", detail: `${machineReadable} readable` },
-        VERIFY: { className: verifiedSpans ? "live" : "blocked", detail: `${verifiedSpans}/${totalSpans} spans` },
+        VERIFY: { className: verifiedSpans ? "live" : "blocked", detail: `${verifiedSpans}/${verificationTotal} spans` },
         INGEST: { className: organized ? "reviewed" : "blocked", detail: `${organized} reviewed` },
         MAP: { className: mappedRelationships ? "live" : "blocked", detail: `${mappedRelationships} links` },
       };
       byId("acquisition-summary").innerHTML = [
         [preserved, "Source responses preserved"],
-        [`${verifiedSpans}/${totalSpans}`, "Cited spans machine-matched"],
+        [`${verifiedSpans}/${verificationTotal}`, "Cited spans machine-matched"],
         [machineReadable, "Readable source responses"],
         [organized, "Reviewed assertions mapped"],
       ].map(([value, label]) => `<div><strong>${value}</strong><span>${escapeHtml(label)}</span></div>`).join("");
@@ -1442,9 +1445,16 @@
         const custody = acquisition?.custody || {};
         const custodyStatus = custody.chain_status === "VERIFIED" && custody.artifact_integrity === "VERIFIED" ? "verified" : "not verified";
         const canImport = Boolean(acquisition && constrained && source.source_uri);
-        return `<article class="acquisition-source"><div class="acquisition-source-top"><strong title="${escapeHtml(source.filename)}">${escapeHtml(source.filename)}</strong><span class="acquisition-state ${statusClass}">${escapeHtml(statusLabel)}</span></div><p class="acquisition-uri">${escapeHtml(host)}${source.source_uri ? ` · <a href="${escapeHtml(source.source_uri)}" target="_blank" rel="noreferrer">open source</a>` : ""}</p><div class="acquisition-facts"><div class="acquisition-fact"><span>Response</span><b>${escapeHtml(acquisition?.http_status || "n/a")} · ${escapeHtml(acquisition?.content_type || "no content")}</b></div><div class="acquisition-fact"><span>Artifact</span><b>${formatBytes(acquisition?.content_bytes || 0)} · ${escapeHtml(fingerprint)}</b></div><div class="acquisition-fact"><span>Read method</span><b>${escapeHtml(method)}${acquisition?.page_count ? ` · ${acquisition.page_count} pages` : ""}</b></div><div class="acquisition-fact"><span>Machine verification</span><b>${escapeHtml(verification)}</b></div><div class="acquisition-fact"><span>Acquired via</span><b>${escapeHtml(acquisition?.acquisition_method?.replaceAll("_", " ").toLowerCase() || "not recorded")}</b></div><div class="acquisition-fact"><span>Custody</span><b>${escapeHtml(custodyStatus)} · ${acquisition?.attempt_count || 0} attempt${acquisition?.attempt_count === 1 ? "" : "s"}</b></div><div class="acquisition-fact"><span>Organized</span><b>${source.assertions_organized} reviewed assertions</b></div></div>${canImport ? `<div class="acquisition-actions"><span>Resolve access or OCR constraint</span><button data-import-artifact="${escapeHtml(source.document_id)}" type="button">Import retrieved file</button></div>` : ""}</article>`;
+        const document = state.data.documents.find((item) => item.id === source.document_id);
+        const organizedAssertions = source.assertions_organized || document?.assertion_count || 0;
+        return `<article class="acquisition-source"><div class="acquisition-source-top"><strong title="${escapeHtml(source.filename)}">${escapeHtml(source.filename)}</strong><span class="acquisition-state ${statusClass}">${escapeHtml(statusLabel)}</span></div><p class="acquisition-uri">${escapeHtml(host)}${source.source_uri ? ` · <a href="${escapeHtml(source.source_uri)}" target="_blank" rel="noreferrer">open source</a>` : ""}</p><div class="acquisition-facts"><div class="acquisition-fact"><span>Response</span><b>${escapeHtml(acquisition?.http_status || "n/a")} · ${escapeHtml(acquisition?.content_type || "no content")}</b></div><div class="acquisition-fact"><span>Artifact</span><b>${formatBytes(acquisition?.content_bytes || 0)} · ${escapeHtml(fingerprint)}</b></div><div class="acquisition-fact"><span>Read method</span><b>${escapeHtml(method)}${acquisition?.page_count ? ` · ${acquisition.page_count} pages` : ""}</b></div><div class="acquisition-fact"><span>Machine verification</span><b>${escapeHtml(verification)}</b></div><div class="acquisition-fact"><span>Acquired via</span><b>${escapeHtml(acquisition?.acquisition_method?.replaceAll("_", " ").toLowerCase() || "not recorded")}</b></div><div class="acquisition-fact"><span>Custody</span><b>${escapeHtml(custodyStatus)} · ${acquisition?.attempt_count || 0} attempt${acquisition?.attempt_count === 1 ? "" : "s"}</b></div><div class="acquisition-fact"><span>Organized</span><b>${organizedAssertions} reviewed assertions</b></div></div>${canImport ? `<div class="acquisition-actions"><span>Resolve access or OCR constraint</span><button data-import-artifact="${escapeHtml(source.document_id)}" type="button">Import retrieved file</button></div>` : ""}</article>`;
       }).join("");
-      byId("acquisition-boundary").innerHTML = `<strong>Run boundary:</strong> URL retrieval, response classification, byte hashing, extraction attempts, ledger ingestion, recomputation, and relationship mapping ran live. <strong>Trust boundary:</strong> ${verifiedSpans}/${totalSpans} cited spans were machine-matched to readable source text. The remaining ${unmatchedSpans} reviewed assertion${unmatchedSpans === 1 ? "" : "s"} stay visibly pending source verification while ${constrained} constrained response${constrained === 1 ? "" : "s"} await approved retrieval or import.`;
+      byId("acquisition-boundary").innerHTML = attempted
+        ? `<strong>Run boundary:</strong> URL retrieval, response classification, byte hashing, extraction attempts, ledger ingestion, recomputation, and relationship mapping ran live. <strong>Trust boundary:</strong> ${verifiedSpans}/${verificationTotal} cited spans were machine-matched to readable source text. The remaining ${unmatchedSpans} reviewed assertion${unmatchedSpans === 1 ? "" : "s"} stay visibly pending source verification while ${constrained} constrained response${constrained === 1 ? "" : "s"} await approved retrieval or import.`
+        : `<strong>Run boundary:</strong> Live URL retrieval was not run on this host. The reviewed public-source mappings were ingested, recomputed, and mapped into ${mappedRelationships} case relationships. <strong>Trust boundary:</strong> 0/${verificationTotal} cited spans are machine-matched in this run, so every reviewed assertion remains pending external source verification.`;
+      byId("acquisition-note").textContent = attempted
+        ? "Resolution path: download a constrained artifact through an approved browser, then import it here. The backend fingerprints, stores, reads, verifies, and appends the new attempt to its custody chain without changing the evidentiary revision."
+        : "Resolution path: run the public connector in the Docker deployment, or open each official source and verify its cited spans before relying on the reviewed mapping.";
       document.querySelectorAll("[data-import-artifact]").forEach((button) => button.addEventListener("click", () => {
         state.artifactImportDocumentId = button.dataset.importArtifact;
         byId("artifact-import-file").value = "";
