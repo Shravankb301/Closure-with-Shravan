@@ -6,6 +6,7 @@ from uuid import uuid4
 from sqlalchemy import and_, exists, func, select
 from sqlalchemy.orm import Session
 
+from evidence_delta.analysis import ActiveEvent, derive_findings
 from evidence_delta.database import Database
 from evidence_delta.domain import (
     AssertionView,
@@ -612,6 +613,52 @@ class EvidenceService:
                 ),
             },
         }
+
+    def case_findings(self, case_id: str) -> dict:
+        """Derive cross-source review findings from the active assertion set.
+
+        Findings are recomputed in full on every read. They are a pure function
+        of active assertions, so they inherit full-rebuild semantics without
+        incremental machinery; if they became expensive they would become
+        artifacts with change keys exactly like timelines.
+        """
+
+        with self.database.session() as session:
+            case = session.get(CaseRecord, case_id)
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+
+            retracted = exists().where(
+                DocumentRetractionRecord.document_id == AssertionRecord.document_id
+            )
+            rows = session.execute(
+                select(AssertionRecord, DocumentRecord)
+                .join(DocumentRecord, DocumentRecord.id == AssertionRecord.document_id)
+                .where(AssertionRecord.case_id == case_id, ~retracted)
+                .order_by(AssertionRecord.occurred_at, AssertionRecord.id)
+            ).all()
+            events = [
+                ActiveEvent(
+                    assertion_id=assertion.id,
+                    document_id=document.id,
+                    document_filename=document.filename,
+                    document_source_type=document.source_type,
+                    entity_id=assertion.entity_id,
+                    day=assertion.occurred_at.date().isoformat(),
+                    kind=assertion.kind,
+                    value=assertion.value,
+                    time_precision=assertion.time_precision,
+                    source_locator=assertion.source_locator,
+                    source_text=assertion.source_text,
+                )
+                for assertion, document in rows
+            ]
+            revision = case.revision
+
+        findings = derive_findings(events)
+        findings["case_id"] = case_id
+        findings["case_revision"] = revision
+        return findings
 
     def current_artifact(self, case_id: str, key: str) -> dict | None:
         with self.database.session() as session:

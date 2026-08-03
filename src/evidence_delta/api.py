@@ -69,6 +69,18 @@ def create_app(database_url: str | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    @application.middleware("http")
+    async def disable_response_caching(request: Request, call_next):
+        # Case, proof, and findings responses must always reflect the current
+        # evidence revision; a heuristically cached GET can show a reviewer a
+        # retracted source as active. The social image is the only safe cache.
+        response = await call_next(request)
+        if request.url.path == "/og.png":
+            response.headers.setdefault("Cache-Control", "public, max-age=3600")
+        else:
+            response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
     static_dir = Path(__file__).parent / "static"
 
     @application.get("/", include_in_schema=False)
@@ -166,6 +178,13 @@ def create_app(database_url: str | None = None) -> FastAPI:
         if result is None:
             raise HTTPException(status_code=404, detail="Artifact not found")
         return result
+
+    @application.get("/cases/{case_id}/findings", dependencies=secured)
+    def get_case_findings(case_id: str) -> dict:
+        try:
+            return service.case_findings(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @application.get("/cases/{case_id}/proof", dependencies=secured)
     def get_case_proof(case_id: str) -> dict:

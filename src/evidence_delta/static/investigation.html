@@ -190,12 +190,14 @@
     .assignment-strip strong { display: block; margin-top: 6px; font-size: 14px; }
     .assignment-strip p { margin: 5px 0 0; color: #a9b4b7; font-size: 11px; }
 
-    .metric-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; margin-bottom: 20px; background: var(--line); border: 1px solid var(--line); }
+    .metric-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; margin-bottom: 20px; background: var(--line); border: 1px solid var(--line); }
     .metric { min-height: 116px; padding: 20px; background: var(--paper-bright); }
     .metric strong { display: block; font-size: clamp(29px, 3vw, 43px); line-height: 1; letter-spacing: -0.06em; }
     .metric span { display: block; margin-top: 12px; color: var(--muted); font: 600 8px/1.5 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
     .metric.signal strong { color: var(--signal); }
     .metric.verified strong { color: var(--green); font-size: clamp(20px, 2vw, 30px); }
+    .metric.alert.active { background: #fff2ef; }
+    .metric.alert.active strong { color: var(--signal-dark); }
 
     .board-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.45fr); gap: 20px; }
     .card { background: var(--paper-bright); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(17, 23, 28, 0.05); }
@@ -258,6 +260,27 @@
     .queue-item strong { display: block; font-size: 12px; }
     .queue-item p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
     .queue-state { padding: 5px 6px; color: #875429; border: 1px solid #d8b78f; background: #fff8ea; font: 600 7px/1 var(--mono); text-transform: uppercase; }
+    .queue-state.alert { color: #8f2d1f; border-color: #d7a69d; background: #fff2ef; }
+
+    .nav-badge { display: inline-grid; place-items: center; min-width: 16px; height: 16px; margin-left: 6px; padding: 0 4px; color: white; background: var(--signal); border-radius: 9px; font: 600 8px/1 var(--mono); }
+    .findings-grid { display: grid; gap: 20px; }
+    .findings-count { padding: 7px 11px; border: 1px solid var(--line); font: 600 15px/1 var(--mono); }
+    .findings-count.alert { color: #8f2d1f; border-color: #d7a69d; background: #fff2ef; }
+    .findings-body { display: grid; gap: 12px; padding: 20px 22px; }
+    .finding { padding: 14px; border: 1px solid var(--line); background: #fff; }
+    .finding.alert { border-left: 4px solid var(--signal); background: #fff8f6; }
+    .finding-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .finding-head strong { font-size: 13px; }
+    .finding-head small { display: block; margin-top: 4px; color: var(--muted); font: 500 8px/1.4 var(--mono); text-transform: uppercase; }
+    .finding-head code { color: #858c88; font: 500 8px/1 var(--mono); }
+    .finding > p { margin: 10px 0 12px; font-size: 11px; line-height: 1.55; }
+    .finding-events { display: grid; gap: 8px; }
+    .findings-empty { color: var(--muted); font: 500 9px/1.6 var(--mono); }
+    .findings-demo { padding: 0 22px 22px; }
+    .findings-demo p { max-width: 680px; margin: 0 0 12px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+    .single-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 13px; border: 1px solid var(--line); background: #fff; }
+    .single-row p { margin: 0; font-size: 10px; line-height: 1.5; }
+    .single-row code { color: #858c88; font: 500 8px/1 var(--mono); white-space: nowrap; }
 
     .toolbar { display: flex; flex-wrap: wrap; gap: 7px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
     .filter { padding: 8px 10px; color: #6e7471; border: 1px solid var(--line); background: transparent; font: 600 8px/1 var(--mono); text-transform: uppercase; }
@@ -421,6 +444,7 @@
 
       <nav class="case-nav" aria-label="Investigation workspace sections">
         <button class="active" data-panel-target="command" type="button">Command board</button>
+        <button data-panel-target="findings" type="button">Findings<span class="nav-badge hidden" id="findings-badge">0</span></button>
         <button data-panel-target="timeline" type="button">Chronology</button>
         <button data-panel-target="sources" type="button">Source ledger</button>
         <button data-panel-target="intake" type="button">Evidence intake</button>
@@ -438,6 +462,7 @@
           <div class="metric"><strong id="metric-assertions">0</strong><span>Retained assertions</span></div>
           <div class="metric"><strong id="metric-entities">0</strong><span>Entities and objects</span></div>
           <div class="metric"><strong id="metric-timelines">0</strong><span>Materialized timelines</span></div>
+          <div class="metric alert"><strong id="metric-contradictions">0</strong><span>Contradiction candidates</span></div>
           <div class="metric verified"><strong id="metric-oracle">Checking</strong><span>Correctness oracle</span></div>
         </div>
 
@@ -465,6 +490,37 @@
         </div>
       </section>
 
+      <section class="panel hidden" data-panel="findings">
+        <div class="findings-grid">
+          <section class="card">
+            <div class="card-head">
+              <div><span class="card-kicker">Cross-source review</span><h3>Contradiction candidates</h3><p>Flagged when active sources assert mutually exclusive event classes for the same entity on the same day. Detection is rule-based and deterministic; a flag is a review prompt for the assigned officer, never an automatic conclusion.</p></div>
+              <span class="findings-count" id="contradiction-count">0</span>
+            </div>
+            <div class="findings-body" id="contradiction-list"></div>
+            <div class="findings-demo" id="contradiction-demo">
+              <p>The official public record is internally consistent, so no contradiction is active. To watch the detector work, append a clearly labeled hypothetical tip that conflicts with the court-established laptop concealment. Retracting the tip from the source ledger clears the flag while the tip stays auditable.</p>
+              <button class="button button-dark button-small" id="add-demo-tip" type="button">Append demonstration conflicting tip</button>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <div><span class="card-kicker">Independent support</span><h3>Corroborated events</h3><p>Entity-day event classes supported by two or more distinct source records. Cross-tier support means allegation-tier and court-established records agree on the same structural event.</p></div>
+              <span class="findings-count" id="corroboration-count">0</span>
+            </div>
+            <div class="findings-body" id="corroboration-list"></div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <div><span class="card-kicker">Sourcing gaps</span><h3>Single-source exposure</h3><p>Entity-days whose every active event rests on one source record. These are the leads most in need of corroboration before they carry weight.</p></div>
+              <span class="findings-count" id="single-source-count">0</span>
+            </div>
+            <div class="findings-body" id="single-source-list"></div>
+          </section>
+        </div>
+        <p class="form-status" id="findings-status" role="status"></p>
+      </section>
+
       <section class="panel hidden" data-panel="timeline">
         <article class="card">
           <div class="card-head"><div><span class="card-kicker">Chronological reconstruction</span><h3>Event timeline</h3><p>Times retain source precision. Broad windows are never displayed as invented exact timestamps.</p></div></div>
@@ -487,7 +543,7 @@
               <div class="field"><label for="evidence-source-uri">Source URL</label><input id="evidence-source-uri" type="url" placeholder="https://agency.gov/source"></div>
               <div class="field"><label for="evidence-entity">Entity ID</label><input id="evidence-entity" list="known-entities" placeholder="backpack" required><datalist id="known-entities"></datalist></div>
               <div class="field"><label for="evidence-occurred">Occurred at</label><input id="evidence-occurred" type="datetime-local" required></div>
-              <div class="field"><label for="evidence-kind">Event kind</label><select id="evidence-kind"><option>OBSERVED_AT</option><option>CONTACTED</option><option>TRANSFERRED</option><option>MENTIONED</option><option>OTHER</option></select></div>
+              <div class="field"><label for="evidence-kind">Event kind</label><select id="evidence-kind"><option>OBSERVED_AT</option><option>CONTACTED</option><option>TRANSFERRED</option><option>MENTIONED</option><option>REPORTED_DISPOSAL</option><option>REPORTED_CONCEALMENT</option><option>REPORTED_TRANSFER</option><option>REPORTED_RECOVERY</option><option>OTHER</option></select></div>
               <div class="field"><label for="evidence-precision">Time precision</label><select id="evidence-precision"><option>EXACT</option><option>MINUTE</option><option>HOUR</option><option>DAY</option><option>MONTH</option><option>WINDOW</option><option>UNKNOWN</option></select></div>
               <div class="field full"><label for="evidence-value">Analytical observation</label><textarea id="evidence-value" placeholder="State only what the source supports." required></textarea></div>
               <div class="field"><label for="evidence-locator">Source locator</label><input id="evidence-locator" value="officer-note:1" required><span class="field-note">Page, paragraph, timestamp, evidence ID, or another stable locator.</span></div>
@@ -572,7 +628,8 @@
       ["azamat-tazhayakov", "backpack", "agreement", 0, 20],
       ["dias-kadyrbayev", "laptop-computer", "concealment", 0, 18],
     ];
-    const state = { caseId: null, data: null, proof: null, selectedEntity: null, timelineTier: "all", batch: null, navigationId: 0 };
+    const state = { caseId: null, data: null, proof: null, findings: null, selectedEntity: null, timelineTier: "all", batch: null, navigationId: 0 };
+    const TIER_LABELS = { court: "Court established", allegation: "Allegation", agency: "Agency record", officer: "Officer evidence" };
     const byId = (id) => document.getElementById(id);
     const storedKey = sessionStorage.getItem("evidenceCommandKey") || "";
     byId("demo-key").value = storedKey;
@@ -587,7 +644,7 @@
     }
 
     async function api(path, options = {}) {
-      const response = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...headers(), ...(options.headers || {}) } });
+      const response = await fetch(path, { cache: "no-store", ...options, headers: { "Content-Type": "application/json", ...headers(), ...(options.headers || {}) } });
       const text = await response.text();
       let body;
       try { body = text ? JSON.parse(text) : {}; } catch (_error) { body = { detail: `Server returned ${response.status} without JSON` }; }
@@ -630,7 +687,7 @@
       if (sourceType.startsWith("officer_") || sourceType.startsWith("user_")) return { key: "officer", label: "Officer evidence" };
       if (kind.startsWith("COURT_")) return { key: "court", label: "Court established" };
       if (kind.startsWith("COMPLAINT_") || kind.startsWith("INDICTMENT_")) return { key: "allegation", label: "Allegation" };
-      if (["OBSERVED_AT", "CONTACTED", "TRANSFERRED", "MENTIONED", "OTHER"].includes(kind)) return { key: "officer", label: "Officer evidence" };
+      if (["OBSERVED_AT", "CONTACTED", "TRANSFERRED", "MENTIONED", "OTHER", "REPORTED_DISPOSAL", "REPORTED_CONCEALMENT", "REPORTED_TRANSFER", "REPORTED_RECOVERY"].includes(kind)) return { key: "officer", label: "Officer evidence" };
       return { key: "agency", label: "Agency record" };
     }
 
@@ -749,13 +806,84 @@
       const disposal = events.filter((event) => event.entityId === "backpack" && event.occurred_at.startsWith("2013-04-19"));
       const disposalSources = new Set(disposal.map((event) => event.lineage.document_id));
       const retracted = state.data.documents.filter((document) => document.retracted);
-      const items = [
+      const contradictions = state.findings?.contradictions?.length || 0;
+      const items = [];
+      if (contradictions) items.push(["Adjudicate contradiction candidates", `${contradictions} active entity-day${contradictions === 1 ? " has" : "s have"} sources asserting mutually exclusive event classes. Open the Findings tab and review both cited locators.`, true]);
+      items.push(
         ["Resolve broad time windows", `${broad.length} active events use WINDOW, MONTH, or UNKNOWN precision. Do not infer a minute-level sequence without another source.`],
         ["Separate allegation from outcome", `${allegations.length} events originate in complaint or indictment records and must remain qualified until compared with later outcomes.`],
         ["Corroborate the disposal chain", `${disposal.length} backpack events on April 19 are represented across ${disposalSources.size} source records. Compare actor, action, and location language.`],
         ["Audit withdrawn material", retracted.length ? `${retracted.length} source record${retracted.length === 1 ? " is" : "s are"} retracted but retained for audit.` : "No source has been retracted. Confirm that each active source remains within scope."],
-      ];
-      byId("review-queue").innerHTML = items.map(([title, copy], index) => `<div class="queue-item"><span class="queue-number">0${index + 1}</span><div><strong>${title}</strong><p>${copy}</p></div><span class="queue-state">Review</span></div>`).join("");
+      );
+      byId("review-queue").innerHTML = items.map(([title, copy, alert], index) => `<div class="queue-item"><span class="queue-number">0${index + 1}</span><div><strong>${title}</strong><p>${copy}</p></div><span class="queue-state${alert ? " alert" : ""}">${alert ? "Priority" : "Review"}</span></div>`).join("");
+    }
+
+    function findingEventMarkup(event) {
+      return `<div class="claim"><div class="claim-top"><span class="tier ${escapeHtml(event.tier)}">${TIER_LABELS[event.tier] || escapeHtml(event.tier)}</span><time>${escapeHtml(event.kind)} / ${escapeHtml(event.time_precision)}</time></div><p>${escapeHtml(event.value)}</p><code>${escapeHtml(event.document_filename)} @ ${escapeHtml(event.source_locator)}</code></div>`;
+    }
+
+    function findingCard(finding, alert = false) {
+      const profile = entityProfile(finding.entity_id);
+      const classes = (finding.classes || [finding.event_class]).filter(Boolean).join(" vs ");
+      return `<article class="finding${alert ? " alert" : ""}"><div class="finding-head"><div><strong>${escapeHtml(profile.label)}</strong><small>${escapeHtml(finding.date)}${classes ? ` / ${escapeHtml(classes)}` : ""}${finding.cross_tier ? " / cross-tier" : ""}</small></div><code>FINDING ${escapeHtml(finding.finding_id)}</code></div><p>${escapeHtml(finding.summary)}</p><div class="finding-events">${finding.events.map(findingEventMarkup).join("")}</div></article>`;
+    }
+
+    function renderFindings() {
+      const findings = state.findings || { contradictions: [], corroborations: [], single_source: [] };
+      const contradictions = findings.contradictions || [];
+      const corroborations = findings.corroborations || [];
+      const singleSource = findings.single_source || [];
+
+      byId("metric-contradictions").textContent = contradictions.length;
+      byId("metric-contradictions").parentElement.classList.toggle("active", contradictions.length > 0);
+      const badge = byId("findings-badge");
+      badge.textContent = contradictions.length;
+      badge.classList.toggle("hidden", contradictions.length === 0);
+
+      byId("contradiction-count").textContent = contradictions.length;
+      byId("contradiction-count").classList.toggle("alert", contradictions.length > 0);
+      byId("corroboration-count").textContent = corroborations.length;
+      byId("single-source-count").textContent = singleSource.length;
+
+      byId("contradiction-list").innerHTML = contradictions.length
+        ? contradictions.map((finding) => findingCard(finding, true)).join("")
+        : '<p class="findings-empty">NO ACTIVE CONTRADICTION - EVERY FLAGGED PAIR HAS BEEN RESOLVED OR NONE EXISTS IN THE ACTIVE SOURCE SET.</p>';
+      const demoBlock = byId("contradiction-demo");
+      const demoTipActive = state.data.documents.some((document) => document.filename === "demo-conflicting-tip.txt" && !document.retracted);
+      demoBlock.classList.toggle("hidden", demoTipActive);
+      byId("corroboration-list").innerHTML = corroborations.length
+        ? corroborations.map((finding) => findingCard(finding)).join("")
+        : '<p class="findings-empty">NO EVENT CLASS IS SUPPORTED BY MORE THAN ONE SOURCE YET.</p>';
+      byId("single-source-list").innerHTML = singleSource.length
+        ? singleSource.map((finding) => {
+            const profile = entityProfile(finding.entity_id);
+            const filenames = [...new Set(finding.events.map((event) => event.document_filename))];
+            return `<div class="single-row"><p><strong>${escapeHtml(profile.label)}</strong> - ${escapeHtml(finding.date)}: ${finding.events.length} active event${finding.events.length === 1 ? "" : "s"} from a single record.</p><code>${escapeHtml(filenames[0] || "source")}</code></div>`;
+          }).join("")
+        : '<p class="findings-empty">EVERY ENTITY-DAY IS SUPPORTED BY MULTIPLE SOURCE RECORDS.</p>';
+    }
+
+    async function appendDemoTip() {
+      const button = byId("add-demo-tip");
+      setBusy(button, true, "Appending tip...");
+      try {
+        const mutation = await ingestDocument({
+          filename: "demo-conflicting-tip.txt",
+          source_type: "officer_observation",
+          source_uri: null,
+          assertions: [{
+            entity_id: "laptop-computer",
+            occurred_at: "2013-04-19T04:30:00.000Z",
+            kind: "REPORTED_DISPOSAL",
+            value: "DEMONSTRATION: hypothetical tip claiming the laptop was thrown into the dumpster with the backpack. Not part of the official record.",
+            time_precision: "WINDOW",
+            source_locator: "demo-tip:1",
+            source_text: "Caller stated the laptop went into the dumpster too. (Hypothetical demonstration input.)",
+          }],
+        }, "findings-status");
+        setStatus("findings-status", mutation.deduplicated ? "The demonstration tip already exists in this case." : "Demonstration tip appended. The detector flagged it against the court-established concealment; retract the tip in the source ledger to clear the flag.");
+      } catch (error) { setStatus("findings-status", error.message, true); }
+      finally { setBusy(button, false, ""); }
     }
 
     function renderTimeline() {
@@ -806,6 +934,7 @@
         `Assigned: ${current.assigned_officer || "UNASSIGNED"}${current.assigned_badge ? ` / ${current.assigned_badge}` : ""}${current.assigned_unit ? ` / ${current.assigned_unit}` : ""}`,
         `Scope: ${state.data.documents.length} sources, ${events.length} active events, ${state.data.artifacts.length} timelines`,
         `Status split: ${counts.allegation} allegations / ${counts.court} court-established / ${counts.agency} agency / ${counts.officer} officer-added`,
+        `Findings: ${state.findings?.contradictions?.length || 0} contradiction candidate(s) / ${state.findings?.corroborations?.length || 0} corroborated event(s) / ${state.findings?.single_source?.length || 0} single-source day(s)`,
         `Correctness oracle: ${state.proof?.equivalent_to_full_rebuild ? "VERIFIED" : "PENDING"}`,
         `Handoff note: ${current.handoff_note || "No handoff note recorded."}`,
         "Priority review: preserve source qualification; resolve broad time windows; compare physical-action attribution across complaint, indictment, and outcome records.",
@@ -827,6 +956,7 @@
       const events = renderMetrics();
       renderGraph();
       renderStatusDistribution(events);
+      renderFindings();
       renderReviewQueue(events);
       renderTimeline();
       renderSources();
@@ -839,11 +969,13 @@
       const data = await api(`/cases/${caseId}`);
       if (navigationId !== state.navigationId) return false;
       let proof = null;
-      if (data.artifacts.length) proof = await api(`/cases/${caseId}/proof`);
+      let findings = null;
+      if (data.artifacts.length) [proof, findings] = await Promise.all([api(`/cases/${caseId}/proof`), api(`/cases/${caseId}/findings`)]);
       if (navigationId !== state.navigationId) return false;
       state.caseId = caseId;
       state.data = data;
       state.proof = proof;
+      state.findings = findings;
       renderCase();
       return true;
     }
@@ -973,6 +1105,7 @@
       } catch (error) { setStatus("assignment-status", error.message, true); }
       finally { setBusy(button, false, ""); }
     });
+    byId("add-demo-tip").addEventListener("click", appendDemoTip);
     byId("copy-handoff").addEventListener("click", async () => { try { await navigator.clipboard.writeText(handoffText()); setStatus("handoff-status", "Handoff summary copied."); } catch (_error) { setStatus("handoff-status", "Clipboard permission was blocked.", true); } });
 
     byId("text-file").addEventListener("change", async (event) => { const file = event.target.files[0]; if (!file) return; const text = await file.text(); byId("evidence-filename").value = file.name; byId("evidence-source-text").value = text; if (!byId("evidence-value").value) byId("evidence-value").value = text.split(/\r?\n/).find((line) => line.trim())?.trim() || file.name; });

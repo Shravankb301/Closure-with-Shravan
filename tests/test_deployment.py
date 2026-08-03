@@ -15,6 +15,18 @@ from evidence_delta.worker import RecomputeWorker
 from tests.helpers import document
 
 
+def test_api_responses_disable_http_caching() -> None:
+    app = create_app("sqlite+pysqlite:///:memory:")
+    with TestClient(app) as client:
+        health = client.get("/health")
+        assert health.headers["Cache-Control"] == "no-store"
+        created = client.post("/demo/real-case/boston-obstruction")
+        case_id = created.json()["case_id"]
+        for path in (f"/cases/{case_id}", f"/cases/{case_id}/findings", f"/cases/{case_id}/proof"):
+            assert client.get(path).headers["Cache-Control"] == "no-store"
+        assert client.get("/og.png").headers["Cache-Control"] == "public, max-age=3600"
+
+
 def test_provider_postgres_url_uses_psycopg_three() -> None:
     assert Database.normalize_url("postgresql://user:pass@db/internal") == (
         "postgresql+psycopg://user:pass@db/internal"

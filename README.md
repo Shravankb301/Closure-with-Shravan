@@ -10,6 +10,8 @@ one operational surface for:
 - tracing each displayed claim to an immutable source locator,
 - separating complaint and indictment allegations from later court outcomes,
 - inspecting a shared-source relationship graph and chronological reconstruction,
+- surfacing deterministic cross-source findings: contradiction candidates,
+  corroborated events, and single-source exposure,
 - assigning an officer or analyst and persisting handoff context,
 - adding or retracting evidence without erasing the audit trail, and
 - verifying maintained timelines against a deterministic full rebuild.
@@ -67,8 +69,10 @@ The root route opens the **Boston Evidence Command Board**. The official-record
 action materializes 25 assertions from four official records into 15
 entity-day timelines. The command board renders live case metrics, a source-
 supported relationship map, an event chronology, a legal-status distribution,
-an officer review queue, a source ledger, evidence intake, and persistent case
-assignment/handoff metadata.
+an officer review queue, a source ledger, evidence intake, persistent case
+assignment/handoff metadata, and a findings board that surfaces contradiction
+candidates, corroboration, and single-source exposure across the active
+source set.
 
 The original incremental-computation demonstration remains available at
 `/engineering`.
@@ -106,6 +110,40 @@ jury verdict. Coarse source times retain `DAY`, `MONTH`, or `WINDOW` precision
 instead of presenting invented exact timestamps. The resulting case is a
 normal workspace: a reviewer can add evidence, inspect source spans and
 lineage, share the case URL, or retract a source.
+
+### Deterministic cross-source findings
+
+`GET /cases/{case_id}/findings` derives three kinds of review findings from the
+active (non-retracted) assertion set:
+
+- **Contradiction candidates.** Two active sources assert mutually exclusive
+  event classes for the same entity on the same day (for example `disposal`
+  vs `concealment`). The conflict table is an explicit, deliberately minimal
+  allowlist; a flag is a review prompt for the assigned officer, never an
+  automatic falsehood determination.
+- **Corroborated events.** The same entity-day event class is supported by two
+  or more distinct source records, with cross-tier support (allegation-tier and
+  court-established records agreeing) called out explicitly.
+- **Single-source exposure.** Entity-days whose every active event rests on one
+  source record — the leads most in need of corroboration.
+
+Detection is structural: entity, day, kind-derived event class, source
+identity, and legal tier. There is no free-text comparison and no model call in
+this path, so the same active assertion set always produces byte-identical
+findings. Event classes come from an explicit kind-suffix allowlist, so a new
+assertion kind never silently joins a conflict rule.
+
+The curated official record is internally consistent, so it produces zero
+contradictions — which is itself the correct finding. The Findings panel
+offers a clearly labeled hypothetical demonstration tip that conflicts with
+the court-established laptop concealment; appending it surfaces a live
+contradiction with both cited locators, and retracting it clears the flag
+while the tip remains in the audit ledger.
+
+Findings are recomputed in full on every read. They are a pure function of
+active assertions, so they inherit full-rebuild semantics without incremental
+machinery; if they became expensive they would become artifacts with change
+keys exactly like timelines.
 
 ### Use your own evidence
 
@@ -199,6 +237,7 @@ Core endpoints:
 | `POST` | `/cases/{case_id}/documents/{document_id}/retractions` | Append a retraction tombstone |
 | `POST` | `/workers/drain` | Process queued recomputations locally |
 | `GET` | `/cases/{case_id}/artifacts/{artifact_key}` | Read a versioned artifact and lineage |
+| `GET` | `/cases/{case_id}/findings` | Derive contradiction candidates, corroboration, and single-source exposure |
 | `GET` | `/cases/{case_id}/proof` | Verify full-rebuild equivalence and inspect live proof counts |
 
 Interactive API documentation is available at `/docs` while the server runs.
