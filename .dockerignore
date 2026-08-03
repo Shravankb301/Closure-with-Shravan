@@ -1,0 +1,10 @@
+.git
+.venv
+.env*
+.evidence_delta_artifacts
+*.db
+__pycache__
+.pytest_cache
+.ruff_cache
+dist
+build

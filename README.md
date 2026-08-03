@@ -101,7 +101,7 @@ production-scale benchmark. Correctness is the primary result.
 
 For a reviewer, the fastest path is the **Start guided demo** action on
 the opening screen. It walks through the case state, cross-source findings,
-the live backend trace, human-confirmed AI intake, append-only retraction, and
+the live backend trace, review-gated assisted intake, append-only retraction, and
 officer handoff without requiring prior knowledge of the architecture.
 
 ## Documentation map
@@ -121,6 +121,8 @@ officer handoff without requiring prior knowledge of the architecture.
 | `src/evidence_delta/service.py` | Transactional case mutations and read models |
 | `src/evidence_delta/worker.py` | Durable job claiming, recomputation, and atomic publication |
 | `src/evidence_delta/analysis.py` | Deterministic cross-source finding rules |
+| `src/evidence_delta/evidence_graph.py` | Server-side evidence-to-insight node and relationship mapping |
+| `src/evidence_delta/public_artifacts.py` | Allowlisted public-source retrieval, fingerprinting, extraction, and span verification |
 | `src/evidence_delta/extraction.py` | Human-confirmed evidence extraction workflow |
 | `src/evidence_delta/models.py` | Persistent ledger, dependency, job, and artifact records |
 | `src/evidence_delta/settings.py` | Environment-backed application configuration |
@@ -128,8 +130,9 @@ officer handoff without requiring prior knowledge of the architecture.
 
 ## Case workspace
 
-The root route opens **Evidence Delta**. The demonstration action materializes
-25 assertions from four official records into 15 entity-day timelines. The
+The root route opens **Evidence Delta**. The demonstration action attempts to
+retrieve four official artifacts, records their acquisition status and content
+fingerprints, and organizes 25 reviewed assertions into 15 entity-day timelines. The
 workspace renders live case metrics, an
 inspectable evidence-to-insight map, an event chronology, a legal-status distribution,
 an officer review queue, a source ledger, evidence intake, persistent case
@@ -149,6 +152,14 @@ from four official records:
 - [August 2013 indictment announcement](https://www.justice.gov/usao-ma/pr/federal-grand-jury-indicts-two-men-obstruction-justice-boston-marathon-bombing)
 - [FBI case history](https://www.fbi.gov/history/cases-and-criminals/boston-marathon-bombing)
 - [June 2015 sentencing record](https://www.justice.gov/usao-ma/pr/dias-kadyrbayev-sentenced-six-years-impeding-boston-marathon-bombing-investigation)
+
+The acquisition service allowlists official DOJ and FBI hosts, follows redirects,
+limits artifact size, records HTTP and content metadata, hashes returned bytes,
+and attempts HTML or PDF text extraction. It explicitly reports anti-bot
+challenges and scanned PDFs that require OCR. Those constraints are never
+presented as successful machine reading. The stable demonstration uses a
+reviewed, source-located assertion set after acquisition so downstream
+ingestion, recomputation, and evidence mapping remain reproducible.
 
 Complaint and indictment events remain labeled as allegations. The interface
 uses court-established labels only for events reported after a guilty plea or
@@ -191,9 +202,11 @@ active assertions, so they inherit full-rebuild semantics without incremental
 machinery; if they became expensive they would become artifacts with change
 keys exactly like timelines.
 
-### Inspectable reasoning graph
+### Live evidence-mapping service
 
-The overview turns active lineage into a directed graph:
+`GET /cases/{case_id}/evidence-graph` reads active assertions and provenance
+from the persistent ledger, derives current findings, and maps them into a
+deterministic directed graph:
 
 ```text
 document -> source-backed assertion -> entity or artifact -> review finding
@@ -209,8 +222,13 @@ Each finding includes the exact deterministic rule ID, the test that ran, the
 premises that satisfied it, and a structural support level. Levels such as
 `STRONG`, `MODERATE`, `LIMITED`, and `CONFLICTED` are not probabilities or model
 confidence scores. They summarize source independence, legal-status breadth,
-and known conflict or sourcing gaps. The graph contains no invented semantic
-edges and no hidden model reasoning.
+and known conflict or sourcing gaps.
+
+The browser renders this API contract. It does not infer evidence relationships
+from page copy or a Boston-specific graph fixture. Adding a source changes the
+returned nodes and edges at the new case revision; retracting that source
+removes it from active reasoning while preserving its ledger record. The graph
+contains no invented semantic edges and no hidden model reasoning.
 
 ### Use your own evidence
 
@@ -245,6 +263,8 @@ flowchart TD
     D --> E["Pure timeline deriver"]
     E --> F["Artifact version + lineage"]
     F --> G["Full-rebuild oracle"]
+    B --> H["Evidence graph API"]
+    H --> I["Interactive reasoning map"]
 ```
 
 The worker claims jobs with `SELECT ... FOR UPDATE SKIP LOCKED` when running on
@@ -270,6 +290,10 @@ of silently presenting an old artifact as current.
 - `documents` are idempotent within a case by canonical content hash.
 - `assertions` are immutable, source-specific statements, not authoritative facts.
 - `document_retractions` are append-only tombstones. Retraction never deletes an assertion.
+- `source_acquisition_attempts` form a per-document hash chain for public fetches
+  and reviewer imports.
+- exact retrieved bytes are stored by SHA-256 in a content-addressed artifact
+  vault when `ARTIFACT_VAULT_DIR` is configured.
 - `change_sets.performed_by` snapshots the assigned reviewer at mutation time;
   later reassignment cannot rewrite the historical actor.
 - `change_keys` identify the smallest supported recomputation partition.
@@ -301,17 +325,29 @@ Core endpoints:
 | `POST` | `/cases` | Create an isolated durable case |
 | `GET` | `/cases/{case_id}` | Reopen a case with its source history and current artifacts |
 | `PUT` | `/cases/{case_id}/assignment` | Persist assigned officer, unit, and handoff context |
-| `POST` | `/demo/real-case/boston-obstruction` | Materialize the curated official-record case |
+| `POST` | `/demo/real-case/boston-obstruction?acquire_public_sources=true` | Fetch official artifacts and materialize the reviewed public-record case |
 | `POST` | `/cases/{case_id}/documents` | Add structured assertions idempotently |
 | `POST` | `/cases/{case_id}/documents/{document_id}/retractions` | Append a retraction tombstone |
 | `POST` | `/workers/drain` | Process queued recomputations locally |
 | `GET` | `/cases/{case_id}/artifacts/{artifact_key}` | Read a versioned artifact and lineage |
 | `GET` | `/cases/{case_id}/findings` | Derive contradiction candidates, corroboration, and single-source exposure |
+| `GET` | `/cases/{case_id}/evidence-graph` | Map active sources, assertions, entities, and findings into labeled relationships |
+| `GET` | `/cases/{case_id}/source-acquisitions` | Inspect retrieval, fingerprint, extraction, verification, and ingestion metadata |
+| `POST` | `/cases/{case_id}/source-acquisitions/{document_id}/imports` | Reprocess a browser-retrieved artifact and append its custody attempt |
+| `GET` | `/cases/{case_id}/search?q=laptop+concealment` | Search active assertions and return ranked source excerpts and stable locators |
 | `GET` | `/cases/{case_id}/changes` | Explain recent source mutations, affected timelines, finding deltas, and recomputation state |
 | `GET` | `/cases/{case_id}/operations` | Inspect the live mutation pipeline, worker jobs, publications, dependencies, and selectivity |
 | `GET` | `/cases/{case_id}/proof` | Verify full-rebuild equivalence and inspect live proof counts |
 
 Interactive API documentation is available at `/docs` while the server runs.
+
+Artifact processing uses on-device macOS Vision OCR locally and automatically
+falls back to Poppler plus Tesseract when those binaries are installed. The
+included Docker image installs the cross-platform OCR runtime used by Render.
+Set `ENABLE_LOCAL_OCR=false` to disable OCR. Exact source bytes default to
+`./.evidence_delta_artifacts`; set
+`ARTIFACT_VAULT_DIR` to a mounted encrypted volume or managed object-storage
+adapter in production.
 
 ## Deploy on Render
 
@@ -320,10 +356,16 @@ PostgreSQL 17 database:
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Shravankb301/Closure-with-Shravan)
 
-During Blueprint creation, set a strong `DEMO_API_KEY`. The database blocks
-external network connections and the application uses Render's internal
-connection string. Alembic runs before every deploy, health checks verify the
-database, and automatic deploys wait for GitHub checks to pass.
+The Blueprint creates a public, non-sensitive interview demonstration. It uses
+the Docker image so scanned PDFs receive Tesseract OCR on Linux, runs Alembic
+before every deploy, and deploys each commit to the linked branch. The database
+blocks external network connections and the application uses Render's internal
+connection string.
+
+Do not use the public-demo profile for customer evidence. For a private hosted
+deployment, set `PUBLIC_DEMO_MODE=false`, configure `DEMO_API_KEY` and optionally
+`DEMO_READ_ONLY_KEY`, and provide an authenticated client instead of exposing
+mutation controls publicly.
 
 The free demo profile deliberately runs the durable queue worker in the web
 process because Render does not offer free background workers. For a production
@@ -333,7 +375,10 @@ split, set `RUN_EMBEDDED_WORKER=false` on the web service and run
 
 Free Render web services sleep after inactivity, and free Render Postgres
 databases expire after 30 days. That is acceptable for a short-lived interview
-demo, not for retained evidence or production use.
+demo, not for retained evidence or production use. The free profile also stores
+artifact bytes on ephemeral container storage; recreating the demo case restores
+them after an instance replacement. Production deployments require a persistent
+encrypted volume or object-storage adapter.
 
 ## Design notes and limitations
 

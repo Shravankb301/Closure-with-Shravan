@@ -33,13 +33,18 @@ class ActiveEvent:
     document_id: str
     document_filename: str
     document_source_type: str
+    document_source_uri: str | None
     entity_id: str
-    day: str
+    occurred_at: str
     kind: str
     value: str
     time_precision: str
     source_locator: str
     source_text: str
+
+    @property
+    def day(self) -> str:
+        return self.occurred_at[:10]
 
 
 def event_class(kind: str) -> str | None:
@@ -73,7 +78,9 @@ def _event_payload(event: ActiveEvent) -> dict:
         "document_id": event.document_id,
         "document_filename": event.document_filename,
         "source_type": event.document_source_type,
+        "source_uri": event.document_source_uri,
         "tier": source_tier(event.document_source_type, event.kind),
+        "occurred_at": event.occurred_at,
         "kind": event.kind,
         "event_class": event_class(event.kind),
         "value": event.value,

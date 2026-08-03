@@ -108,6 +108,82 @@ class DocumentRetractionRecord(Base):
     )
 
 
+class SourceAcquisitionRecord(Base):
+    """Audit metadata for one attempt to retrieve an external source artifact."""
+
+    __tablename__ = "source_acquisitions"
+    __table_args__ = (UniqueConstraint("document_id", name="uq_source_acquisition_document"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    case_id: Mapped[str] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    document_id: Mapped[str] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    requested_uri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    resolved_uri: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False)
+    http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_type: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    content_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    extraction_method: Mapped[str] = mapped_column(String(50), nullable=False)
+    extracted_characters: Mapped[int] = mapped_column(Integer, nullable=False)
+    page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    assertions_total: Mapped[int] = mapped_column(Integer, nullable=False)
+    assertions_verified: Mapped[int] = mapped_column(Integer, nullable=False)
+    verification_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    error_class: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    acquisition_method: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="PUBLIC_HTTP", server_default="PUBLIC_HTTP"
+    )
+    storage_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="NOT_STORED", server_default="NOT_STORED"
+    )
+    storage_uri: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    attempt_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default="1"
+    )
+    retrieved_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
+class SourceAcquisitionAttemptRecord(Base):
+    """Append-only custody event chained to the previous source attempt."""
+
+    __tablename__ = "source_acquisition_attempts"
+    __table_args__ = (
+        UniqueConstraint(
+            "document_id",
+            "sequence",
+            name="uq_source_acquisition_attempt_sequence",
+        ),
+        UniqueConstraint("event_hash", name="uq_source_acquisition_attempt_hash"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    case_id: Mapped[str] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    document_id: Mapped[str] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    acquisition_method: Mapped[str] = mapped_column(String(40), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False)
+    actor: Mapped[str] = mapped_column(String(160), nullable=False)
+    content_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    content_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    storage_uri: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    previous_event_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    event_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
 class ChangeKeyRecord(Base):
     __tablename__ = "change_keys"
     __table_args__ = (UniqueConstraint("case_id", "key", name="uq_change_key_case_key"),)

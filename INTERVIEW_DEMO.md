@@ -47,6 +47,11 @@ If the conversation gets technical too early, return to this sentence:
 > Search finds the record. Evidence Delta keeps the case state trustworthy after
 > the record changes.
 
+When you open the map, point to the **Live graph API** strip. Say that the
+browser requested `GET /cases/{id}/evidence-graph`, and that the backend mapped
+the active ledger rows into the nodes and relationships now on screen. Adding
+or retracting a source changes that API response at the next evidence revision.
+
 ## The opening: 30 seconds
 
 Say this before touching the screen:
@@ -75,8 +80,32 @@ That framing communicates user empathy and integrity before technical depth.
 
 ### 1. Materialize the case and prove the backend work (60 seconds)
 
-Choose **Start guided demo**. Explain that four public records become 25
-immutable assertions and 15 materialized entity-day timelines.
+Choose **Start guided demo**. Start with the **Public artifact acquisition**
+panel. Explain that the backend attempted the four official URLs, fingerprinted
+the returned bytes, tried content extraction, and recorded whether the artifact
+was readable, access challenged, or in need of OCR. Then show how 25 reviewed,
+source-located assertions entered the ledger and became 15 materialized
+entity-day timelines.
+
+Read the trust boundary out loud: the interface separates preserved response
+bytes, readable source text, machine-matched cited spans, and reviewed
+assertions. In the current run, six of 25 cited spans are machine-matched. The
+remaining assertions stay visibly pending source verification instead of being
+presented as live extraction results.
+
+Use this sentence when an official site blocks automated retrieval:
+
+> The connector does not pretend a challenge page is evidence. The scanned
+> complaint is processed with the configured OCR runtime, while challenged pages remain
+> constrained. An investigator can download one through an approved browser and
+> import the exact file. The new attempt is fingerprinted, verified, stored by
+> content hash, and linked to the prior fetch in the custody chain.
+
+Before opening the acquisition trace, search for **laptop concealment**. Point
+out that the results come from the active ledger, include the exact source
+excerpt and locator, and disappear from search if their source is retracted.
+This gives the investigator inflection and typo-tolerant search without turning
+a generated summary into a case fact.
 
 Start with the **What changed?** brief. It gives the reviewer one compact answer:
 which source changed, which timelines were touched, which findings opened or
@@ -156,9 +185,9 @@ describe the structure of the active evidence set.
 
 ### 3. Show the human-in-the-loop boundary (60 seconds)
 
-Move to **AI intake**. The guided briefing preloads a short sample. Choose
-**Extract with AI**, then show the editable proposal, verbatim source span,
-time precision, and confidence.
+Move to **Assisted intake**. The guided briefing preloads a short sample. Choose
+**Generate draft assertions**, then show the editable proposal, verbatim source
+span, time precision, and confidence.
 
 Say:
 

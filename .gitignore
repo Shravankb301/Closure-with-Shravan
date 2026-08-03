@@ -10,3 +10,5 @@ dist/
 build/
 .vercel
 .env*
+!.env.example
+.evidence_delta_artifacts/

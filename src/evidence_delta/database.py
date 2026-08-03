@@ -118,6 +118,24 @@ class Database:
                         text("ALTER TABLE change_sets ADD COLUMN performed_by VARCHAR(160)")
                     )
 
+            if "source_acquisitions" in inspector.get_table_names():
+                acquisition_columns = {
+                    column["name"] for column in inspector.get_columns("source_acquisitions")
+                }
+                acquisition_upgrades = {
+                    "acquisition_method": "VARCHAR(40) NOT NULL DEFAULT 'PUBLIC_HTTP'",
+                    "storage_status": "VARCHAR(30) NOT NULL DEFAULT 'NOT_STORED'",
+                    "storage_uri": "VARCHAR(2048)",
+                    "attempt_count": "INTEGER NOT NULL DEFAULT 1",
+                }
+                for column, definition in acquisition_upgrades.items():
+                    if column not in acquisition_columns:
+                        connection.execute(
+                            text(
+                                f"ALTER TABLE source_acquisitions ADD COLUMN {column} {definition}"
+                            )
+                        )
+
     def drop_schema(self) -> None:
         Base.metadata.drop_all(self.engine)
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from evidence_delta.public_artifacts import PublicArtifactClient
 from evidence_delta.schemas import AssertionInput, DocumentInput
 from evidence_delta.service import EvidenceService
 from evidence_delta.worker import RecomputeWorker
@@ -346,12 +347,17 @@ def boston_obstruction_documents() -> list[DocumentInput]:
 def build_boston_obstruction_case(
     service: EvidenceService,
     worker: RecomputeWorker,
+    artifact_client: PublicArtifactClient | None = None,
 ) -> dict:
     documents = boston_obstruction_documents()
-    case = service.create_case("Boston evidence-disposal case / official public record")
-    document_ids = [
-        service.ingest_document(case.id, document).document_id for document in documents
-    ]
+    acquisitions = artifact_client.acquire_all(documents) if artifact_client else []
+    case = service.create_case("Boston evidence disposal review")
+    document_ids = []
+    for index, document in enumerate(documents):
+        document_id = service.ingest_document(case.id, document).document_id
+        document_ids.append(document_id)
+        if acquisitions:
+            service.record_source_acquisition(case.id, document_id, acquisitions[index])
     worker.run_until_idle()
     proof = service.case_proof(case.id)
     assertion_total = sum(len(document.assertions) for document in documents)
@@ -360,7 +366,7 @@ def build_boston_obstruction_case(
         for document in documents
         for assertion in document.assertions
     )
-    return {
+    result = {
         "template_id": "boston-obstruction-public-record-v1",
         "case_id": case.id,
         "document_ids": document_ids,
@@ -371,3 +377,6 @@ def build_boston_obstruction_case(
         "equivalent_to_full_rebuild": proof["equivalent_to_full_rebuild"],
         "source_uris": [document.source_uri for document in documents],
     }
+    if acquisitions:
+        result["source_acquisition"] = service.case_source_acquisitions(case.id)
+    return result

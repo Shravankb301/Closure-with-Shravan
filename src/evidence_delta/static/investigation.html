@@ -196,6 +196,61 @@
     .metric.alert.active { background: #fff2ef; }
     .metric.alert.active strong { color: var(--signal-dark); }
 
+    .acquisition-board { margin-bottom: 20px; }
+    .acquisition-summary { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); background: #fff; }
+    .acquisition-summary div { padding: 14px 17px; border-right: 1px solid var(--line); }
+    .acquisition-summary div:last-child { border-right: 0; }
+    .acquisition-summary strong { display: block; font-size: 20px; }
+    .acquisition-summary span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+    .acquisition-flow { display: grid; grid-template-columns: repeat(6, 1fr); border-bottom: 1px solid var(--line); background: #f4f6f5; }
+    .acquisition-step { position: relative; padding: 14px 12px; border-right: 1px solid var(--line); }
+    .acquisition-step:last-child { border-right: 0; }
+    .acquisition-step span { display: block; color: var(--signal-dark); font: 700 8px/1 var(--mono); letter-spacing: 0.08em; }
+    .acquisition-step strong { display: block; margin-top: 6px; font-size: 10px; text-transform: capitalize; }
+    .acquisition-step small { display: inline-flex; margin-top: 9px; padding: 3px 5px; color: var(--muted); border: 1px solid var(--line); font: 700 7px/1 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+    .acquisition-step.live small { color: #316948; border-color: #bdd5c6; background: #eef7f1; }
+    .acquisition-step.reviewed small { color: #315f8c; border-color: #bfd0df; background: #eef4f8; }
+    .acquisition-step.blocked small { color: #865d22; border-color: #e2c99c; background: #fff7e9; }
+    .acquisition-grid { display: grid; grid-template-columns: repeat(2, 1fr); }
+    .acquisition-source { min-width: 0; padding: 18px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .acquisition-source:nth-child(2n) { border-right: 0; }
+    .acquisition-source-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .acquisition-source strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+    .acquisition-state { flex: 0 0 auto; padding: 4px 6px; color: #4f715b; border: 1px solid #bfd1c4; background: #edf5ef; font: 700 7px/1 var(--mono); letter-spacing: 0.05em; }
+    .acquisition-state.blocked { color: #865d22; border-color: #e2c99c; background: #fff7e9; }
+    .acquisition-state.failed { color: #8a3d34; border-color: #dfb1aa; background: #fff0ed; }
+    .acquisition-uri { margin: 8px 0 13px; color: var(--muted); font: 500 9px/1.4 var(--mono); }
+    .acquisition-facts { display: grid; gap: 6px; }
+    .acquisition-fact { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 10px; }
+    .acquisition-fact b { color: var(--ink); font: 600 9px/1.35 var(--mono); text-align: right; }
+    .acquisition-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .acquisition-actions button { padding: 7px 9px; color: #315f8c; border: 1px solid #b9c8d5; border-radius: 5px; background: #f4f8fb; font-size: 10px; font-weight: 650; }
+    .acquisition-actions span { color: #667583; font-size: 9px; }
+    .acquisition-note { margin: 0; padding: 11px 17px; color: var(--muted); border-top: 1px solid var(--line); background: #fafbfa; font-size: 10px; line-height: 1.5; }
+    .acquisition-boundary { margin: 0; padding: 13px 17px; color: #405465; border-top: 1px solid #c8d7e3; background: #edf3f7; font-size: 11px; line-height: 1.55; }
+    .acquisition-boundary strong { color: #244b70; }
+    .case-search { margin-bottom: 16px; }
+    .case-search-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 0 20px 14px; }
+    .case-search-form input { min-height: 42px; padding: 0 13px; border: 1px solid #aeb8c2; border-radius: 5px; background: #fff; font-size: 13px; }
+    .search-suggestions { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 20px 16px; }
+    .search-suggestions button { padding: 7px 9px; color: #526679; border: 1px solid #c8d1d9; border-radius: 999px; background: #f7f9fa; font-size: 10px; }
+    .case-search-status { min-height: 18px; margin: 0; padding: 0 20px 12px; color: var(--muted); font-size: 11px; }
+    .case-search-results { display: grid; border-top: 1px solid var(--line); }
+    .search-result { display: grid; grid-template-columns: 165px minmax(0, 1fr); gap: 18px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .search-result:last-child { border-bottom: 0; }
+    .search-result-meta { color: #687684; font-size: 10px; line-height: 1.55; }
+    .search-result-meta strong { display: block; color: var(--ink); font-size: 12px; }
+    .search-result-body > strong { display: block; font-size: 13px; }
+    .search-result-body p { margin: 5px 0 0; color: #586775; font-size: 12px; line-height: 1.55; }
+    .search-result-body blockquote { margin: 10px 0 0; padding: 9px 11px; color: #465867; border-left: 3px solid #8ba6bd; background: #f4f7f9; font-size: 11px; line-height: 1.5; }
+    .search-result-body code { display: block; margin-top: 8px; color: #6a7885; font: 500 9px/1.45 var(--mono); }
+    .search-source-status { display: inline-flex; margin-top: 9px; padding: 5px 7px; color: #31536f; border: 1px solid #c8d3dc; border-radius: 4px; background: #f2f6f8; font-size: 9px; line-height: 1.35; }
+    .search-source-status.constrained { color: #865d22; border-color: #e2c99c; background: #fff7e9; }
+    .search-source-status.verified { color: #316948; border-color: #b9d1c1; background: #eef7f1; }
+    .ops-disclosure { border-top: 1px solid var(--line); }
+    .ops-disclosure > summary { padding: 13px 16px; cursor: pointer; color: #315f8c; font-size: 11px; font-weight: 650; }
+    .ops-disclosure[open] > summary { border-bottom: 1px solid var(--line); }
+
     .board-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.45fr); gap: 20px; }
     .card { background: var(--paper-bright); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(17, 23, 28, 0.05); }
     .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
@@ -205,6 +260,9 @@
     .graph-toolbar { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 18px; background: #11171c; border-bottom: 1px solid #262f36; }
     .graph-toggle { padding: 7px 10px; color: #7e8a90; border: 1px solid #37424a; background: transparent; font: 600 8px/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; }
     .graph-toggle.active { color: #e9edec; border-color: #5c6b75; background: #232d35; }
+    .graph-service-proof { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 9px 18px; color: #9eaaad; border-bottom: 1px solid #2c363d; background: #172027; font: 500 9px/1.4 var(--mono); }
+    .graph-service-proof strong { margin-right: 8px; color: #8fc09f; letter-spacing: 0.04em; text-transform: uppercase; }
+    .graph-service-proof code { color: #b9c5c7; font-size: 8px; }
     .graph-scroll { overflow: hidden; background: radial-gradient(circle at 50% 42%, #18212800 0%, #10161b 78%), #131a20; }
     .evidence-graph { display: block; width: 100%; min-height: 500px; touch-action: none; cursor: grab; }
     .evidence-graph.panning { cursor: grabbing; }
@@ -360,6 +418,14 @@
     .source-card h3 { margin: 13px 0 0; font-size: 16px; line-height: 1.35; }
     .source-card code { display: block; margin-top: 8px; color: var(--muted); font: 500 8px/1.4 var(--mono); word-break: break-all; }
     .source-meta { margin: 12px 0 0; color: var(--muted); font: 500 9px/1.55 var(--mono); }
+    .source-integrity { display: grid; gap: 5px; margin-top: 14px; padding: 10px 11px; border: 1px solid #c8d3dc; border-radius: 5px; background: #f2f6f8; }
+    .source-integrity strong { color: #31536f; font-size: 10px; }
+    .source-integrity span { color: #667583; font-size: 9px; line-height: 1.45; }
+    .source-integrity.verified { border-color: #b9d1c1; background: #eef7f1; }
+    .source-integrity.verified strong { color: #316948; }
+    .source-integrity.constrained { border-color: #e2c99c; background: #fff7e9; }
+    .source-integrity.constrained strong { color: #865d22; }
+    .source-integrity.local { border-color: #d2d5d7; background: #f5f6f6; }
     .source-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 18px; }
     .source-actions a, .source-actions button { color: var(--ink); font: 600 9px/1 var(--mono); }
     .source-actions a { padding: 10px 0; text-underline-offset: 4px; }
@@ -400,11 +466,6 @@
     .handoff-box strong { display: block; font-size: 11px; }
     .handoff-box pre { max-height: 230px; overflow: auto; margin: 10px 0 0; white-space: pre-wrap; color: #59615d; font: 500 8px/1.65 var(--mono); }
 
-    .access-gate { max-width: 620px; margin-top: 18px; padding: 17px; border: 1px solid var(--line); background: var(--paper-bright); }
-    .access-gate strong { display: block; font-size: 13px; }
-    .access-gate p { margin: 5px 0 14px; color: var(--muted); font-size: 11px; line-height: 1.5; }
-    .access-gate-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; align-items: end; }
-    .access-gate-row .field { margin: 0; }
 
     .tour-bar {
       position: fixed;
@@ -699,8 +760,6 @@
     .drop-zone { border-color: #aeb8c2; border-radius: 6px; background: #f7f9fa; font-size: 11px; }
     .assignment-preview { color: var(--ink); border-left-color: #758ca2; border-radius: 5px; background: #f1f4f6; }
     .assignment-preview span { color: #687583; }
-    .access-gate { border-radius: 6px; background: #f7f9fa; }
-    .access-gate p { font-size: 12px; }
     .tour-bar { width: min(960px, calc(100vw - 36px)); color: #fff; border-color: #425c74; border-radius: 7px; background: rgba(35, 55, 73, 0.98); }
     .tour-progress { color: #bacbdd; font: 600 10px/1 var(--sans); letter-spacing: 0; text-transform: none; }
     .tour-points { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 9px; }
@@ -759,6 +818,10 @@
       .capability-flow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .capability-step:nth-child(3) { border-right: 0; }
       .capability-step:nth-child(n + 4) { border-top: 1px solid var(--line); }
+      .acquisition-flow { grid-template-columns: repeat(3, 1fr); }
+      .acquisition-summary { grid-template-columns: repeat(2, 1fr); }
+      .acquisition-grid { grid-template-columns: repeat(2, 1fr); }
+      .acquisition-source { border-bottom: 1px solid var(--line); }
     }
     @media (max-width: 720px) {
       .topbar { padding: 0 15px; }
@@ -773,7 +836,6 @@
       .capability-footer { align-items: flex-start; flex-direction: column; }
       .case-thesis-points, .tour-points { grid-template-columns: 1fr; }
       .case-nav { top: 60px; }
-      .access-gate-row { grid-template-columns: 1fr; }
       .change-brief { grid-template-columns: 1fr; }
       .change-verification { border-top: 1px solid var(--line); border-left: 0; }
       .change-history-row { grid-template-columns: 58px 1fr; }
@@ -785,6 +847,10 @@
       .operations-grid { grid-template-columns: 1fr; }
       .metric { border-right: 0; border-bottom: 1px solid var(--line); }
       .metric:last-child { border-bottom: 0; }
+      .acquisition-flow, .acquisition-grid { grid-template-columns: 1fr; }
+      .acquisition-summary { grid-template-columns: 1fr 1fr; }
+      .acquisition-step, .acquisition-source { border-right: 0; border-bottom: 1px solid var(--line); }
+      .case-search-form, .search-result { grid-template-columns: 1fr; }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
@@ -818,11 +884,6 @@
         <form class="hidden" id="open-case-form" style="max-width:620px;margin-top:18px">
           <div class="field"><label for="open-case-id">Case ID</label><input id="open-case-id" placeholder="Paste a case UUID" required></div>
           <button class="button button-dark button-small" type="submit">Open case</button>
-        </form>
-        <form class="access-gate hidden" id="access-gate">
-          <strong>Protected interview demo</strong>
-          <p>Enter the private access code to continue. The code stays in this browser session and is never included in a shared case link.</p>
-          <div class="access-gate-row"><div class="field"><label for="demo-key">Access code</label><input id="demo-key" type="password" autocomplete="current-password" required></div><button class="button button-primary" id="save-key" type="submit">Continue</button></div>
         </form>
         <p class="form-status" id="launch-status" role="status">Ready to run a public-record test case through the evidence pipeline.</p>
         <div class="guardrail"><span class="guardrail-mark">[!]</span><span><strong>Working engineering demonstration, not an official law-enforcement system.</strong> Boston is the test case, not the product. The system proves evidence mutation, targeted recomputation, provenance, review findings, and operational handoff without claiming to have solved a historical investigation.</span></div>
@@ -929,6 +990,17 @@
           <button class="button button-ghost button-small" data-go-panel="officer" type="button">Assign officer</button>
         </div>
 
+        <article class="card case-search">
+          <div class="card-head"><div><span class="card-kicker">Search active evidence</span><h3>Find the source before drawing the conclusion</h3><p>Searches run against active ledger assertions and return the original excerpt, source record, and stable locator. Retracted material is excluded and no answer is generated.</p></div></div>
+          <form class="case-search-form" id="case-search-form">
+            <input id="case-search-query" aria-label="Search active case evidence" placeholder="Try laptop concealment or backpack disposal" autocomplete="off">
+            <button class="button button-primary" id="case-search-button" type="submit">Search evidence</button>
+          </form>
+          <div class="search-suggestions" aria-label="Suggested evidence searches"><button type="button" data-search-query="laptop concealment">Laptop concealment</button><button type="button" data-search-query="backpack disposal">Backpack disposal</button><button type="button" data-search-query="Tazhayakov agreement">Tazhayakov agreement</button></div>
+          <p class="case-search-status" id="case-search-status" role="status">Search the current revision and inspect every result at its source.</p>
+          <div class="case-search-results hidden" id="case-search-results"></div>
+        </article>
+
         <article class="change-brief card" id="change-brief">
           <div class="change-brief-main">
             <div class="change-brief-top"><span class="change-operation" id="change-operation">No recorded update</span><span class="change-revision" id="change-revision">Evidence revision 0</span></div>
@@ -954,6 +1026,17 @@
           <div class="metric verified"><strong id="metric-oracle">Checking</strong><span>Rebuild verification</span></div>
         </div>
 
+        <article class="card acquisition-board">
+          <div class="card-head"><div><span class="card-kicker">Public artifact acquisition</span><h3>From official source to organized case evidence</h3><p>The backend retrieves each allowlisted public artifact, fingerprints the bytes, attempts text extraction, records access or OCR constraints, ingests the reviewed assertion set, and maps it into current case relationships.</p></div></div>
+          <div class="acquisition-summary" id="acquisition-summary"></div>
+          <div class="acquisition-flow" id="acquisition-flow"></div>
+          <div class="acquisition-grid" id="acquisition-sources"></div>
+          <p class="acquisition-boundary" id="acquisition-boundary"></p>
+          <p class="acquisition-note">Resolution path: download a constrained artifact through an approved browser, then import it here. The backend fingerprints, stores, reads, verifies, and appends the new attempt to its custody chain without changing the evidentiary revision.</p>
+          <input class="hidden" id="artifact-import-file" type="file" accept="application/pdf,text/html,text/plain,.pdf,.html,.htm,.txt">
+          <p class="form-status" id="artifact-import-status" role="status"></p>
+        </article>
+
         <div class="board-grid">
           <article class="card">
             <div class="card-head"><div><span class="card-kicker">Inspectable reasoning</span><h3>Evidence-to-insight map</h3><p>Traverse from source records to assertions, entities, and review findings, or start with a finding and work backward to every cited locator. Findings use visible deterministic rules, not hidden model reasoning.</p></div></div>
@@ -964,6 +1047,7 @@
               <button class="graph-toggle active" id="toggle-labels" type="button" aria-pressed="true">Labels</button>
               <button class="graph-toggle" id="graph-reset" type="button">Reset view</button>
             </div>
+            <div class="graph-service-proof"><span><strong>Live graph API</strong><span id="graph-api-summary">Waiting for mapped evidence</span></span><code>GET /cases/{id}/evidence-graph</code></div>
             <div class="graph-scroll"><svg class="evidence-graph" id="evidence-graph" viewBox="0 0 940 600" role="img" aria-label="Bidirectional evidence and reasoning graph"></svg></div>
             <div class="graph-legend"><span><i class="legend-dot source"></i>Document</span><span><i class="legend-dot event"></i>Assertion</span><span><i class="legend-dot person"></i>Person</span><span><i class="legend-dot location"></i>Location</span><span><i class="legend-dot object"></i>Physical artifact</span><span><i class="legend-dot conclusion"></i>Corroboration</span><span><i class="legend-dot conflict"></i>Conflict</span><span><i class="legend-dot gap"></i>Missing support</span><span><i class="legend-line supports"></i>Supports</span><span><i class="legend-line conflict"></i>Conflicts</span></div>
           </article>
@@ -995,26 +1079,31 @@
 
         <div class="operations-grid">
           <article class="card">
-            <div class="card-head"><div><span class="card-kicker">Selective recomputation</span><h3>Only rebuild what changed</h3><p>The latest revision advances addressable change keys, queues affected artifacts, and leaves unrelated artifacts alone.</p></div><button class="button button-ghost button-small" data-go-panel="findings" type="button">Run a controlled change</button></div>
+            <div class="card-head"><div><span class="card-kicker">Selective recomputation</span><h3>Only rebuild what changed</h3><p>The latest revision advances addressable change keys, queues affected artifacts, and leaves unrelated artifacts alone.</p></div><button class="button button-ghost button-small" data-go-panel="findings" type="button">Open controlled change</button></div>
             <div class="ops-metrics"><div class="ops-metric"><strong id="ops-affected">0</strong><span>Artifacts recomputed</span></div><div class="ops-metric"><strong id="ops-untouched">0</strong><span>Artifacts untouched</span></div><div class="ops-metric"><strong id="ops-percent">0%</strong><span>Latest impact</span></div></div>
-            <div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Revision</th><th>Artifact job</th><th>Status</th><th>Attempt</th><th>Publication</th><th>Dependency</th></tr></thead><tbody id="operations-jobs"></tbody></table></div>
+            <details class="ops-disclosure"><summary id="operations-jobs-summary">Inspect worker jobs</summary><div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Revision</th><th>Artifact job</th><th>Status</th><th>Attempt</th><th>Publication</th><th>Dependency</th></tr></thead><tbody id="operations-jobs"></tbody></table></div></details>
           </article>
 
           <aside class="card">
             <div class="card-head"><div><span class="card-kicker">Real integration boundary</span><h3>Inputs and outputs</h3><p>The interface is one client of an API and worker system.</p></div></div>
             <div class="integration-list">
               <div class="integration-row"><strong>Structured evidence intake</strong><p>Idempotent document and assertion writes through <code>POST /cases/{id}/documents</code>.</p></div>
+              <div class="integration-row"><strong>Public artifact connector</strong><p><code>GET /cases/{id}/source-acquisitions</code> exposes retrieval, redirect, fingerprint, extraction, and source-span verification state for every official URL.</p></div>
+              <div class="integration-row"><strong>OCR and browser resolution</strong><p>Scanned PDFs use the configured OCR adapter. Challenge pages can be downloaded through an approved browser and imported through <code>POST /cases/{id}/source-acquisitions/{document_id}/imports</code>.</p></div>
+              <div class="integration-row"><strong>Artifact custody</strong><p>Exact returned bytes are stored by SHA-256 in a content-addressed vault. Every fetch or reviewer import appends a linked custody event whose hash is verified on read.</p></div>
+              <div class="integration-row"><strong>Cited case search</strong><p><code>GET /cases/{id}/search?q=</code> ranks active assertions and returns exact source excerpts and locators without generating an answer.</p></div>
+              <div class="integration-row"><strong>Evidence graph service</strong><p><code>GET /cases/{id}/evidence-graph</code> maps active ledger rows into source, assertion, entity, and finding nodes with labeled relationships. The browser renders that contract instead of inventing the graph.</p></div>
               <div class="integration-row"><strong>Review-gated extraction</strong><p><code>POST /extract</code> proposes cited assertions. A human must confirm before the ledger changes.</p></div>
               <div class="integration-row"><strong>Portable case packet</strong><p>Sources, findings, history, operational proof, and artifact lineage export as one durable JSON handoff.</p></div>
               <div class="integration-row"><strong>API and worker deployment</strong><p>Independent processes coordinate through PostgreSQL leases, fencing tokens, and immutable version records.</p></div>
             </div>
-            <p class="integration-note">No live agency connector is claimed in this demo. A customer connector would map into the same ingestion contract without bypassing the evidence ledger.</p>
+            <p class="integration-note">The public web connector runs live against allowlisted DOJ and FBI URLs. It does not authenticate into agency systems. Customer connectors would use the same ingestion contract without bypassing the evidence ledger.</p>
           </aside>
         </div>
 
         <article class="card">
           <div class="card-head"><div><span class="card-kicker">Materialized case state</span><h3>Published artifacts</h3><p>Each current artifact points to an immutable version with a content fingerprint and observed dependency version.</p></div></div>
-          <div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Artifact key</th><th>Current version</th><th>Computed at revision</th><th>Version history</th><th>Input fingerprint</th><th>Freshness</th></tr></thead><tbody id="operations-artifacts"></tbody></table></div>
+          <details class="ops-disclosure"><summary id="operations-artifacts-summary">Inspect materialized artifact versions</summary><div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Artifact key</th><th>Current version</th><th>Computed at revision</th><th>Version history</th><th>Input fingerprint</th><th>Freshness</th></tr></thead><tbody id="operations-artifacts"></tbody></table></div></details>
         </article>
       </section>
 
@@ -1187,31 +1276,16 @@
       "backpack": { label: "Backpack / fireworks", type: "object", x: 815, y: 205 },
       "laptop-computer": { label: "Laptop computer", type: "object", x: 815, y: 385 },
     };
-    const state = { caseId: null, data: null, proof: null, findings: null, changes: null, operations: null, selectedNode: null, timelineTier: "all", batch: null, retractionDocumentId: null, retryAfterAccess: null, navigationId: 0, tourIndex: -1 };
+    const state = { caseId: null, data: null, proof: null, findings: null, graph: null, acquisitions: null, changes: null, operations: null, selectedNode: null, timelineTier: "all", batch: null, retractionDocumentId: null, artifactImportDocumentId: null, navigationId: 0, tourIndex: -1 };
     const TIER_LABELS = { court: "Court established", allegation: "Allegation", agency: "Agency record", officer: "Officer evidence" };
     const byId = (id) => document.getElementById(id);
-    const storedKey = sessionStorage.getItem("evidenceCommandKey") || "";
-    byId("demo-key").value = storedKey;
 
     function escapeHtml(value) {
       return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
     }
 
-    function headers() {
-      const key = byId("demo-key").value.trim();
-      return key ? { "X-Demo-Key": key } : {};
-    }
-
-    function requestAccess(retry) {
-      state.retryAfterAccess = retry;
-      byId("access-gate").classList.remove("hidden");
-      setStatus("launch-status", "This hosted interview demo is protected. Enter the private access code to continue.", true);
-      byId("access-gate").scrollIntoView({ behavior: "smooth", block: "center" });
-      byId("demo-key").focus();
-    }
-
     async function api(path, options = {}) {
-      const response = await fetch(path, { cache: "no-store", ...options, headers: { "Content-Type": "application/json", ...headers(), ...(options.headers || {}) } });
+      const response = await fetch(path, { cache: "no-store", ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) } });
       const text = await response.text();
       let body;
       try { body = text ? JSON.parse(text) : {}; } catch (_error) { body = { detail: `Server returned ${response.status} without JSON` }; }
@@ -1235,10 +1309,18 @@
       button.textContent = busy ? label : button.dataset.label;
     }
 
+    function isBostonCaseName(name) {
+      return ["Boston evidence disposal review", "Boston evidence-disposal case / official public record"].includes(name);
+    }
+
+    function displayCaseName(name) {
+      return isBostonCaseName(name) ? "Boston evidence disposal review" : name;
+    }
+
     function caseUrl(caseId = state.caseId) {
       const url = new URL(window.location.href);
       url.searchParams.set("case", caseId);
-      if (state.data?.case?.name === "Boston evidence-disposal case / official public record") url.searchParams.set("demo", REAL_CASE_TEMPLATE_ID);
+      if (isBostonCaseName(state.data?.case?.name)) url.searchParams.set("demo", REAL_CASE_TEMPLATE_ID);
       else url.searchParams.delete("demo");
       url.hash = "case-app";
       return url;
@@ -1293,6 +1375,164 @@
       return events;
     }
 
+    function formatBytes(value) {
+      if (!value) return "0 B";
+      if (value < 1024) return `${value} B`;
+      if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+      return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function renderAcquisitions() {
+      const report = state.acquisitions || { pipeline: [], sources: [] };
+      const acquisitionRows = report.sources.filter((source) => source.acquisition);
+      const attempted = acquisitionRows.length;
+      const preserved = acquisitionRows.filter((source) => source.acquisition.storage_status === "STORED").length;
+      const hashed = acquisitionRows.filter((source) => source.acquisition.content_sha256).length;
+      const machineReadable = acquisitionRows.filter((source) => source.acquisition.extracted_characters > 0).length;
+      const verifiedSpans = acquisitionRows.reduce((total, source) => total + source.acquisition.assertions_verified, 0);
+      const totalSpans = acquisitionRows.reduce((total, source) => total + source.acquisition.assertions_total, 0);
+      const organized = report.sources.reduce((total, source) => total + source.assertions_organized, 0);
+      const mappedRelationships = state.graph?.edges?.length || 0;
+      const constrained = acquisitionRows.filter((source) => source.acquisition.status !== "FETCHED" || source.acquisition.extraction_method?.includes("REQUIRES_OCR")).length;
+      const unmatchedSpans = Math.max(totalSpans - verifiedSpans, 0);
+      const labels = {
+        FETCH: "Retrieve official URL",
+        FINGERPRINT: "Hash source bytes",
+        READ: "Extract available text",
+        VERIFY: "Check cited spans",
+        INGEST: "Append reviewed assertions",
+        MAP: "Build case relationships",
+      };
+      const stageState = {
+        FETCH: { className: attempted ? "live" : "blocked", detail: `${attempted} attempted` },
+        FINGERPRINT: { className: hashed ? "live" : "blocked", detail: `${hashed} hashed` },
+        READ: { className: machineReadable ? "live" : "blocked", detail: `${machineReadable} readable` },
+        VERIFY: { className: verifiedSpans ? "live" : "blocked", detail: `${verifiedSpans}/${totalSpans} spans` },
+        INGEST: { className: organized ? "reviewed" : "blocked", detail: `${organized} reviewed` },
+        MAP: { className: mappedRelationships ? "live" : "blocked", detail: `${mappedRelationships} links` },
+      };
+      byId("acquisition-summary").innerHTML = [
+        [preserved, "Source responses preserved"],
+        [`${verifiedSpans}/${totalSpans}`, "Cited spans machine-matched"],
+        [machineReadable, "Readable source responses"],
+        [organized, "Reviewed assertions mapped"],
+      ].map(([value, label]) => `<div><strong>${value}</strong><span>${escapeHtml(label)}</span></div>`).join("");
+      byId("acquisition-flow").innerHTML = report.pipeline.map((stage, index) => {
+        const stageInfo = stageState[stage] || { className: "blocked", detail: "not run" };
+        return `<div class="acquisition-step ${stageInfo.className}"><span>0${index + 1}</span><strong>${escapeHtml(labels[stage] || stage)}</strong><small>${escapeHtml(stageInfo.detail)}</small></div>`;
+      }).join("");
+      byId("acquisition-sources").innerHTML = report.sources.map((source) => {
+        const acquisition = source.acquisition;
+        const status = acquisition?.status || "NOT_REQUESTED";
+        const constrained = status === "ACCESS_CHALLENGE" || acquisition?.extraction_method?.includes("REQUIRES_OCR");
+        const failed = !["FETCHED", "ACCESS_CHALLENGE", "NOT_REQUESTED"].includes(status);
+        const statusClass = failed ? "failed" : constrained || status === "NOT_REQUESTED" ? "blocked" : "";
+        const statusLabel = status === "FETCHED" && acquisition.extraction_method?.includes("REQUIRES_OCR")
+          ? "Fetched, OCR needed"
+          : status === "FETCHED" && acquisition.extraction_method?.includes("OCR")
+            ? "Fetched, OCR complete"
+          : status === "ACCESS_CHALLENGE" ? "Access challenged"
+            : status === "NOT_REQUESTED" ? "Fetch not requested" : status.replaceAll("_", " ").toLowerCase();
+        const host = source.source_uri ? new URL(source.source_uri).hostname : "No public URL";
+        const method = acquisition?.extraction_method?.replaceAll("_", " ").toLowerCase() || "not run";
+        const fingerprint = acquisition?.content_sha256 ? acquisition.content_sha256.slice(0, 14) : "unavailable";
+        const verification = acquisition
+          ? `${acquisition.assertions_verified}/${acquisition.assertions_total} spans · ${acquisition.verification_status.toLowerCase().replaceAll("_", " ")}`
+          : "not run";
+        const custody = acquisition?.custody || {};
+        const custodyStatus = custody.chain_status === "VERIFIED" && custody.artifact_integrity === "VERIFIED" ? "verified" : "not verified";
+        const canImport = Boolean(acquisition && constrained && source.source_uri);
+        return `<article class="acquisition-source"><div class="acquisition-source-top"><strong title="${escapeHtml(source.filename)}">${escapeHtml(source.filename)}</strong><span class="acquisition-state ${statusClass}">${escapeHtml(statusLabel)}</span></div><p class="acquisition-uri">${escapeHtml(host)}${source.source_uri ? ` · <a href="${escapeHtml(source.source_uri)}" target="_blank" rel="noreferrer">open source</a>` : ""}</p><div class="acquisition-facts"><div class="acquisition-fact"><span>Response</span><b>${escapeHtml(acquisition?.http_status || "n/a")} · ${escapeHtml(acquisition?.content_type || "no content")}</b></div><div class="acquisition-fact"><span>Artifact</span><b>${formatBytes(acquisition?.content_bytes || 0)} · ${escapeHtml(fingerprint)}</b></div><div class="acquisition-fact"><span>Read method</span><b>${escapeHtml(method)}${acquisition?.page_count ? ` · ${acquisition.page_count} pages` : ""}</b></div><div class="acquisition-fact"><span>Machine verification</span><b>${escapeHtml(verification)}</b></div><div class="acquisition-fact"><span>Acquired via</span><b>${escapeHtml(acquisition?.acquisition_method?.replaceAll("_", " ").toLowerCase() || "not recorded")}</b></div><div class="acquisition-fact"><span>Custody</span><b>${escapeHtml(custodyStatus)} · ${acquisition?.attempt_count || 0} attempt${acquisition?.attempt_count === 1 ? "" : "s"}</b></div><div class="acquisition-fact"><span>Organized</span><b>${source.assertions_organized} reviewed assertions</b></div></div>${canImport ? `<div class="acquisition-actions"><span>Resolve access or OCR constraint</span><button data-import-artifact="${escapeHtml(source.document_id)}" type="button">Import retrieved file</button></div>` : ""}</article>`;
+      }).join("");
+      byId("acquisition-boundary").innerHTML = `<strong>Run boundary:</strong> URL retrieval, response classification, byte hashing, extraction attempts, ledger ingestion, recomputation, and relationship mapping ran live. <strong>Trust boundary:</strong> ${verifiedSpans}/${totalSpans} cited spans were machine-matched to readable source text. The remaining ${unmatchedSpans} reviewed assertion${unmatchedSpans === 1 ? "" : "s"} stay visibly pending source verification while ${constrained} constrained response${constrained === 1 ? "" : "s"} await approved retrieval or import.`;
+      document.querySelectorAll("[data-import-artifact]").forEach((button) => button.addEventListener("click", () => {
+        state.artifactImportDocumentId = button.dataset.importArtifact;
+        byId("artifact-import-file").value = "";
+        byId("artifact-import-file").click();
+      }));
+    }
+
+    function renderCaseSearchResults(payload) {
+      const container = byId("case-search-results");
+      const results = payload.results || [];
+      if (!results.length) {
+        container.classList.add("hidden");
+        container.innerHTML = "";
+        setStatus("case-search-status", `No active assertions matched “${payload.query}”. Try an entity, action, source, or location.`);
+        return;
+      }
+      container.innerHTML = results.map((result) => {
+        const profile = entityProfile(result.entity_id);
+        const tier = eventTier({ kind: result.kind, document: result.document });
+        const sourceLink = result.document.source_uri ? ` · <a href="${escapeHtml(result.document.source_uri)}" target="_blank" rel="noreferrer">open source</a>` : "";
+        const acquisition = state.acquisitions?.sources?.find((source) => source.document_id === result.document.id)?.acquisition;
+        const constrained = acquisition && (acquisition.status === "ACCESS_CHALLENGE" || acquisition.extraction_method?.includes("REQUIRES_OCR"));
+        const complete = acquisition && acquisition.assertions_total > 0 && acquisition.assertions_verified === acquisition.assertions_total;
+        const verificationClass = complete ? "verified" : constrained ? "constrained" : "";
+        const verificationCopy = acquisition
+          ? `Source coverage: ${acquisition.assertions_verified}/${acquisition.assertions_total} cited spans machine-matched${constrained ? " · retrieval constrained" : ""}`
+          : "Source coverage: reviewer-added evidence; no external acquisition record";
+        return `<article class="search-result"><div class="search-result-meta"><strong>${escapeHtml(profile.label)}</strong><span class="tier ${escapeHtml(tier.key)}">${escapeHtml(tier.label)}</span><br>${escapeHtml(result.occurred_at.slice(0, 10))} · ${escapeHtml(result.time_precision)}</div><div class="search-result-body"><strong>${escapeHtml(humanizeKind(result.kind))}</strong><p>${escapeHtml(result.value)}</p><blockquote>${escapeHtml(result.source_text)}</blockquote><code>${escapeHtml(result.document.filename)} @ ${escapeHtml(result.source_locator)}${sourceLink}</code><span class="search-source-status ${verificationClass}">${escapeHtml(verificationCopy)}</span></div></article>`;
+      }).join("");
+      container.classList.remove("hidden");
+      setStatus("case-search-status", `${payload.total} matching assertion${payload.total === 1 ? "" : "s"} across ${payload.source_count} active source${payload.source_count === 1 ? "" : "s"}, ranked at evidence revision ${payload.case_revision}.`);
+    }
+
+    async function searchCaseEvidence(query) {
+      const cleanQuery = String(query || "").trim();
+      if (!cleanQuery) {
+        setStatus("case-search-status", "Enter an entity, action, source, or location to search.", true);
+        return;
+      }
+      const button = byId("case-search-button");
+      byId("case-search-query").value = cleanQuery;
+      setBusy(button, true, "Searching...");
+      setStatus("case-search-status", `Searching active evidence for “${cleanQuery}”...`);
+      try {
+        const payload = await api(`/cases/${state.caseId}/search?q=${encodeURIComponent(cleanQuery)}`);
+        renderCaseSearchResults(payload);
+      } catch (error) {
+        setStatus("case-search-status", error.message, true);
+      } finally {
+        setBusy(button, false, "");
+      }
+    }
+
+    async function importSourceArtifact(file) {
+      const documentId = state.artifactImportDocumentId;
+      if (!file || !documentId) return;
+      if (file.size > 8 * 1024 * 1024) {
+        setStatus("artifact-import-status", "Artifacts are limited to 8 MB.", true);
+        return;
+      }
+      const source = state.acquisitions?.sources?.find((item) => item.document_id === documentId);
+      setStatus("artifact-import-status", `Fingerprinting and reprocessing ${file.name}...`);
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("The browser could not read this file."));
+          reader.readAsDataURL(file);
+        });
+        const contentBase64 = String(dataUrl).split(",", 2)[1] || "";
+        const result = await api(`/cases/${state.caseId}/source-acquisitions/${documentId}/imports`, {
+          method: "POST",
+          body: JSON.stringify({
+            content_base64: contentBase64,
+            content_type: file.type || "application/octet-stream",
+            resolved_uri: source?.source_uri || null,
+          }),
+        });
+        await openCase(state.caseId, state.navigationId);
+        const acquisition = result.acquisition;
+        setStatus("artifact-import-status", `Import recorded as custody attempt ${acquisition.attempt_count}. ${acquisition.assertions_verified}/${acquisition.assertions_total} cited spans verified using ${acquisition.extraction_method.toLowerCase().replaceAll("_", " ")}.`);
+      } catch (error) {
+        setStatus("artifact-import-status", error.message, true);
+      } finally {
+        state.artifactImportDocumentId = null;
+      }
+    }
+
     function entityEvidence() {
       const map = new Map();
       collectEvents().forEach((event) => {
@@ -1302,24 +1542,8 @@
       return map;
     }
 
-    function findingEntries() {
-      const groups = [
-        ["contradictions", "conflict"],
-        ["corroborations", "conclusion"],
-        ["single_source", "gap"],
-      ];
-      return groups.flatMap(([category, type]) => (state.findings?.[category] || []).map((finding) => ({ finding, category, type })));
-    }
-
     function humanizeKind(kind) {
       return String(kind || "event").toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-    }
-
-    function findingLabel(finding, type) {
-      const entity = entityProfile(finding.entity_id).label;
-      if (type === "conflict") return `Conflict: ${entity}`;
-      if (type === "gap") return `Missing support: ${entity}`;
-      return `Corroborated: ${entity}`;
     }
 
     const GRAPH_W = 940, GRAPH_H = 600;
@@ -1331,10 +1555,94 @@
       showFindings: true, showLabels: true,
     };
 
+    function graphEvent(data) {
+      const entity = entityProfile(data.entity_id);
+      return {
+        assertion_id: data.assertion_id,
+        entityId: data.entity_id,
+        entity,
+        occurred_at: data.occurred_at,
+        kind: data.kind,
+        value: data.value,
+        time_precision: data.time_precision,
+        lineage: {
+          document_id: data.document_id,
+          source_locator: data.source_locator,
+          source_text: data.source_text,
+        },
+        document: state.data.documents.find((item) => item.id === data.document_id),
+      };
+    }
+
+    function projectGraph() {
+      const desired = new Map();
+      (state.graph?.nodes || []).forEach((mapped) => {
+        const data = mapped.data || {};
+        if (mapped.type === "document") {
+          if (!graphView.showSources) return;
+          let label = mapped.label.replace(/\.(pdf|html|txt|json|csv)$/i, "");
+          if (label.length > 26) label = `${label.slice(0, 24)}...`;
+          desired.set(mapped.id, {
+            id: mapped.id, kind: "source", type: "source", documentId: data.document_id,
+            label, subtitle: `${data.active_assertions} assertion${data.active_assertions === 1 ? "" : "s"}`,
+            layer: 0, r: 8 + 1.25 * Math.sqrt(data.active_assertions),
+          });
+          return;
+        }
+        if (mapped.type === "assertion") {
+          if (!graphView.showEvents) return;
+          const event = graphEvent(data);
+          desired.set(mapped.id, {
+            id: mapped.id, kind: "event", type: "event", event,
+            label: mapped.label, subtitle: data.occurred_at.slice(0, 10), layer: 1, r: 6.5,
+          });
+          return;
+        }
+        if (mapped.type === "entity") {
+          const profile = entityProfile(data.entity_id);
+          desired.set(mapped.id, {
+            id: mapped.id, kind: "entity", type: profile.type, entityId: data.entity_id,
+            label: profile.label, subtitle: `${data.active_assertions} assertion${data.active_assertions === 1 ? "" : "s"}`,
+            events: data.active_assertions, layer: 2, r: 11 + 2.6 * Math.sqrt(data.active_assertions),
+          });
+          return;
+        }
+        if (mapped.type === "finding" && graphView.showFindings) {
+          const type = data.finding_type === "corroboration" ? "conclusion" : data.finding_type;
+          const finding = data.finding;
+          desired.set(mapped.id, {
+            id: mapped.id, kind: "finding", type, finding, category: data.category,
+            label: mapped.label, subtitle: finding.support?.level || "REVIEW",
+            layer: 3, r: type === "conflict" ? 13 : 11,
+          });
+        }
+      });
+
+      const edges = (state.graph?.edges || []).flatMap((mapped) => {
+        if (mapped.scope === "detail" && !graphView.showEvents) return [];
+        if (mapped.scope === "summary" && graphView.showEvents) return [];
+        if (!desired.has(mapped.source) || !desired.has(mapped.target)) return [];
+        const findingType = desired.get(mapped.target)?.type;
+        const styles = {
+          CONTAINS: ["contains", 105],
+          DESCRIBES: ["describes", 125],
+          MAPS_TO: ["contains", 210],
+          SUPPORTS: ["supports", 135],
+          CONFLICTS_WITHIN: ["conflicts", 135],
+          REVEALS_GAP: ["exposes", 135],
+          PRODUCES_FINDING: [findingType === "conflict" ? "conflicts" : findingType === "gap" ? "exposes" : "supports", 210],
+        };
+        const [tier, length] = styles[mapped.relationship] || ["describes", 150];
+        return [{ a: mapped.source, b: mapped.target, tier, label: mapped.label, length }];
+      });
+      return { desired, edges };
+    }
+
     function renderGraph() {
       const svg = byId("evidence-graph");
-      const events = collectEvents();
-      if (!events.length) {
+      const mapped = state.graph?.generated_from || { assertions: 0 };
+      byId("graph-api-summary").textContent = `Revision ${state.graph?.case_revision ?? 0} · ${mapped.assertions || 0} active assertions · ${state.graph?.edges?.length || 0} mapped relationships`;
+      if (!mapped.assertions) {
         stopGraphLoop();
         state.selectedNode = null;
         graphView.nodes.clear(); graphView.edges = []; graphView.edgeRefs = []; graphView.refs = new Map(); graphView.viewport = null; graphView.built = "";
@@ -1342,85 +1650,7 @@
         byId("inspector-body").innerHTML = '<p class="inspector-summary">This case has no active evidence yet. Add a source-backed observation or batch import to create the first entity timeline.</p>';
         return;
       }
-      const desired = new Map();
-      const edges = [];
-      const evidence = entityEvidence();
-      const documentMap = new Map(state.data.documents.map((document) => [document.id, document]));
-
-      evidence.forEach((entityEvents, entityId) => {
-        const profile = entityProfile(entityId);
-        desired.set(`entity:${entityId}`, {
-          id: `entity:${entityId}`, kind: "entity", type: profile.type,
-          entityId, label: profile.label, subtitle: `${entityEvents.length} assertion${entityEvents.length === 1 ? "" : "s"}`,
-          events: entityEvents.length, layer: 2, r: 11 + 2.6 * Math.sqrt(entityEvents.length),
-        });
-      });
-
-      const eventsByDocument = new Map();
-      events.forEach((event) => {
-        const documentId = event.lineage.document_id;
-        if (!eventsByDocument.has(documentId)) eventsByDocument.set(documentId, []);
-        eventsByDocument.get(documentId).push(event);
-      });
-
-      if (graphView.showSources) {
-        eventsByDocument.forEach((documentEvents, documentId) => {
-          const document = documentMap.get(documentId);
-          let label = document ? document.filename.replace(/\.(pdf|html|txt|json|csv)$/i, "") : "source";
-          if (label.length > 26) label = `${label.slice(0, 24)}...`;
-          desired.set(`doc:${documentId}`, {
-            id: `doc:${documentId}`, kind: "source", type: "source", documentId,
-            label, subtitle: `${documentEvents.length} assertion${documentEvents.length === 1 ? "" : "s"}`,
-            layer: 0, r: 8 + 1.25 * Math.sqrt(documentEvents.length),
-          });
-        });
-      }
-
-      if (graphView.showEvents) {
-        events.forEach((event) => {
-          const eventId = `event:${event.assertion_id}`;
-          desired.set(eventId, {
-            id: eventId, kind: "event", type: "event", event,
-            label: humanizeKind(event.kind), subtitle: event.occurred_at.slice(0, 10),
-            layer: 1, r: 6.5,
-          });
-          edges.push({ a: eventId, b: `entity:${event.entityId}`, tier: "describes", label: "describes", length: 125 });
-          if (graphView.showSources && event.lineage.document_id) {
-            edges.push({ a: `doc:${event.lineage.document_id}`, b: eventId, tier: "contains", label: "contains", length: 105 });
-          }
-        });
-      } else if (graphView.showSources) {
-        eventsByDocument.forEach((documentEvents, documentId) => {
-          const counts = new Map();
-          documentEvents.forEach((event) => counts.set(event.entityId, (counts.get(event.entityId) || 0) + 1));
-          counts.forEach((count, entityId) => edges.push({
-            a: `doc:${documentId}`, b: `entity:${entityId}`, tier: "contains",
-            label: `${count} assertion${count === 1 ? "" : "s"}`, length: 210,
-          }));
-        });
-      }
-
-      if (graphView.showFindings) {
-        findingEntries().forEach(({ finding, category, type }) => {
-          const findingId = `finding:${finding.finding_id}`;
-          desired.set(findingId, {
-            id: findingId, kind: "finding", type, finding, category,
-            label: findingLabel(finding, type), subtitle: finding.support?.level || "REVIEW",
-            layer: 3, r: type === "conflict" ? 13 : 11,
-          });
-          if (graphView.showEvents) {
-            finding.events.forEach((event) => {
-              const eventId = `event:${event.assertion_id}`;
-              if (!desired.has(eventId)) return;
-              const tier = type === "conflict" ? "conflicts" : type === "gap" ? "exposes" : "supports";
-              const label = type === "conflict" ? "conflicts within" : type === "gap" ? "reveals gap" : "supports";
-              edges.push({ a: eventId, b: findingId, tier, label, length: 135 });
-            });
-          } else {
-            edges.push({ a: `entity:${finding.entity_id}`, b: findingId, tier: type === "conflict" ? "conflicts" : type === "gap" ? "exposes" : "supports", label: "produces finding", length: 210 });
-          }
-        });
-      }
+      const { desired, edges } = projectGraph();
 
       const layers = [0, 1, 2, 3].map((layer) => [...desired.values()].filter((node) => node.layer === layer).sort((left, right) => left.label.localeCompare(right.label)));
       const layerX = [85, 315, 600, 835];
@@ -1848,12 +2078,38 @@
       }).join("")}</div></section>`).join("") || '<div class="day-group"><p>No events match this filter.</p></div>';
     }
 
+    function sourceIntegrityMarkup(document) {
+      const source = state.acquisitions?.sources?.find((item) => item.document_id === document.id);
+      const acquisition = source?.acquisition;
+      if (!acquisition) {
+        const copy = document.source_uri
+          ? "No acquisition record is attached to this source. Treat its reviewed assertions as pending external verification."
+          : "Reviewer-added source. Its assertions retain exact locators and source excerpts but have no external retrieval record.";
+        return `<div class="source-integrity local"><strong>${document.source_uri ? "Acquisition not recorded" : "Reviewer-added evidence"}</strong><span>${escapeHtml(copy)}</span></div>`;
+      }
+      const verified = acquisition.assertions_verified || 0;
+      const total = acquisition.assertions_total || 0;
+      const custody = acquisition.custody || {};
+      const custodyVerified = custody.chain_status === "VERIFIED" && custody.artifact_integrity === "VERIFIED";
+      const constrained = acquisition.status === "ACCESS_CHALLENGE" || acquisition.extraction_method?.includes("REQUIRES_OCR");
+      const complete = total > 0 && verified === total;
+      const className = complete && custodyVerified ? "verified" : constrained ? "constrained" : "";
+      const heading = complete
+        ? "Source verification complete"
+        : constrained
+          ? "Source verification constrained"
+          : "Source verification partial";
+      const custodyCopy = custodyVerified ? "custody and stored bytes verified" : "custody verification pending";
+      const method = acquisition.extraction_method?.replaceAll("_", " ").toLowerCase() || "read method unavailable";
+      return `<div class="source-integrity ${className}"><strong>${escapeHtml(heading)}</strong><span>${verified}/${total} cited spans machine-matched · ${escapeHtml(method)} · ${escapeHtml(custodyCopy)}</span></div>`;
+    }
+
     function renderSources() {
       const changes = state.changes?.changes || [];
       byId("source-ledger").innerHTML = state.data.documents.map((document) => {
         const retraction = changes.find((change) => change.operation === "RETRACT_DOCUMENT" && change.document.id === document.id);
         const actor = retraction?.performed_by ? `<br>Recorded by ${escapeHtml(retraction.performed_by)}` : "";
-        return `<article class="source-card${document.retracted ? " retracted" : ""}"><div class="source-top"><span class="entity-tag">${escapeHtml(document.source_type)}</span><span class="tier ${document.retracted ? "allegation" : "court"}">${document.retracted ? "Retracted" : "Active"}</span></div><h3>${escapeHtml(document.filename)}</h3><code>${escapeHtml(document.id)}</code><p class="source-meta">${document.assertion_count} retained assertion${document.assertion_count === 1 ? "" : "s"}<br>Added at evidence revision ${document.added_at_revision}${document.retracted ? `<br>Reason: ${escapeHtml(document.retraction_reason)}${actor}` : ""}</p><div class="source-actions">${document.source_uri ? `<a href="${escapeHtml(document.source_uri)}" target="_blank" rel="noreferrer">Open source</a>` : ""}${document.retracted ? "" : `<button class="retract-action" data-retract="${escapeHtml(document.id)}" type="button" aria-label="Retract ${escapeHtml(document.filename)}">Retract source</button>`}</div></article>`;
+        return `<article class="source-card${document.retracted ? " retracted" : ""}"><div class="source-top"><span class="entity-tag">${escapeHtml(document.source_type)}</span><span class="tier ${document.retracted ? "allegation" : "court"}">${document.retracted ? "Retracted" : "Active"}</span></div><h3>${escapeHtml(document.filename)}</h3><code>${escapeHtml(document.id)}</code><p class="source-meta">${document.assertion_count} retained assertion${document.assertion_count === 1 ? "" : "s"}<br>Added at evidence revision ${document.added_at_revision}${document.retracted ? `<br>Reason: ${escapeHtml(document.retraction_reason)}${actor}` : ""}</p>${sourceIntegrityMarkup(document)}<div class="source-actions">${document.source_uri ? `<a href="${escapeHtml(document.source_uri)}" target="_blank" rel="noreferrer">Open source</a>` : ""}${document.retracted ? "" : `<button class="retract-action" data-retract="${escapeHtml(document.id)}" type="button" aria-label="Retract ${escapeHtml(document.filename)}">Retract source</button>`}</div></article>`;
       }).join("");
       document.querySelectorAll("[data-retract]").forEach((button) => button.addEventListener("click", () => openRetractionDialog(button.dataset.retract)));
     }
@@ -1949,6 +2205,7 @@
       byId("ops-percent").textContent = `${operations.selectivity.recomputed_percent}%`;
 
       const jobs = operations.jobs.slice(0, 12);
+      byId("operations-jobs-summary").textContent = `Inspect ${operations.jobs.length} worker job${operations.jobs.length === 1 ? "" : "s"}`;
       byId("operations-jobs").innerHTML = jobs.length ? jobs.map((job) => {
         const publication = job.publication;
         const statusClass = job.status.toLowerCase().replaceAll("_", "-");
@@ -1970,6 +2227,7 @@
         </tr>`;
       }).join("") : `<tr><td colspan="6">No recompute jobs have been created for this case.</td></tr>`;
 
+      byId("operations-artifacts-summary").textContent = `Inspect ${operations.artifacts.length} materialized artifact version${operations.artifacts.length === 1 ? "" : "s"}`;
       byId("operations-artifacts").innerHTML = operations.artifacts.length ? operations.artifacts.map((artifact) => `
         <tr>
           <td><code>${escapeHtml(artifact.artifact_key)}</code></td>
@@ -2003,13 +2261,22 @@
       const counts = { allegation: 0, court: 0, agency: 0, officer: 0 };
       events.forEach((event) => { counts[eventTier(event).key] += 1; });
       const current = state.data.case;
+      const activeSources = state.data.documents.filter((document) => !document.retracted).length;
+      const retractedSources = state.data.documents.length - activeSources;
+      const acquisitionRows = (state.acquisitions?.sources || []).filter((source) => source.acquisition);
+      const verifiedSpans = acquisitionRows.reduce((total, source) => total + source.acquisition.assertions_verified, 0);
+      const totalSpans = acquisitionRows.reduce((total, source) => total + source.acquisition.assertions_total, 0);
+      const constrainedSources = acquisitionRows.filter((source) => source.acquisition.status !== "FETCHED" || source.acquisition.extraction_method?.includes("REQUIRES_OCR")).length;
+      const verifiedCustody = acquisitionRows.filter((source) => source.acquisition.custody?.chain_status === "VERIFIED" && source.acquisition.custody?.artifact_integrity === "VERIFIED").length;
       return [
         "BOSTON EVIDENCE REVIEW / OFFICER HANDOFF",
-        `Case: ${current.name}`,
+        `Case: ${displayCaseName(current.name)}`,
         `Case ID: ${current.id}`,
         `Evidence revision: ${current.revision}`,
         `Assigned: ${current.assigned_officer || "UNASSIGNED"}${current.assigned_badge ? ` / ${current.assigned_badge}` : ""}${current.assigned_unit ? ` / ${current.assigned_unit}` : ""}`,
-        `Scope: ${state.data.documents.length} sources, ${events.length} active events, ${state.data.artifacts.length} timelines`,
+        `Scope: ${activeSources} active source${activeSources === 1 ? "" : "s"}, ${retractedSources} retracted source${retractedSources === 1 ? "" : "s"}, ${events.length} active events, ${state.data.artifacts.length} timelines`,
+        `Source verification: ${verifiedSpans}/${totalSpans} cited spans machine-matched; ${constrainedSources} retrieval constraint${constrainedSources === 1 ? "" : "s"} remain`,
+        `Artifact custody: ${verifiedCustody}/${acquisitionRows.length} acquired response${acquisitionRows.length === 1 ? "" : "s"} verified`,
         `Latest change: ${state.changes?.changes?.[0] ? `${state.changes.changes[0].operation === "ADD_DOCUMENT" ? "source added" : "source retracted"} - ${state.changes.changes[0].document.filename}; ${changeFindingSummary(state.changes.changes[0])}` : "No evidence mutation recorded"}`,
         `Status split: ${counts.allegation} allegations / ${counts.court} court-established / ${counts.agency} agency / ${counts.officer} officer-added`,
         `Findings: ${state.findings?.contradictions?.length || 0} contradiction candidate(s) / ${state.findings?.corroborations?.length || 0} corroborated event(s) / ${state.findings?.single_source?.length || 0} single-source day(s)`,
@@ -2033,6 +2300,8 @@
         sources: state.data.documents,
         artifacts: state.data.artifacts,
         findings: state.findings,
+        evidence_graph: state.graph,
+        source_acquisitions: state.acquisitions,
         change_history: state.changes,
         operations: state.operations,
         verification: state.proof,
@@ -2050,14 +2319,18 @@
 
     function renderCase() {
       const current = state.data.case;
-      const isBoston = current.name === "Boston evidence-disposal case / official public record";
+      const isBoston = isBostonCaseName(current.name);
       byId("case-app").classList.remove("hidden");
-      byId("case-name").textContent = current.name;
+      byId("case-name").textContent = displayCaseName(current.name);
       byId("case-id").textContent = `CASE ${current.id}`;
       byId("case-revision").textContent = `EVIDENCE REVISION ${current.revision}`;
       byId("case-created").textContent = `CREATED ${new Date(current.created_at).toLocaleString()}`;
+      byId("case-search-results").classList.add("hidden");
+      byId("case-search-results").innerHTML = "";
+      setStatus("case-search-status", "Search the current revision and inspect every result at its source.");
       window.history.replaceState({}, "", caseUrl(current.id));
       const events = renderMetrics();
+      renderAcquisitions();
       renderGraph();
       renderStatusDistribution(events);
       renderFindings();
@@ -2074,12 +2347,14 @@
     async function openCase(caseId, navigationId = ++state.navigationId) {
       const data = await api(`/cases/${caseId}`);
       if (navigationId !== state.navigationId) return false;
-      const [proof, findings, changes, operations] = await Promise.all([api(`/cases/${caseId}/proof`), api(`/cases/${caseId}/findings`), api(`/cases/${caseId}/changes`), api(`/cases/${caseId}/operations`)]);
+      const [proof, findings, graph, acquisitions, changes, operations] = await Promise.all([api(`/cases/${caseId}/proof`), api(`/cases/${caseId}/findings`), api(`/cases/${caseId}/evidence-graph`), api(`/cases/${caseId}/source-acquisitions`), api(`/cases/${caseId}/changes`), api(`/cases/${caseId}/operations`)]);
       if (navigationId !== state.navigationId) return false;
       state.caseId = caseId;
       state.data = data;
       state.proof = proof;
       state.findings = findings;
+      state.graph = graph;
+      state.acquisitions = acquisitions;
       state.changes = changes;
       state.operations = operations;
       renderCase();
@@ -2090,17 +2365,19 @@
       const button = byId("build-case");
       const navigationId = ++state.navigationId;
       setBusy(button, true, recovered ? "Rebuilding case..." : "Building case...");
-      setStatus("launch-status", recovered ? "The prior case is unavailable. Rebuilding from the public record..." : "Loading sources, preparing timelines, and verifying the case state...");
+      setStatus("launch-status", recovered ? "The prior case is unavailable. Fetching and rebuilding from the public record..." : "Fetching official artifacts, fingerprinting responses, organizing cited assertions, and preparing case state...");
       try {
-        const result = await api("/demo/real-case/boston-obstruction", { method: "POST", body: "{}" });
+        const result = await api("/demo/real-case/boston-obstruction?acquire_public_sources=true", { method: "POST", body: "{}" });
         if (navigationId !== state.navigationId) return false;
         await openCase(result.case_id, navigationId);
-        setStatus("launch-status", `Official case ready: ${result.official_sources} sources, ${result.assertions} assertions, ${result.materialized_timelines} timelines.`);
+        const acquisition = result.source_acquisition?.by_status || {};
+        const fetched = acquisition.FETCHED || 0;
+        const constrained = (acquisition.ACCESS_CHALLENGE || 0) + (acquisition.FETCH_FAILED || 0) + (acquisition.HTTP_ERROR || 0);
+        setStatus("launch-status", `Official case ready: ${result.official_sources} sources attempted, ${fetched} fetched, ${constrained} access constrained, ${result.assertions} reviewed assertions organized into ${result.materialized_timelines} timelines.`);
         byId("case-app").scrollIntoView({ behavior: "smooth" });
         return true;
       } catch (error) {
-        if (error.status === 401) requestAccess(() => buildOfficialCase({ recovered }));
-        else setStatus("launch-status", error.message, true);
+        setStatus("launch-status", error.status === 401 ? "This deployment is not configured for public demo access." : error.message, true);
         return false;
       } finally {
         setBusy(button, false, "");
@@ -2325,6 +2602,23 @@
       },
       {
         panel: "command",
+        selector: ".case-search",
+        title: "Find the evidence, then inspect the source",
+        description: "Case search ranks active ledger assertions and returns exact excerpts and stable locators. It does not generate an answer or include retracted material.",
+        proof: "Search laptop concealment. Open the original source, then use the evidence graph to see which findings depend on the assertion.",
+        enter() {
+          if (!byId("case-search-query").value.trim()) searchCaseEvidence("laptop concealment");
+        },
+      },
+      {
+        panel: "command",
+        selector: ".acquisition-board",
+        title: "Acquire the public artifacts",
+        description: "The backend attempts each official URL, fingerprints returned bytes, reads supported content, and records access or OCR constraints before reviewed assertions enter the case ledger.",
+        proof: "Show the trust boundary: four responses preserved, six of 25 cited spans machine-matched, and three challenge responses pending approved retrieval. A challenge page is never treated as source text.",
+      },
+      {
+        panel: "command",
         selector: "#change-brief",
         title: "Read the delta first",
         description: "After every update, the investigator first needs to know what changed and what now requires attention.",
@@ -2377,7 +2671,7 @@
         selector: "[data-panel='officer'] .work-grid",
         title: "Own the outcome through handoff",
         description: "The deployment is complete when the next reviewer can safely continue the investigation, not when an analysis finishes rendering.",
-        proof: "Persist ownership and the next action, then export the source-aware case packet with findings, history, lineage, and operational proof.",
+        proof: "Persist ownership and the next action, verify that the handoff carries source coverage and custody status, then export the case packet with findings, history, lineage, and operational proof.",
       },
     ];
 
@@ -2434,8 +2728,7 @@
       if (!caseId) { if (demo === REAL_CASE_TEMPLATE_ID) await buildOfficialCase({ recovered: true }); return; }
       try { await openCase(caseId); byId("case-app").scrollIntoView(); }
       catch (error) {
-        if (error.status === 401) requestAccess(restoreFromUrl);
-        else if (error.status === 404 && demo === REAL_CASE_TEMPLATE_ID) await buildOfficialCase({ recovered: true });
+        if (error.status === 404 && demo === REAL_CASE_TEMPLATE_ID) await buildOfficialCase({ recovered: true });
         else setStatus("launch-status", error.message, true);
       }
     }
@@ -2506,26 +2799,16 @@
       const caseId = byId("open-case-id").value.trim();
       try { await openCase(caseId); byId("case-app").scrollIntoView({ behavior: "smooth" }); }
       catch (error) {
-        if (error.status === 401) requestAccess(async () => { await openCase(caseId); byId("case-app").scrollIntoView({ behavior: "smooth" }); });
-        else setStatus("launch-status", error.message, true);
+        setStatus("launch-status", error.status === 401 ? "This deployment is not configured for public demo access." : error.message, true);
       }
     });
-    byId("copy-link").addEventListener("click", async () => { try { await navigator.clipboard.writeText(caseUrl().toString()); setStatus("launch-status", "Case link copied. Hosted recipients also need the access key."); } catch (_error) { setStatus("launch-status", "Clipboard permission was blocked.", true); } });
-    byId("access-gate").addEventListener("submit", async (event) => {
+    byId("copy-link").addEventListener("click", async () => { try { await navigator.clipboard.writeText(caseUrl().toString()); setStatus("launch-status", "Case link copied."); } catch (_error) { setStatus("launch-status", "Clipboard permission was blocked.", true); } });
+    byId("case-search-form").addEventListener("submit", async (event) => {
       event.preventDefault();
-      sessionStorage.setItem("evidenceCommandKey", byId("demo-key").value.trim());
-      byId("access-gate").classList.add("hidden");
-      const retry = state.retryAfterAccess;
-      state.retryAfterAccess = null;
-      setStatus("launch-status", "Access code accepted for this browser session.");
-      if (retry) {
-        try { await retry(); }
-        catch (error) {
-          if (error.status === 401) requestAccess(retry);
-          else setStatus("launch-status", error.message, true);
-        }
-      }
+      await searchCaseEvidence(byId("case-search-query").value);
     });
+    document.querySelectorAll("[data-search-query]").forEach((button) => button.addEventListener("click", () => searchCaseEvidence(button.dataset.searchQuery)));
+    byId("artifact-import-file").addEventListener("change", (event) => importSourceArtifact(event.target.files[0]));
     document.querySelectorAll("[data-panel-target]").forEach((button) => button.addEventListener("click", () => switchPanel(button.dataset.panelTarget)));
     document.querySelectorAll("[data-go-panel]").forEach((button) => button.addEventListener("click", () => switchPanel(button.dataset.goPanel)));
     document.querySelectorAll("[data-tier]").forEach((button) => button.addEventListener("click", () => { state.timelineTier = button.dataset.tier; document.querySelectorAll("[data-tier]").forEach((item) => item.classList.toggle("active", item === button)); renderTimeline(); }));
@@ -2607,7 +2890,12 @@
 
     const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
     byId("evidence-occurred").value = localNow;
-    api("/health").then((health) => { byId("health-dot").classList.add("live"); byId("health-label").textContent = `${health.database} / ${health.worker_mode}`; }).catch(() => { byId("health-label").textContent = "Engine unavailable"; });
+    api("/health").then((health) => {
+      byId("health-dot").classList.add("live");
+      const databaseLabel = health.database === "sqlite" ? "Local database" : "PostgreSQL";
+      const workerLabel = health.worker_mode === "embedded" ? "Live worker" : "Evidence API ready";
+      byId("health-label").textContent = `${databaseLabel} · ${workerLabel}`;
+    }).catch(() => { byId("health-label").textContent = "Engine unavailable"; });
     restoreFromUrl();
   </script>
 </body>

@@ -99,6 +99,51 @@ def test_demo_key_protects_stateful_routes(monkeypatch) -> None:
         assert authorized.status_code == 201
 
 
+def test_read_only_key_can_inspect_but_cannot_mutate(monkeypatch) -> None:
+    monkeypatch.setenv("DEMO_API_KEY", "reviewer-secret")
+    monkeypatch.setenv("DEMO_READ_ONLY_KEY", "viewer-secret")
+    app = create_app("sqlite+pysqlite:///:memory:")
+
+    with TestClient(app) as client:
+        reviewer_headers = {"X-Demo-Key": "reviewer-secret"}
+        viewer_headers = {"X-Demo-Key": "viewer-secret"}
+        created = client.post(
+            "/cases",
+            json={"name": "Role-gated case"},
+            headers=reviewer_headers,
+        )
+        case_id = created.json()["id"]
+
+        assert client.get(f"/cases/{case_id}", headers=viewer_headers).status_code == 200
+        denied = client.put(
+            f"/cases/{case_id}/assignment",
+            json={"assigned_officer": "Viewer"},
+            headers=viewer_headers,
+        )
+        assert denied.status_code == 403
+        assert denied.json()["detail"] == "Reviewer access is required"
+        assert (
+            client.post(
+                "/cases",
+                json={"name": "Denied"},
+                headers=viewer_headers,
+            ).status_code
+            == 403
+        )
+        assert client.get("/health").json()["access_mode"] == "role_keys"
+
+
+def test_public_demo_mode_is_explicit_and_open(monkeypatch) -> None:
+    monkeypatch.delenv("DEMO_API_KEY", raising=False)
+    monkeypatch.delenv("DEMO_READ_ONLY_KEY", raising=False)
+    monkeypatch.setenv("PUBLIC_DEMO_MODE", "true")
+    app = create_app("sqlite+pysqlite:///:memory:")
+
+    with TestClient(app) as client:
+        assert client.get("/health").json()["access_mode"] == "public_demo"
+        assert client.post("/cases", json={"name": "Public demonstration"}).status_code == 201
+
+
 def test_hosted_mode_refuses_to_start_without_demo_key(monkeypatch) -> None:
     monkeypatch.delenv("DEMO_API_KEY", raising=False)
     monkeypatch.setenv("REQUIRE_DEMO_API_KEY", "true")
@@ -132,7 +177,8 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         assert "Download case packet" in response.text
         assert "Excluded · span not found" in response.text
         assert "prefers-reduced-motion" in response.text
-        assert 'class="access-gate hidden"' in response.text
+        assert "access-gate" not in response.text
+        assert 'type="password"' not in response.text
         assert "Hosted access key" not in response.text
         assert "access-drawer" not in response.text
         assert "\u2014" not in response.text
@@ -141,6 +187,22 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         assert 'id="evidence-form"' in response.text
         assert 'id="evidence-graph"' in response.text
         assert 'id="graph-inspector"' in response.text
+        assert "Live graph API" in response.text
+        assert "GET /cases/{id}/evidence-graph" in response.text
+        assert "Find the source before drawing the conclusion" in response.text
+        assert "Source responses preserved" in response.text
+        assert "Cited spans machine-matched" in response.text
+        assert "Trust boundary:" in response.text
+        assert "Source verification constrained" in response.text
+        assert "Source coverage:" in response.text
+        assert "Artifact custody:" in response.text
+        assert "Open controlled change" in response.text
+        assert "Run a controlled change" not in response.text
+        assert "GET /cases/{id}/search?q=" in response.text
+        assert "Public artifact acquisition" in response.text
+        assert "/cases/${caseId}/source-acquisitions" in response.text
+        assert "/cases/${state.caseId}/search?q=" in response.text
+        assert "No live agency connector is claimed" not in response.text
         assert "function parseCsv" in response.text
         assert (
             'const REAL_CASE_TEMPLATE_ID = "boston-obstruction-public-record-v1"' in response.text
@@ -150,6 +212,18 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         preview = client.get("/og.png")
         assert preview.status_code == 200
         assert preview.headers["content-type"] == "image/png"
+
+
+def test_render_profile_is_public_and_includes_linux_ocr() -> None:
+    root = Path(__file__).parents[1]
+    blueprint = (root / "render.yaml").read_text(encoding="utf-8")
+    dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+
+    assert "runtime: docker" in blueprint
+    assert "PUBLIC_DEMO_MODE" in blueprint
+    assert "DEMO_API_KEY" not in blueprint
+    assert "poppler-utils tesseract-ocr" in dockerfile
+    assert "USER evidence-delta" in dockerfile
 
 
 def test_official_record_case_is_materialized_with_status_separation() -> None:
@@ -167,6 +241,7 @@ def test_official_record_case_is_materialized_with_status_separation() -> None:
         assert all(uri.startswith("https://www.") for uri in real_case["source_uris"])
 
         workspace = client.get(f"/cases/{real_case['case_id']}").json()
+        assert workspace["case"]["name"] == "Boston evidence disposal review"
         assert len(workspace["documents"]) == 4
         assert all(document["source_uri"] for document in workspace["documents"])
 

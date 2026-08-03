@@ -1,28 +1,26 @@
 services:
   - type: web
     name: closure-evidence-delta
-    runtime: python
+    runtime: docker
     plan: free
     region: oregon
-    buildCommand: python -m pip install -e .
     preDeployCommand: alembic upgrade head
-    startCommand: alembic upgrade head && uvicorn evidence_delta.api:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     maxShutdownDelaySeconds: 30
     envVars:
       - key: DATABASE_URL
         fromDatabase:
           name: closure-evidence-delta-db
           property: connectionString
-      - key: DEMO_API_KEY
-        sync: false
-      - key: REQUIRE_DEMO_API_KEY
+      - key: PUBLIC_DEMO_MODE
         value: "true"
       - key: RUN_EMBEDDED_WORKER
         value: "true"
       - key: ENABLE_MANUAL_DRAIN
         value: "false"
+      - key: ENABLE_LOCAL_OCR
+        value: "true"
 
 databases:
   - name: closure-evidence-delta-db

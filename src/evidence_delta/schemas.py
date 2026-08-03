@@ -83,6 +83,25 @@ class ExtractionInput(BaseModel):
     source_hint: str | None = Field(default=None, max_length=2_048)
 
 
+class ArtifactImportInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    content_base64: str = Field(min_length=1, max_length=12_000_000)
+    content_type: str = Field(min_length=1, max_length=160)
+    resolved_uri: str | None = Field(default=None, max_length=2_048)
+
+    @field_validator("resolved_uri")
+    @classmethod
+    def validate_resolved_uri(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        parsed = urlparse(normalized)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("resolved_uri must be an absolute HTTP(S) URL")
+        return normalized
+
+
 class MutationResult(BaseModel):
     case_id: str
     document_id: str

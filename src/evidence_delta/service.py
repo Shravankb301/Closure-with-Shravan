@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime
+import re
+from datetime import UTC, datetime
+from difflib import SequenceMatcher
 from uuid import uuid4
 
 from sqlalchemy import and_, exists, func, select
 from sqlalchemy.orm import Session
 
 from evidence_delta.analysis import ActiveEvent, derive_findings
+from evidence_delta.artifact_vault import ArtifactVault
 from evidence_delta.database import Database
 from evidence_delta.domain import (
     AssertionView,
@@ -17,6 +20,7 @@ from evidence_delta.domain import (
     timeline_key,
 )
 from evidence_delta.errors import ResourceNotFoundError
+from evidence_delta.evidence_graph import build_evidence_graph
 from evidence_delta.job_status import (
     FAILED_PERMANENT,
     QUEUED,
@@ -35,15 +39,71 @@ from evidence_delta.models import (
     DocumentRecord,
     DocumentRetractionRecord,
     RecomputeJobRecord,
+    SourceAcquisitionAttemptRecord,
+    SourceAcquisitionRecord,
+    utc_now,
 )
-from evidence_delta.schemas import CaseAssignmentInput, DocumentInput, MutationResult
+from evidence_delta.public_artifacts import ArtifactAcquisition
+from evidence_delta.schemas import (
+    AssertionInput,
+    CaseAssignmentInput,
+    DocumentInput,
+    MutationResult,
+)
 
 ADD_DOCUMENT = "ADD_DOCUMENT"
 RETRACT_DOCUMENT = "RETRACT_DOCUMENT"
+SEARCH_STOPWORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "did",
+        "for",
+        "from",
+        "happen",
+        "happened",
+        "in",
+        "is",
+        "of",
+        "on",
+        "the",
+        "to",
+        "was",
+        "what",
+        "when",
+        "where",
+        "who",
+        "with",
+    }
+)
 
 
 def new_id() -> str:
     return str(uuid4())
+
+
+def _search_stem(value: str) -> str:
+    for suffix in ("ments", "ment", "ingly", "ing", "edly", "ed", "es", "s"):
+        if value.endswith(suffix) and len(value) - len(suffix) >= 4:
+            return value[: -len(suffix)]
+    return value
+
+
+def _search_term_matches(term: str, text: str) -> bool:
+    if term in text:
+        return True
+    term_stem = _search_stem(term)
+    for token in re.findall(r"[a-z0-9]+", text):
+        token_stem = _search_stem(token)
+        if token_stem == term_stem:
+            return True
+        if (
+            min(len(token_stem), len(term_stem)) >= 5
+            and SequenceMatcher(None, token_stem, term_stem).ratio() >= 0.84
+        ):
+            return True
+    return False
 
 
 def _active_event(assertion: AssertionRecord, document: DocumentRecord) -> ActiveEvent:
@@ -52,8 +112,9 @@ def _active_event(assertion: AssertionRecord, document: DocumentRecord) -> Activ
         document_id=document.id,
         document_filename=document.filename,
         document_source_type=document.source_type,
+        document_source_uri=document.source_uri,
         entity_id=assertion.entity_id,
-        day=assertion.occurred_at.date().isoformat(),
+        occurred_at=assertion.occurred_at.isoformat(),
         kind=assertion.kind,
         value=assertion.value,
         time_precision=assertion.time_precision,
@@ -63,8 +124,9 @@ def _active_event(assertion: AssertionRecord, document: DocumentRecord) -> Activ
 
 
 class EvidenceService:
-    def __init__(self, database: Database) -> None:
+    def __init__(self, database: Database, artifact_vault: ArtifactVault | None = None) -> None:
         self.database = database
+        self.artifact_vault = artifact_vault or ArtifactVault()
 
     def create_case(self, name: str) -> CaseRecord:
         with self.database.session() as session, session.begin():
@@ -245,6 +307,344 @@ class EvidenceService:
                 ADD_DOCUMENT,
                 self._timeline_keys(assertions),
             )
+
+    def record_source_acquisition(
+        self,
+        case_id: str,
+        document_id: str,
+        acquisition: ArtifactAcquisition,
+    ) -> None:
+        """Attach retrieval metadata and its first chained custody event."""
+
+        storage_status, storage_uri = self._store_artifact(acquisition)
+
+        with self.database.session() as session, session.begin():
+            document = session.scalar(
+                select(DocumentRecord).where(
+                    DocumentRecord.id == document_id,
+                    DocumentRecord.case_id == case_id,
+                )
+            )
+            if document is None:
+                raise ResourceNotFoundError(f"Unknown document: {document_id}")
+            existing = session.scalar(
+                select(SourceAcquisitionRecord).where(
+                    SourceAcquisitionRecord.document_id == document_id
+                )
+            )
+            if existing is not None:
+                return
+            record = SourceAcquisitionRecord(
+                id=new_id(),
+                case_id=case_id,
+                document_id=document_id,
+                requested_uri=acquisition.requested_uri,
+                resolved_uri=acquisition.resolved_uri,
+                status=acquisition.status,
+                http_status=acquisition.http_status,
+                content_type=acquisition.content_type,
+                content_bytes=acquisition.content_bytes,
+                content_sha256=acquisition.content_sha256,
+                extraction_method=acquisition.extraction_method,
+                extracted_characters=acquisition.extracted_characters,
+                page_count=acquisition.page_count,
+                assertions_total=acquisition.assertions_total,
+                assertions_verified=acquisition.assertions_verified,
+                verification_status=acquisition.verification_status,
+                error_class=acquisition.error_class,
+                acquisition_method=acquisition.acquisition_method,
+                storage_status=storage_status,
+                storage_uri=storage_uri,
+                attempt_count=1,
+            )
+            session.add(record)
+            self._append_acquisition_attempt(
+                session,
+                case_id,
+                document_id,
+                acquisition,
+                storage_uri,
+                actor="system:public-connector",
+            )
+
+    def replace_source_acquisition(
+        self,
+        case_id: str,
+        document_id: str,
+        acquisition: ArtifactAcquisition,
+        *,
+        actor: str,
+    ) -> None:
+        """Promote a reviewer import while preserving prior attempts in custody history."""
+
+        storage_status, storage_uri = self._store_artifact(acquisition)
+        with self.database.session() as session, session.begin():
+            self._case(session, case_id)
+            record = session.scalar(
+                select(SourceAcquisitionRecord).where(
+                    SourceAcquisitionRecord.case_id == case_id,
+                    SourceAcquisitionRecord.document_id == document_id,
+                )
+            )
+            if record is None:
+                raise ResourceNotFoundError(f"Unknown source acquisition: {document_id}")
+            record.requested_uri = acquisition.requested_uri
+            record.resolved_uri = acquisition.resolved_uri
+            record.status = acquisition.status
+            record.http_status = acquisition.http_status
+            record.content_type = acquisition.content_type
+            record.content_bytes = acquisition.content_bytes
+            record.content_sha256 = acquisition.content_sha256
+            record.extraction_method = acquisition.extraction_method
+            record.extracted_characters = acquisition.extracted_characters
+            record.page_count = acquisition.page_count
+            record.assertions_total = acquisition.assertions_total
+            record.assertions_verified = acquisition.assertions_verified
+            record.verification_status = acquisition.verification_status
+            record.error_class = acquisition.error_class
+            record.acquisition_method = acquisition.acquisition_method
+            record.storage_status = storage_status
+            record.storage_uri = storage_uri
+            record.attempt_count += 1
+            record.retrieved_at = utc_now()
+            self._append_acquisition_attempt(
+                session,
+                case_id,
+                document_id,
+                acquisition,
+                storage_uri,
+                actor=actor,
+            )
+
+    def document_input(self, case_id: str, document_id: str) -> DocumentInput:
+        """Reconstruct the immutable source mapping for reprocessing."""
+
+        with self.database.session() as session:
+            self._case(session, case_id)
+            document = session.scalar(
+                select(DocumentRecord).where(
+                    DocumentRecord.case_id == case_id,
+                    DocumentRecord.id == document_id,
+                )
+            )
+            if document is None:
+                raise ResourceNotFoundError(f"Unknown document: {document_id}")
+            assertions = session.scalars(
+                select(AssertionRecord)
+                .where(AssertionRecord.document_id == document_id)
+                .order_by(AssertionRecord.created_at, AssertionRecord.id)
+            ).all()
+            return DocumentInput(
+                filename=document.filename,
+                source_type=document.source_type,
+                source_uri=document.source_uri,
+                assertions=[
+                    AssertionInput(
+                        entity_id=item.entity_id,
+                        occurred_at=item.occurred_at
+                        if item.occurred_at.tzinfo
+                        else item.occurred_at.replace(tzinfo=UTC),
+                        kind=item.kind,
+                        value=item.value,
+                        time_precision=item.time_precision,
+                        source_locator=item.source_locator,
+                        source_text=item.source_text,
+                    )
+                    for item in assertions
+                ],
+            )
+
+    def _store_artifact(self, acquisition: ArtifactAcquisition) -> tuple[str, str | None]:
+        receipt = self.artifact_vault.store(acquisition.content or b"", acquisition.content_sha256)
+        if receipt is None:
+            return "NOT_STORED", None
+        return "STORED", receipt.uri
+
+    @staticmethod
+    def _acquisition_attempt_payload(
+        *,
+        case_id: str,
+        document_id: str,
+        sequence: int,
+        acquisition_method: str,
+        status: str,
+        actor: str,
+        content_sha256: str | None,
+        content_bytes: int,
+        storage_uri: str | None,
+        previous_event_hash: str | None,
+    ) -> dict:
+        return {
+            "case_id": case_id,
+            "document_id": document_id,
+            "sequence": sequence,
+            "acquisition_method": acquisition_method,
+            "status": status,
+            "actor": actor,
+            "content_sha256": content_sha256,
+            "content_bytes": content_bytes,
+            "storage_uri": storage_uri,
+            "previous_event_hash": previous_event_hash,
+        }
+
+    def _append_acquisition_attempt(
+        self,
+        session: Session,
+        case_id: str,
+        document_id: str,
+        acquisition: ArtifactAcquisition,
+        storage_uri: str | None,
+        *,
+        actor: str,
+    ) -> None:
+        previous = session.scalar(
+            select(SourceAcquisitionAttemptRecord)
+            .where(SourceAcquisitionAttemptRecord.document_id == document_id)
+            .order_by(SourceAcquisitionAttemptRecord.sequence.desc())
+            .limit(1)
+        )
+        sequence = previous.sequence + 1 if previous else 1
+        previous_hash = previous.event_hash if previous else None
+        payload = self._acquisition_attempt_payload(
+            case_id=case_id,
+            document_id=document_id,
+            sequence=sequence,
+            acquisition_method=acquisition.acquisition_method,
+            status=acquisition.status,
+            actor=actor,
+            content_sha256=acquisition.content_sha256,
+            content_bytes=acquisition.content_bytes,
+            storage_uri=storage_uri,
+            previous_event_hash=previous_hash,
+        )
+        session.add(
+            SourceAcquisitionAttemptRecord(
+                id=new_id(),
+                **payload,
+                event_hash=sha256_json(payload),
+            )
+        )
+
+    def case_source_acquisitions(self, case_id: str) -> dict:
+        """Return the public-artifact acquisition audit for one case."""
+
+        with self.database.session() as session:
+            case = self._case(session, case_id)
+            rows = session.execute(
+                select(DocumentRecord, SourceAcquisitionRecord)
+                .outerjoin(
+                    SourceAcquisitionRecord,
+                    SourceAcquisitionRecord.document_id == DocumentRecord.id,
+                )
+                .where(DocumentRecord.case_id == case_id)
+                .order_by(DocumentRecord.added_at_revision, DocumentRecord.id)
+            ).all()
+            attempts = session.scalars(
+                select(SourceAcquisitionAttemptRecord)
+                .where(SourceAcquisitionAttemptRecord.case_id == case_id)
+                .order_by(
+                    SourceAcquisitionAttemptRecord.document_id,
+                    SourceAcquisitionAttemptRecord.sequence,
+                )
+            ).all()
+
+        attempts_by_document: dict[str, list[SourceAcquisitionAttemptRecord]] = {}
+        for attempt in attempts:
+            attempts_by_document.setdefault(attempt.document_id, []).append(attempt)
+
+        items = []
+        for document, acquisition in rows:
+            item = {
+                "document_id": document.id,
+                "filename": document.filename,
+                "source_type": document.source_type,
+                "source_uri": document.source_uri,
+                "assertions_organized": 0,
+                "acquisition": None,
+            }
+            if acquisition is not None:
+                source_attempts = attempts_by_document.get(document.id, [])
+                previous_hash = None
+                chain_verified = bool(source_attempts)
+                for attempt in source_attempts:
+                    payload = self._acquisition_attempt_payload(
+                        case_id=attempt.case_id,
+                        document_id=attempt.document_id,
+                        sequence=attempt.sequence,
+                        acquisition_method=attempt.acquisition_method,
+                        status=attempt.status,
+                        actor=attempt.actor,
+                        content_sha256=attempt.content_sha256,
+                        content_bytes=attempt.content_bytes,
+                        storage_uri=attempt.storage_uri,
+                        previous_event_hash=attempt.previous_event_hash,
+                    )
+                    if (
+                        attempt.previous_event_hash != previous_hash
+                        or sha256_json(payload) != attempt.event_hash
+                    ):
+                        chain_verified = False
+                    previous_hash = attempt.event_hash
+                artifact_verified = self.artifact_vault.verify(
+                    acquisition.storage_uri,
+                    acquisition.content_sha256,
+                )
+                item["assertions_organized"] = acquisition.assertions_total
+                item["acquisition"] = {
+                    "status": acquisition.status,
+                    "requested_uri": acquisition.requested_uri,
+                    "resolved_uri": acquisition.resolved_uri,
+                    "http_status": acquisition.http_status,
+                    "content_type": acquisition.content_type,
+                    "content_bytes": acquisition.content_bytes,
+                    "content_sha256": acquisition.content_sha256,
+                    "extraction_method": acquisition.extraction_method,
+                    "extracted_characters": acquisition.extracted_characters,
+                    "page_count": acquisition.page_count,
+                    "assertions_total": acquisition.assertions_total,
+                    "assertions_verified": acquisition.assertions_verified,
+                    "verification_status": acquisition.verification_status,
+                    "error_class": acquisition.error_class,
+                    "acquisition_method": acquisition.acquisition_method,
+                    "storage_status": acquisition.storage_status,
+                    "storage_uri": acquisition.storage_uri,
+                    "attempt_count": acquisition.attempt_count,
+                    "custody": {
+                        "chain_status": "VERIFIED"
+                        if chain_verified
+                        else "FAILED"
+                        if source_attempts
+                        else "NOT_RECORDED",
+                        "artifact_integrity": "VERIFIED" if artifact_verified else "NOT_VERIFIED",
+                        "attempts": [
+                            {
+                                "sequence": attempt.sequence,
+                                "method": attempt.acquisition_method,
+                                "status": attempt.status,
+                                "actor": attempt.actor,
+                                "content_sha256": attempt.content_sha256,
+                                "content_bytes": attempt.content_bytes,
+                                "event_hash": attempt.event_hash,
+                                "created_at": attempt.created_at.isoformat(),
+                            }
+                            for attempt in source_attempts
+                        ],
+                    },
+                    "retrieved_at": acquisition.retrieved_at.isoformat(),
+                }
+            items.append(item)
+
+        status_counts: dict[str, int] = {}
+        for item in items:
+            status = item["acquisition"]["status"] if item["acquisition"] else "NOT_REQUESTED"
+            status_counts[status] = status_counts.get(status, 0) + 1
+        return {
+            "case_id": case.id,
+            "case_revision": case.revision,
+            "pipeline": ["FETCH", "FINGERPRINT", "READ", "VERIFY", "INGEST", "MAP"],
+            "by_status": status_counts,
+            "sources": items,
+        }
 
     def retract_document(self, case_id: str, document_id: str, reason: str) -> MutationResult:
         with self.database.session() as session, session.begin():
@@ -654,23 +1054,144 @@ class EvidenceService:
 
         with self.database.session() as session:
             case = self._case(session, case_id)
-
-            retracted = exists().where(
-                DocumentRetractionRecord.document_id == AssertionRecord.document_id
-            )
-            rows = session.execute(
-                select(AssertionRecord, DocumentRecord)
-                .join(DocumentRecord, DocumentRecord.id == AssertionRecord.document_id)
-                .where(AssertionRecord.case_id == case_id, ~retracted)
-                .order_by(AssertionRecord.occurred_at, AssertionRecord.id)
-            ).all()
-            events = [_active_event(assertion, document) for assertion, document in rows]
+            events = self._active_events(session, case_id)
             revision = case.revision
 
         findings = derive_findings(events)
         findings["case_id"] = case_id
         findings["case_revision"] = revision
         return findings
+
+    def case_evidence_graph(self, case_id: str) -> dict:
+        """Return the live evidence-to-insight graph mapped from ledger rows."""
+
+        with self.database.session() as session:
+            case = self._case(session, case_id)
+            events = self._active_events(session, case_id)
+            findings = derive_findings(events)
+            return build_evidence_graph(case.id, case.revision, events, findings)
+
+    def case_search(self, case_id: str, query: str, limit: int = 12) -> dict:
+        """Search active evidence and return ranked, source-cited assertions.
+
+        This intentionally searches the governed evidence ledger instead of
+        producing a generated answer. Every result can be inspected at its
+        original source locator, and retracted documents never appear.
+        """
+
+        normalized_query = " ".join(query.lower().split())
+        terms = [
+            term
+            for term in dict.fromkeys(re.findall(r"[a-z0-9]+", normalized_query))
+            if term not in SEARCH_STOPWORDS
+        ]
+        if not terms:
+            return {
+                "case_id": case_id,
+                "query": query,
+                "query_terms": [],
+                "search_mode": "lexical_stem_fuzzy_v2",
+                "total": 0,
+                "source_count": 0,
+                "results": [],
+            }
+
+        with self.database.session() as session:
+            case = self._case(session, case_id)
+            events = self._active_events(session, case_id)
+            revision = case.revision
+
+        ranked = []
+        for event in events:
+            fields = {
+                "entity": event.entity_id.replace("-", " ").lower(),
+                "filename": event.document_filename.lower(),
+                "source_type": event.document_source_type.replace("_", " ").lower(),
+                "kind": event.kind.replace("_", " ").lower(),
+                "value": event.value.lower(),
+                "source_text": event.source_text.lower(),
+                "source_locator": event.source_locator.lower(),
+            }
+            matched_terms = [
+                term
+                for term in terms
+                if any(_search_term_matches(term, value) for value in fields.values())
+            ]
+            if len(matched_terms) != len(terms):
+                continue
+
+            score = 0
+            combined = " ".join(fields.values())
+            if normalized_query in combined:
+                score += 12
+            for term in terms:
+                if _search_term_matches(term, fields["entity"]):
+                    score += 6
+                if _search_term_matches(term, fields["filename"]):
+                    score += 5
+                if _search_term_matches(term, fields["kind"]):
+                    score += 4
+                if _search_term_matches(term, fields["value"]):
+                    score += 4
+                if _search_term_matches(term, fields["source_text"]):
+                    score += 2
+                if _search_term_matches(term, fields["source_type"]) or _search_term_matches(
+                    term, fields["source_locator"]
+                ):
+                    score += 1
+
+            ranked.append(
+                {
+                    "assertion_id": event.assertion_id,
+                    "entity_id": event.entity_id,
+                    "occurred_at": event.occurred_at,
+                    "kind": event.kind,
+                    "value": event.value,
+                    "time_precision": event.time_precision,
+                    "source_locator": event.source_locator,
+                    "source_text": event.source_text,
+                    "document": {
+                        "id": event.document_id,
+                        "filename": event.document_filename,
+                        "source_type": event.document_source_type,
+                        "source_uri": event.document_source_uri,
+                    },
+                    "matched_terms": matched_terms,
+                    "score": score,
+                }
+            )
+
+        ranked.sort(
+            key=lambda item: (
+                -item["score"],
+                item["occurred_at"],
+                item["assertion_id"],
+            )
+        )
+        bounded_limit = max(1, min(limit, 50))
+        return {
+            "case_id": case_id,
+            "case_revision": revision,
+            "query": query,
+            "query_terms": terms,
+            "search_mode": "lexical_stem_fuzzy_v2",
+            "total": len(ranked),
+            "source_count": len({item["document"]["id"] for item in ranked}),
+            "results": ranked[:bounded_limit],
+        }
+
+    @staticmethod
+    def _active_events(session: Session, case_id: str) -> list[ActiveEvent]:
+        retracted = exists().where(
+            DocumentRetractionRecord.document_id == AssertionRecord.document_id
+        )
+        rows = session.execute(
+            select(AssertionRecord, DocumentRecord)
+            .join(DocumentRecord, DocumentRecord.id == AssertionRecord.document_id)
+            .where(AssertionRecord.case_id == case_id, ~retracted)
+            .order_by(AssertionRecord.occurred_at, AssertionRecord.id)
+        ).all()
+        return [_active_event(assertion, document) for assertion, document in rows]
 
     def case_changes(self, case_id: str, limit: int = 10) -> dict:
         """Explain recent evidence mutations from the durable revision ledger.

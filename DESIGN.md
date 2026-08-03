@@ -35,6 +35,58 @@ For the latest case revision it reports:
 This turns backend correctness into a product capability that an operator can
 inspect during a live evidence change.
 
+## Evidence mapping service
+
+`GET /cases/{case_id}/evidence-graph` is a server-side projection over active
+ledger rows. The mapper joins each immutable assertion to its source document,
+maps it to an entity, and connects it to every deterministic finding that reads
+it. It also emits summary edges for views that collapse assertion nodes. Node
+and edge identities are deterministic, and the response declares the case
+revision and active input counts used to build it.
+
+The browser is a renderer of this contract. It can filter or reposition nodes,
+but it does not create evidence relationships. Retraction changes the active
+projection while the underlying document and assertions remain in the audit
+ledger.
+
+## Public artifact acquisition
+
+The guided case can invoke an allowlisted connector before ingestion. Each
+official URL is fetched with redirect, timeout, and size limits. The acquisition
+record stores the resolved URL, HTTP status, content type, byte count, SHA-256
+fingerprint, extraction method, page or character counts, and source-span
+verification result. Exact returned bytes are written to a content-addressed
+artifact vault and rehashed when the custody report is read.
+
+Acquisition failure is data, not an exception hidden from the operator. An
+anti-bot interstitial becomes `ACCESS_CHALLENGE`; a scanned PDF is routed to the
+configured OCR adapter. On macOS, the local adapter renders each PDF page and
+uses the on-device Vision framework. Linux deployments use Poppler and
+Tesseract from the included container image. OCR span checking permits narrowly bounded
+character substitutions while still rejecting reviewed paraphrases.
+
+A reviewer can download a challenged source through an approved authenticated
+browser and import the exact file. The replacement acquisition snapshot is
+promoted only after fingerprinting, extraction, and source-span verification.
+The original fetch and every later import remain in an append-only custody
+chain whose event hash includes the previous event hash.
+
+## Active evidence search
+
+`GET /cases/{case_id}/search` ranks normalized, stemmed, and typo-tolerant terms
+across active assertion values, entities, event types, source records, source excerpts, and locators. Results
+always include the exact stored excerpt and stable source locator. The search
+does not produce a generated answer, and the active-evidence query excludes
+retracted source records immediately.
+
+## Hosted access roles
+
+The hosted demonstration supports separate reviewer and viewer keys. A viewer
+may read case state, findings, search results, custody reports, and operational
+proof. Mutations require the reviewer key. This is useful least privilege for
+an interview deployment, not a substitute for customer SSO, user lifecycle
+management, or policy-based authorization.
+
 ## Mutation path
 
 1. Lock the case row and advance its revision.
