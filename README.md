@@ -56,18 +56,82 @@ The Boston record is valuable because it is a bounded, source-cited acceptance
 scenario. The actual product primitive is keeping analytical work correct and
 explainable as its inputs change.
 
-## Quick start
+## Tech stack
+
+| Layer | Technology | Responsibility |
+|---|---|---|
+| Interface | Semantic HTML, modern CSS, vanilla JavaScript, and SVG | Responsive investigator workspace, evidence graph, guided demo, and review workflows without a frontend build step |
+| API | Python 3.12, FastAPI, Uvicorn, and Pydantic | Typed HTTP contracts, access boundaries, validation, and operational read models |
+| Persistence | SQLAlchemy 2 and Alembic | Transactional evidence ledger, immutable artifact versions, custody history, and schema migrations |
+| Databases | SQLite locally and PostgreSQL 17 in deployment | Frictionless local setup with production-grade leases and concurrent worker coordination |
+| Recompute worker | Durable Python worker with database leases and fencing tokens | Selective invalidation, retry-safe recomputation, and atomic artifact publication |
+| Public artifact processing | HTTPX, pypdf, SHA-256 fingerprints, optional Poppler and Tesseract OCR | Allowlisted retrieval, exact-byte custody, text extraction, and cited-span verification |
+| Assisted intake | Optional Anthropic adapter behind reviewer confirmation | Proposes source-quoted assertions; it never writes evidence without human approval and is excluded from deterministic derivation |
+| Quality | Pytest and Ruff | Behavioral tests, regression coverage, linting, and formatting checks |
+| Delivery | Docker, Render Blueprint, and a Vercel ASGI entrypoint | Reproducible local and hosted execution |
+
+The browser has no Node.js or bundler dependency. It consumes the same FastAPI
+contracts that another operational client or customer integration would use.
+
+## Run locally
+
+### Prerequisites
+
+- Python 3.12 or newer
+- Git
+- Docker only if you want PostgreSQL locally
+- Poppler and Tesseract only if you want Linux OCR outside Docker
+
+### 1. Install the application
 
 ```bash
-python -m venv .venv
+git clone https://github.com/Shravankb301/Closure-with-Shravan.git
+cd Closure-with-Shravan
+python3.12 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e ".[dev]"
-.venv/bin/python -m pytest
+```
+
+### 2. Start the complete local workspace
+
+SQLite is the default, so no database service or migration command is required.
+The API creates and upgrades its local schema at startup. The embedded worker
+keeps derived timelines and findings current while you use the interface.
+
+```bash
+PUBLIC_DEMO_MODE=true \
+RUN_EMBEDDED_WORKER=true \
+ENABLE_LOCAL_OCR=false \
 .venv/bin/uvicorn evidence_delta.api:app --reload
 ```
 
-Open [http://localhost:8000](http://localhost:8000), then select **Start guided
-demo**. The guided path introduces the customer problem before revealing the
-case workspace and its backend proof surface.
+Open [http://localhost:8000](http://localhost:8000), then select **Open
+demonstration case** or **Start guided demo**. Set `ENABLE_LOCAL_OCR=true` when
+your machine has a supported local OCR adapter. The application still records
+and exposes OCR constraints when OCR is disabled.
+
+### 3. Run the checks
+
+```bash
+.venv/bin/pytest
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+```
+
+### Optional: run with PostgreSQL
+
+```bash
+docker compose up -d
+DATABASE_URL=postgresql+psycopg://evidence_delta:evidence_delta@localhost:5432/evidence_delta \
+PUBLIC_DEMO_MODE=true \
+RUN_EMBEDDED_WORKER=true \
+.venv/bin/uvicorn evidence_delta.api:app --reload
+```
+
+Interactive API documentation is available at
+[http://localhost:8000/docs](http://localhost:8000/docs).
+
+## Engine-only scenario
 
 To run the deterministic engine scenario without the web application:
 

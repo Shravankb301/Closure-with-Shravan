@@ -637,7 +637,7 @@
     .case-thesis-points div { padding: 14px 12px; background: #fff; }
     .case-thesis-points strong { display: block; color: #294f73; font-size: 13px; }
     .case-thesis-points span { display: block; margin-top: 4px; color: #6c7b88; font-size: 10px; }
-    .case-app { min-height: calc(100vh - 60px); background: var(--paper); }
+    .case-app { min-height: calc(100vh - 60px); scroll-margin-top: 60px; background: var(--paper); }
     .case-head { padding: 28px clamp(22px, 4vw, 56px) 24px; color: var(--ink); background: #fff; border-color: var(--line); }
     .case-head .eyebrow { margin-bottom: 7px; color: #637384; }
     .case-head h2 { font-size: clamp(28px, 3vw, 40px); line-height: 1.12; letter-spacing: -0.035em; }
@@ -813,6 +813,120 @@
     footer { color: #77828d; background: #e9edf0; }
     footer a { color: #365c80; }
 
+    /* Product shell: pin navigation beside the existing panels without changing panel IDs or behavior. */
+    .workspace-shell {
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+      min-height: calc(100vh - 60px);
+      transition: grid-template-columns 180ms ease;
+    }
+    .workspace-content { min-width: 0; scroll-margin-top: 60px; background: var(--paper); }
+    .workspace-sidebar {
+      position: sticky;
+      top: 60px;
+      z-index: 16;
+      display: flex;
+      height: calc(100vh - 60px);
+      min-width: 0;
+      flex-direction: column;
+      overflow: hidden;
+      color: #dbe3e9;
+      background: #18232d;
+      border-right: 1px solid #263747;
+    }
+    .workspace-sidebar-head {
+      display: flex;
+      min-height: 72px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 12px 14px 16px;
+      border-bottom: 1px solid #2a3b4a;
+    }
+    .workspace-sidebar-title { display: flex; min-width: 0; align-items: center; gap: 10px; }
+    .workspace-mark { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid #4e6578; border-radius: 6px; color: #dbe8f2; background: #233544; font: 700 9px/1 var(--mono); }
+    .workspace-sidebar-copy { display: block; min-width: 0; }
+    .workspace-sidebar-copy strong { display: block; overflow: hidden; color: #eef3f6; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+    .workspace-sidebar-copy small { display: block; overflow: hidden; margin-top: 3px; color: #8293a0; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-collapse { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; color: #91a4b3; border: 1px solid #354a5b; border-radius: 5px; background: #1d2b36; font-size: 20px; line-height: 1; }
+    .sidebar-collapse:hover { color: #fff; border-color: #526a7c; background: #273a49; }
+    .case-nav {
+      position: static;
+      display: flex;
+      min-height: 0;
+      flex: 1;
+      flex-direction: column;
+      gap: 3px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 14px 10px;
+      background: transparent;
+      border: 0;
+    }
+    .case-nav .nav-group-label { padding: 12px 9px 5px; color: #657989; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .case-nav button {
+      position: relative;
+      display: grid;
+      width: 100%;
+      min-width: 0;
+      min-height: 40px;
+      grid-template-columns: 26px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      color: #9cadba;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      font: 550 12px/1 var(--sans);
+      text-align: left;
+    }
+    .case-nav button:hover { color: #e8eef2; background: #22323f; }
+    .case-nav button.active { color: #fff; border: 0; background: #2a4052; box-shadow: inset 3px 0 0 #7ba1c1; }
+    .nav-index { color: #617687; font: 600 9px/1 var(--mono); }
+    .case-nav button.active .nav-index { color: #9fc0db; }
+    .nav-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nav-badge { min-width: 18px; padding: 3px 5px; border-radius: 999px; color: #ffece8; background: #984a40; font-size: 9px; font-weight: 700; text-align: center; }
+    .workspace-sidebar-foot { display: flex; min-height: 68px; align-items: center; gap: 10px; padding: 13px 17px; border-top: 1px solid #2a3b4a; background: #15202a; }
+    .sidebar-status-dot { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: #69a57e; box-shadow: 0 0 0 4px rgba(105, 165, 126, 0.1); }
+    .workspace-scrim, .workspace-menu { display: none; }
+    .workspace-breadcrumb { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 8px; color: #7b8792; font-size: 11px; }
+    .workspace-breadcrumb strong { color: #365c80; font-weight: 650; }
+    .case-app.sidebar-collapsed .workspace-shell { grid-template-columns: 72px minmax(0, 1fr); }
+    .case-app.sidebar-collapsed .workspace-sidebar-head { justify-content: center; padding-inline: 10px; }
+    .case-app.sidebar-collapsed .workspace-sidebar-title, .case-app.sidebar-collapsed .workspace-sidebar-copy, .case-app.sidebar-collapsed .nav-label, .case-app.sidebar-collapsed .nav-group-label { display: none; }
+    .case-app.sidebar-collapsed .sidebar-collapse span { transform: rotate(180deg); }
+    .case-app.sidebar-collapsed .case-nav { padding-inline: 9px; }
+    .case-app.sidebar-collapsed .case-nav button { grid-template-columns: 1fr; justify-items: center; padding: 0; }
+    .case-app.sidebar-collapsed .case-nav .nav-badge { position: absolute; top: 3px; right: 2px; margin: 0; }
+    .case-app.sidebar-collapsed .workspace-sidebar-foot { justify-content: center; padding-inline: 0; }
+
+    /* Progressive disclosure keeps the initial scan concise while all source proof stays one click away. */
+    .dense-disclosure > summary {
+      display: flex;
+      min-height: 60px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 17px;
+      cursor: pointer;
+      list-style: none;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+    .dense-disclosure > summary::-webkit-details-marker { display: none; }
+    .dense-disclosure > summary strong { display: block; color: #2d4f6e; font-size: 12px; }
+    .dense-disclosure > summary small { display: block; margin-top: 4px; color: #71808d; font-size: 10px; line-height: 1.4; }
+    .disclosure-action { flex: 0 0 auto; padding: 6px 9px; color: #315f8c; border: 1px solid #c4d0da; border-radius: 5px; background: #f4f7f9; font-size: 10px; font-weight: 650; }
+    .dense-disclosure[open] .disclosure-action::before { content: "Hide details"; }
+    .dense-disclosure[open] .disclosure-action { font-size: 0; }
+    .dense-disclosure[open] .disclosure-action::before { font-size: 10px; }
+    .integration-disclosure { border-top: 0; }
+    .integration-disclosure > summary { border-top: 0; }
+    .finding-evidence { margin-top: 12px; border-top: 1px solid var(--line); }
+    .finding-evidence > summary { padding: 11px 0 0; cursor: pointer; color: #315f8c; font-size: 11px; font-weight: 650; }
+    .finding-evidence .finding-events { margin-top: 10px; }
+
     @media (max-width: 1050px) {
       .launch { grid-template-columns: 1fr; }
       .brief-panel { min-height: auto; margin: 0; border-right: 0; border-left: 0; border-radius: 0; }
@@ -824,6 +938,36 @@
       .acquisition-summary { grid-template-columns: repeat(2, 1fr); }
       .acquisition-grid { grid-template-columns: repeat(2, 1fr); }
       .acquisition-source { border-bottom: 1px solid var(--line); }
+    }
+    @media (max-width: 900px) {
+      body.workspace-drawer-open { overflow: hidden; }
+      .workspace-shell { display: block; }
+      .workspace-sidebar {
+        position: fixed;
+        top: 60px;
+        bottom: 0;
+        left: 0;
+        z-index: 31;
+        width: min(288px, calc(100vw - 52px));
+        height: auto;
+        transform: translateX(-102%);
+        box-shadow: 20px 0 50px rgba(13, 24, 34, 0.25);
+        transition: transform 180ms ease;
+      }
+      .case-app.workspace-nav-open .workspace-sidebar { transform: translateX(0); }
+      .workspace-scrim { position: fixed; inset: 60px 0 0; z-index: 30; border: 0; background: rgba(21, 32, 42, 0.46); }
+      .case-app.workspace-nav-open .workspace-scrim { display: block; }
+      .sidebar-collapse { display: none; }
+      .workspace-menu { display: inline-flex; }
+      .case-head { padding: 22px 20px 20px; }
+      .case-head-actions { align-items: flex-start; flex-wrap: wrap; }
+      .case-app.sidebar-collapsed .workspace-sidebar-title { display: flex; }
+      .case-app.sidebar-collapsed .workspace-sidebar-copy, .case-app.sidebar-collapsed .nav-label, .case-app.sidebar-collapsed .nav-group-label { display: block; }
+      .case-app.sidebar-collapsed .workspace-sidebar-head { justify-content: space-between; padding: 14px 12px 14px 16px; }
+      .case-app.sidebar-collapsed .case-nav { padding: 14px 10px; }
+      .case-app.sidebar-collapsed .case-nav button { grid-template-columns: 26px minmax(0, 1fr) auto; justify-items: stretch; padding: 0 10px; }
+      .case-app.sidebar-collapsed .case-nav .nav-badge { position: static; margin: 0; }
+      .case-app.sidebar-collapsed .workspace-sidebar-foot { justify-content: flex-start; padding: 13px 17px; }
     }
     @media (max-width: 720px) {
       .topbar { padding: 0 15px; }
@@ -853,6 +997,9 @@
       .acquisition-summary { grid-template-columns: 1fr 1fr; }
       .acquisition-step, .acquisition-source { border-right: 0; border-bottom: 1px solid var(--line); }
       .case-search-form, .search-result { grid-template-columns: 1fr; }
+      .case-head-actions { width: 100%; }
+      .case-head-actions .button { flex: 1 1 auto; }
+      .dense-disclosure > summary { align-items: flex-start; }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
@@ -881,12 +1028,7 @@
         <div class="launch-actions">
           <button class="button button-primary" id="build-case" type="button">Open demonstration case</button>
           <button class="button button-dark" id="start-tour" type="button">Start guided demo</button>
-          <button class="button button-ghost" id="open-case-toggle" type="button">Open existing case</button>
         </div>
-        <form class="hidden" id="open-case-form" style="max-width:620px;margin-top:18px">
-          <div class="field"><label for="open-case-id">Case ID</label><input id="open-case-id" placeholder="Paste a case UUID" required></div>
-          <button class="button button-dark button-small" type="submit">Open case</button>
-        </form>
         <p class="form-status" id="launch-status" role="status">Ready to run a public-record test case through the evidence pipeline.</p>
         <div class="guardrail"><span class="guardrail-mark">[!]</span><span><strong>Working engineering demonstration, not an official law-enforcement system.</strong> Boston is the test case, not the product. The system proves evidence mutation, targeted recomputation, provenance, review findings, and operational handoff without claiming to have solved a historical investigation.</span></div>
       </div>
@@ -950,28 +1092,49 @@
     </section>
 
     <section class="case-app hidden" id="case-app" aria-live="polite">
+      <div class="workspace-shell">
+        <aside class="workspace-sidebar" id="workspace-sidebar" aria-label="Case workspace navigation">
+          <div class="workspace-sidebar-head">
+            <div class="workspace-sidebar-title">
+              <span class="workspace-mark" aria-hidden="true">ED</span>
+              <span class="workspace-sidebar-copy"><strong>Case operations</strong><small>Evidence workspace</small></span>
+            </div>
+            <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-label="Collapse case navigation" aria-expanded="true"><span aria-hidden="true">‹</span></button>
+          </div>
+
+          <nav class="case-nav" aria-label="Investigation workspace sections">
+            <span class="nav-group-label">Review</span>
+            <button class="active" data-panel-target="command" type="button"><span class="nav-index" aria-hidden="true">01</span><span class="nav-label">Overview</span></button>
+            <button data-panel-target="operations" type="button"><span class="nav-index" aria-hidden="true">02</span><span class="nav-label">Operations</span></button>
+            <button data-panel-target="findings" type="button"><span class="nav-index" aria-hidden="true">03</span><span class="nav-label">Findings</span><span class="nav-badge hidden" id="findings-badge">0</span></button>
+            <button data-panel-target="timeline" type="button"><span class="nav-index" aria-hidden="true">04</span><span class="nav-label">Chronology</span></button>
+            <button data-panel-target="sources" type="button"><span class="nav-index" aria-hidden="true">05</span><span class="nav-label">Sources</span></button>
+            <span class="nav-group-label">Actions</span>
+            <button data-panel-target="intake" type="button"><span class="nav-index" aria-hidden="true">06</span><span class="nav-label">Add evidence</span></button>
+            <button data-panel-target="ai-intake" type="button"><span class="nav-index" aria-hidden="true">07</span><span class="nav-label">Assisted intake</span></button>
+            <button data-panel-target="officer" type="button"><span class="nav-index" aria-hidden="true">08</span><span class="nav-label">Handoff</span></button>
+          </nav>
+
+          <div class="workspace-sidebar-foot">
+            <span class="sidebar-status-dot" aria-hidden="true"></span>
+            <span class="workspace-sidebar-copy"><strong>Live case state</strong><small id="workspace-rail-revision">Awaiting case</small></span>
+          </div>
+        </aside>
+        <button class="workspace-scrim" id="workspace-scrim" type="button" aria-label="Close case navigation"></button>
+
+        <div class="workspace-content" id="case-workspace">
       <div class="case-head">
         <div>
-          <p class="eyebrow">Case workspace</p>
+          <p class="workspace-breadcrumb"><span>Case workspace</span><span aria-hidden="true">/</span><strong id="workspace-section-label">Overview</strong></p>
           <h2 id="case-name">Boston evidence-disposal case</h2>
           <div class="case-meta"><span id="case-id"></span><span id="case-revision"></span><span id="case-created"></span></div>
         </div>
         <div class="case-head-actions">
+          <button class="button button-ghost button-small workspace-menu" id="workspace-menu" type="button" aria-controls="workspace-sidebar" aria-expanded="false">Sections</button>
           <button class="button button-ghost button-small" id="copy-link" type="button">Copy case link</button>
           <button class="button button-primary button-small" id="new-review" type="button">Open fresh copy</button>
         </div>
       </div>
-
-      <nav class="case-nav" aria-label="Investigation workspace sections">
-        <button class="active" data-panel-target="command" type="button">Overview</button>
-        <button data-panel-target="operations" type="button">Operations</button>
-        <button data-panel-target="findings" type="button">Findings<span class="nav-badge hidden" id="findings-badge">0</span></button>
-        <button data-panel-target="timeline" type="button">Chronology</button>
-        <button data-panel-target="sources" type="button">Sources</button>
-        <button data-panel-target="intake" type="button">Add evidence</button>
-        <button data-panel-target="ai-intake" type="button">Assisted intake</button>
-        <button data-panel-target="officer" type="button">Handoff</button>
-      </nav>
 
       <section class="panel" data-panel="command">
         <section class="case-thesis" id="capability-summary">
@@ -1032,9 +1195,12 @@
           <div class="card-head"><div><span class="card-kicker">Public artifact acquisition</span><h3>From official source to organized case evidence</h3><p>The backend retrieves each allowlisted public artifact, fingerprints the bytes, attempts text extraction, records access or OCR constraints, ingests the reviewed assertion set, and maps it into current case relationships.</p></div></div>
           <div class="acquisition-summary" id="acquisition-summary"></div>
           <div class="acquisition-flow" id="acquisition-flow"></div>
-          <div class="acquisition-grid" id="acquisition-sources"></div>
           <p class="acquisition-boundary" id="acquisition-boundary"></p>
-          <p class="acquisition-note" id="acquisition-note">Resolution path: download a constrained artifact through an approved browser, then import it here. The backend fingerprints, stores, reads, verifies, and appends the new attempt to its custody chain without changing the evidentiary revision.</p>
+          <details class="dense-disclosure acquisition-details">
+            <summary><span><strong>Inspect source retrieval records</strong><small id="acquisition-detail-summary">Response, fingerprint, extraction, verification, and custody details</small></span><span class="disclosure-action" aria-hidden="true">Show details</span></summary>
+            <div class="acquisition-grid" id="acquisition-sources"></div>
+            <p class="acquisition-note" id="acquisition-note">Resolution path: download a constrained artifact through an approved browser, then import it here. The backend fingerprints, stores, reads, verifies, and appends the new attempt to its custody chain without changing the evidentiary revision.</p>
+          </details>
           <input class="hidden" id="artifact-import-file" type="file" accept="application/pdf,text/html,text/plain,.pdf,.html,.htm,.txt">
           <p class="form-status" id="artifact-import-status" role="status"></p>
         </article>
@@ -1088,7 +1254,9 @@
 
           <aside class="card">
             <div class="card-head"><div><span class="card-kicker">Real integration boundary</span><h3>Inputs and outputs</h3><p>The interface is one client of an API and worker system.</p></div></div>
-            <div class="integration-list">
+            <details class="ops-disclosure integration-disclosure">
+              <summary>Inspect integration contracts</summary>
+              <div class="integration-list">
               <div class="integration-row"><strong>Structured evidence intake</strong><p>Idempotent document and assertion writes through <code>POST /cases/{id}/documents</code>.</p></div>
               <div class="integration-row"><strong>Public artifact connector</strong><p><code>GET /cases/{id}/source-acquisitions</code> exposes retrieval, redirect, fingerprint, extraction, and source-span verification state for every official URL.</p></div>
               <div class="integration-row"><strong>OCR and browser resolution</strong><p>Scanned PDFs use the configured OCR adapter. Challenge pages can be downloaded through an approved browser and imported through <code>POST /cases/{id}/source-acquisitions/{document_id}/imports</code>.</p></div>
@@ -1098,7 +1266,8 @@
               <div class="integration-row"><strong>Review-gated extraction</strong><p><code>POST /extract</code> proposes cited assertions. A human must confirm before the ledger changes.</p></div>
               <div class="integration-row"><strong>Portable case packet</strong><p>Sources, findings, history, operational proof, and artifact lineage export as one durable JSON handoff.</p></div>
               <div class="integration-row"><strong>API and worker deployment</strong><p>Independent processes coordinate through PostgreSQL leases, fencing tokens, and immutable version records.</p></div>
-            </div>
+              </div>
+            </details>
             <p class="integration-note">The public web connector runs live against allowlisted DOJ and FBI URLs. It does not authenticate into agency systems. Customer connectors would use the same ingestion contract without bypassing the evidence ledger.</p>
           </aside>
         </div>
@@ -1232,6 +1401,8 @@
           </section>
         </div>
       </section>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -1397,6 +1568,7 @@
       const verificationTotal = totalSpans || organized;
       const mappedRelationships = state.graph?.edges?.length || 0;
       const constrained = acquisitionRows.filter((source) => source.acquisition.status !== "FETCHED" || source.acquisition.extraction_method?.includes("REQUIRES_OCR")).length;
+      const sourceDetailCount = report.sources.length;
       const unmatchedSpans = Math.max(verificationTotal - verifiedSpans, 0);
       const labels = {
         FETCH: "Retrieve official URL",
@@ -1424,6 +1596,7 @@
         const stageInfo = stageState[stage] || { className: "blocked", detail: "not run" };
         return `<div class="acquisition-step ${stageInfo.className}"><span>0${index + 1}</span><strong>${escapeHtml(labels[stage] || stage)}</strong><small>${escapeHtml(stageInfo.detail)}</small></div>`;
       }).join("");
+      byId("acquisition-detail-summary").textContent = `${sourceDetailCount} source record${sourceDetailCount === 1 ? "" : "s"} with response, fingerprint, extraction, verification, and custody details`;
       byId("acquisition-sources").innerHTML = report.sources.map((source) => {
         const acquisition = source.acquisition;
         const status = acquisition?.status || "NOT_REQUESTED";
@@ -2008,7 +2181,8 @@
     function findingCard(finding, alert = false) {
       const profile = entityProfile(finding.entity_id);
       const classes = (finding.classes || [finding.event_class]).filter(Boolean).join(" vs ");
-      return `<article class="finding${alert ? " alert" : ""}"><div class="finding-head"><div><strong>${escapeHtml(profile.label)}</strong><small>${escapeHtml(finding.date)}${classes ? ` / ${escapeHtml(classes)}` : ""}${finding.cross_tier ? " / cross-tier" : ""}</small></div><code>FINDING ${escapeHtml(finding.finding_id)}</code></div><p>${escapeHtml(finding.summary)}</p><div class="finding-events">${finding.events.map(findingEventMarkup).join("")}</div></article>`;
+      const eventCount = finding.events.length;
+      return `<article class="finding${alert ? " alert" : ""}"><div class="finding-head"><div><strong>${escapeHtml(profile.label)}</strong><small>${escapeHtml(finding.date)}${classes ? ` / ${escapeHtml(classes)}` : ""}${finding.cross_tier ? " / cross-tier" : ""}</small></div><code>FINDING ${escapeHtml(finding.finding_id)}</code></div><p>${escapeHtml(finding.summary)}</p><details class="finding-evidence"><summary>Inspect ${eventCount} cited assertion${eventCount === 1 ? "" : "s"}</summary><div class="finding-events">${finding.events.map(findingEventMarkup).join("")}</div></details></article>`;
     }
 
     function renderFindings() {
@@ -2335,6 +2509,7 @@
       byId("case-id").textContent = `CASE ${current.id}`;
       byId("case-revision").textContent = `EVIDENCE REVISION ${current.revision}`;
       byId("case-created").textContent = `CREATED ${new Date(current.created_at).toLocaleString()}`;
+      byId("workspace-rail-revision").textContent = `Revision ${current.revision} · ${state.data.documents.filter((document) => !document.retracted).length} active sources`;
       byId("case-search-results").classList.add("hidden");
       byId("case-search-results").innerHTML = "";
       setStatus("case-search-status", "Search the current revision and inspect every result at its source.");
@@ -2598,6 +2773,20 @@
       }
     }
 
+    const workspaceMobileMedia = window.matchMedia("(max-width: 900px)");
+
+    function setWorkspaceDrawer(open) {
+      const caseApp = byId("case-app");
+      const sidebar = byId("workspace-sidebar");
+      const drawerOpen = workspaceMobileMedia.matches && open;
+      caseApp.classList.toggle("workspace-nav-open", drawerOpen);
+      document.body.classList.toggle("workspace-drawer-open", drawerOpen);
+      byId("workspace-menu").setAttribute("aria-expanded", String(drawerOpen));
+      sidebar.inert = workspaceMobileMedia.matches && !drawerOpen;
+      if (sidebar.inert) sidebar.setAttribute("aria-hidden", "true");
+      else sidebar.removeAttribute("aria-hidden");
+    }
+
     function switchPanel(name) {
       document.querySelectorAll("[data-panel]").forEach((panel) => {
         const active = panel.dataset.panel === name;
@@ -2610,7 +2799,10 @@
         button.setAttribute("aria-selected", String(active));
         button.tabIndex = active ? 0 : -1;
       });
-      byId("case-app").scrollIntoView({ behavior: "smooth" });
+      const activeButton = document.querySelector(`[data-panel-target='${name}']`);
+      byId("workspace-section-label").textContent = activeButton?.querySelector(".nav-label")?.textContent || "Workspace";
+      setWorkspaceDrawer(false);
+      byId("case-workspace").scrollIntoView({ behavior: "smooth" });
     }
 
     const TOUR_STEPS = [
@@ -2756,11 +2948,15 @@
 
     const workspaceTabs = [...document.querySelectorAll("[data-panel-target]")];
     document.querySelector(".case-nav").setAttribute("role", "tablist");
+    document.querySelector(".case-nav").setAttribute("aria-orientation", "vertical");
+    document.querySelectorAll(".nav-group-label").forEach((label) => label.setAttribute("role", "presentation"));
     workspaceTabs.forEach((button) => {
       const panelName = button.dataset.panelTarget;
       const panel = document.querySelector(`[data-panel='${panelName}']`);
+      const navigationLabel = button.querySelector(".nav-label")?.textContent || button.textContent.trim();
       button.id = `tab-${panelName}`;
       button.setAttribute("role", "tab");
+      button.setAttribute("aria-label", navigationLabel);
       button.setAttribute("aria-controls", `panel-${panelName}`);
       button.setAttribute("aria-selected", String(button.classList.contains("active")));
       button.tabIndex = button.classList.contains("active") ? 0 : -1;
@@ -2769,14 +2965,27 @@
       panel.setAttribute("aria-labelledby", button.id);
       panel.setAttribute("aria-hidden", String(panel.classList.contains("hidden")));
       button.addEventListener("keydown", (event) => {
-        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
         event.preventDefault();
         const current = workspaceTabs.indexOf(button);
-        const target = event.key === "Home" ? 0 : event.key === "End" ? workspaceTabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + workspaceTabs.length) % workspaceTabs.length;
+        const next = event.key === "ArrowRight" || event.key === "ArrowDown";
+        const target = event.key === "Home" ? 0 : event.key === "End" ? workspaceTabs.length - 1 : (current + (next ? 1 : -1) + workspaceTabs.length) % workspaceTabs.length;
         workspaceTabs[target].focus();
         switchPanel(workspaceTabs[target].dataset.panelTarget);
       });
     });
+
+    byId("sidebar-collapse").addEventListener("click", () => {
+      const caseApp = byId("case-app");
+      const collapsed = caseApp.classList.toggle("sidebar-collapsed");
+      byId("sidebar-collapse").setAttribute("aria-expanded", String(!collapsed));
+      byId("sidebar-collapse").setAttribute("aria-label", collapsed ? "Expand case navigation" : "Collapse case navigation");
+    });
+    byId("workspace-menu").addEventListener("click", () => setWorkspaceDrawer(!byId("case-app").classList.contains("workspace-nav-open")));
+    byId("workspace-scrim").addEventListener("click", () => setWorkspaceDrawer(false));
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape") setWorkspaceDrawer(false); });
+    workspaceMobileMedia.addEventListener("change", () => setWorkspaceDrawer(false));
+    setWorkspaceDrawer(false);
 
     wireGraphInteractions();
     byId("toggle-sources").addEventListener("click", () => {
@@ -2814,15 +3023,6 @@
     byId("start-tour").addEventListener("click", startGuidedTour);
     byId("start-story-tour").addEventListener("click", startGuidedTour);
     byId("new-review").addEventListener("click", () => buildOfficialCase());
-    byId("open-case-toggle").addEventListener("click", () => byId("open-case-form").classList.toggle("hidden"));
-    byId("open-case-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const caseId = byId("open-case-id").value.trim();
-      try { await openCase(caseId); byId("case-app").scrollIntoView({ behavior: "smooth" }); }
-      catch (error) {
-        setStatus("launch-status", error.status === 401 ? "This deployment is not configured for public demo access." : error.message, true);
-      }
-    });
     byId("copy-link").addEventListener("click", async () => { try { await navigator.clipboard.writeText(caseUrl().toString()); setStatus("launch-status", "Case link copied."); } catch (_error) { setStatus("launch-status", "Clipboard permission was blocked.", true); } });
     byId("case-search-form").addEventListener("submit", async (event) => {
       event.preventDefault();
