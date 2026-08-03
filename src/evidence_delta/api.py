@@ -12,9 +12,15 @@ from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_delta.database import Database
+from evidence_delta.real_case import build_boston_obstruction_case
 from evidence_delta.runtime import WorkerLoop
 from evidence_delta.scenario import build_selectivity_scenario
-from evidence_delta.schemas import CaseInput, DocumentInput, RetractionInput
+from evidence_delta.schemas import (
+    CaseAssignmentInput,
+    CaseInput,
+    DocumentInput,
+    RetractionInput,
+)
 from evidence_delta.service import EvidenceService
 from evidence_delta.worker import RecomputeWorker
 
@@ -63,10 +69,28 @@ def create_app(database_url: str | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    @application.middleware("http")
+    async def disable_response_caching(request: Request, call_next):
+        # Case, proof, and findings responses must always reflect the current
+        # evidence revision; a heuristically cached GET can show a reviewer a
+        # retracted source as active. The social image is the only safe cache.
+        response = await call_next(request)
+        if request.url.path == "/og.png":
+            response.headers.setdefault("Cache-Control", "public, max-age=3600")
+        else:
+            response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
     static_dir = Path(__file__).parent / "static"
 
     @application.get("/", include_in_schema=False)
     def dashboard(request: Request) -> HTMLResponse:
+        origin = escape(str(request.base_url).rstrip("/"), quote=True)
+        html = (static_dir / "investigation.html").read_text(encoding="utf-8")
+        return HTMLResponse(html.replace("{{SITE_ORIGIN}}", origin))
+
+    @application.get("/engineering", include_in_schema=False)
+    def engineering_proof(request: Request) -> HTMLResponse:
         origin = escape(str(request.base_url).rstrip("/"), quote=True)
         html = (static_dir / "index.html").read_text(encoding="utf-8")
         return HTMLResponse(html.replace("{{SITE_ORIGIN}}", origin))
@@ -99,9 +123,24 @@ def create_app(database_url: str | None = None) -> FastAPI:
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    @application.put("/cases/{case_id}/assignment", dependencies=secured)
+    def assign_case(case_id: str, body: CaseAssignmentInput) -> dict:
+        try:
+            return service.assign_case(case_id, body)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     @application.post("/demo/scenario", status_code=201, dependencies=secured)
     def create_demo_scenario() -> dict:
         return build_selectivity_scenario(service, worker)
+
+    @application.post(
+        "/demo/real-case/boston-obstruction",
+        status_code=201,
+        dependencies=secured,
+    )
+    def create_boston_obstruction_case() -> dict:
+        return build_boston_obstruction_case(service, worker)
 
     @application.post("/cases/{case_id}/documents", status_code=202, dependencies=secured)
     def add_document(case_id: str, body: DocumentInput) -> dict:
@@ -139,6 +178,13 @@ def create_app(database_url: str | None = None) -> FastAPI:
         if result is None:
             raise HTTPException(status_code=404, detail="Artifact not found")
         return result
+
+    @application.get("/cases/{case_id}/findings", dependencies=secured)
+    def get_case_findings(case_id: str) -> dict:
+        try:
+            return service.case_findings(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @application.get("/cases/{case_id}/proof", dependencies=secured)
     def get_case_proof(case_id: str) -> dict:

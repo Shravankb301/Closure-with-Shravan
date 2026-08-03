@@ -1,17 +1,34 @@
-# Evidence Delta Engine
+# Boston Evidence Command Board
 
-A small backend prototype for one question:
+A source-backed public-record investigation workspace built on a deterministic
+evidence recomputation engine.
+
+The root application is organized around the Boston Marathon bombing
+investigation's evidence-disposal and obstruction sequence. It gives a reviewer
+one operational surface for:
+
+- tracing each displayed claim to an immutable source locator,
+- separating complaint and indictment allegations from later court outcomes,
+- inspecting a shared-source relationship graph and chronological reconstruction,
+- surfacing deterministic cross-source findings: contradiction candidates,
+  corroborated events, and single-source exposure,
+- assigning an officer or analyst and persisting handoff context,
+- adding or retracting evidence without erasing the audit trail, and
+- verifying maintained timelines against a deterministic full rebuild.
+
+The trusted engine underneath still answers one central technical question:
 
 > When evidence is added or retracted, can derived investigative artifacts be
 > updated selectively without changing the result of a full rebuild?
 
-The engine maintains deterministic entity-day timelines over synthetic,
-structured evidence. It records the exact keys each artifact reads, queues only
-affected artifacts, preserves source lineage, and verifies incremental state
-against a full rebuild after every mutation.
+The engine maintains deterministic entity-day timelines over structured
+evidence. It records the exact keys each artifact reads, queues only affected
+artifacts, preserves source lineage, and verifies incremental state against a
+full rebuild after every mutation.
 
-This is an incremental-computation experiment, not an investigation platform.
-It does not process real evidence and does not claim CJIS compliance.
+This is an analytical demonstration, not an official law-enforcement system.
+It does not perform raw evidence extraction, identify new suspects, make
+investigative conclusions, or claim CJIS compliance.
 
 ## The demonstration
 
@@ -46,6 +63,20 @@ Representative impact:
 Timing in the demo is intentionally labeled as a local illustration, not a
 production-scale benchmark. Correctness is the primary result.
 
+## Investigation workspace
+
+The root route opens the **Boston Evidence Command Board**. The official-record
+action materializes 25 assertions from four official records into 15
+entity-day timelines. The command board renders live case metrics, a source-
+supported relationship map, an event chronology, a legal-status distribution,
+an officer review queue, a source ledger, evidence intake, persistent case
+assignment/handoff metadata, and a findings board that surfaces contradiction
+candidates, corroboration, and single-source exposure across the active
+source set.
+
+The original incremental-computation demonstration remains available at
+`/engineering`.
+
 ## Interactive engineering proof
 
 The root route turns the 3-of-100 scenario into a guided live proof. One action
@@ -61,6 +92,59 @@ crash-before-commit rollback, stale-worker fencing, bounded retries, and
 PostgreSQL multi-worker claims. Its link-preview image uses the same impact map,
 so a shared demo URL communicates the result before the page opens.
 
+### Official-record use case
+
+The **Open the real case** action creates a durable workspace for the narrow
+evidence-disposal obstruction case associated with the Boston Marathon bombing
+investigation. It materializes 25 source-backed assertions into 15 timelines
+from four official records:
+
+- [May 2013 criminal complaint](https://www.justice.gov/iso/opa/resources/628201351145721158286.pdf)
+- [August 2013 indictment announcement](https://www.justice.gov/usao-ma/pr/federal-grand-jury-indicts-two-men-obstruction-justice-boston-marathon-bombing)
+- [FBI case history](https://www.fbi.gov/history/cases-and-criminals/boston-marathon-bombing)
+- [June 2015 sentencing record](https://www.justice.gov/usao-ma/pr/dias-kadyrbayev-sentenced-six-years-impeding-boston-marathon-bombing-investigation)
+
+Complaint and indictment events remain labeled as allegations. The interface
+uses court-established labels only for events reported after a guilty plea or
+jury verdict. Coarse source times retain `DAY`, `MONTH`, or `WINDOW` precision
+instead of presenting invented exact timestamps. The resulting case is a
+normal workspace: a reviewer can add evidence, inspect source spans and
+lineage, share the case URL, or retract a source.
+
+### Deterministic cross-source findings
+
+`GET /cases/{case_id}/findings` derives three kinds of review findings from the
+active (non-retracted) assertion set:
+
+- **Contradiction candidates.** Two active sources assert mutually exclusive
+  event classes for the same entity on the same day (for example `disposal`
+  vs `concealment`). The conflict table is an explicit, deliberately minimal
+  allowlist; a flag is a review prompt for the assigned officer, never an
+  automatic falsehood determination.
+- **Corroborated events.** The same entity-day event class is supported by two
+  or more distinct source records, with cross-tier support (allegation-tier and
+  court-established records agreeing) called out explicitly.
+- **Single-source exposure.** Entity-days whose every active event rests on one
+  source record — the leads most in need of corroboration.
+
+Detection is structural: entity, day, kind-derived event class, source
+identity, and legal tier. There is no free-text comparison and no model call in
+this path, so the same active assertion set always produces byte-identical
+findings. Event classes come from an explicit kind-suffix allowlist, so a new
+assertion kind never silently joins a conflict rule.
+
+The curated official record is internally consistent, so it produces zero
+contradictions — which is itself the correct finding. The Findings panel
+offers a clearly labeled hypothetical demonstration tip that conflicts with
+the court-established laptop concealment; appending it surfaces a live
+contradiction with both cited locators, and retracting it clears the flag
+while the tip remains in the audit ledger.
+
+Findings are recomputed in full on every read. They are a pure function of
+active assertions, so they inherit full-rebuild semantics without incremental
+machinery; if they became expensive they would become artifacts with change
+keys exactly like timelines.
+
 ### Use your own evidence
 
 The browser also exposes a durable case workspace intended for hands-on review.
@@ -71,14 +155,15 @@ share the case URL, and retract a source without deleting its audit record.
 JSON and CSV inputs use these fields:
 
 ```text
-entity_id, occurred_at, kind, value, source_locator, source_text
+entity_id, occurred_at, kind, value, time_precision, source_locator, source_text
 ```
 
-The first four fields are required. `source_locator` defaults to the input row
-and `source_text` defaults to `value`. Uploaded bytes are parsed in the browser;
-the durable record is the validated assertion set and its provenance, not the
-original file blob. Imports are limited to 1,000 assertions and 5 MB in the
-hosted workspace.
+The first four fields are required. `time_precision` defaults to `EXACT`,
+`source_locator` defaults to the input row, and `source_text` defaults to
+`value`. A document envelope may also include an absolute `source_uri`.
+Uploaded bytes are parsed in the browser; the durable record is the validated
+assertion set and its provenance, not the original file blob. Imports are
+limited to 1,000 assertions and 5 MB in the hosted workspace.
 
 The hosted demo can require an `X-Demo-Key`. The browser keeps that value in
 session storage only and never places it in a URL.
@@ -144,12 +229,15 @@ Core endpoints:
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/cases` | Create an isolated synthetic case |
+| `POST` | `/cases` | Create an isolated durable case |
 | `GET` | `/cases/{case_id}` | Reopen a case with its source history and current artifacts |
+| `PUT` | `/cases/{case_id}/assignment` | Persist assigned officer, unit, and handoff context |
+| `POST` | `/demo/real-case/boston-obstruction` | Materialize the curated official-record case |
 | `POST` | `/cases/{case_id}/documents` | Add structured assertions idempotently |
 | `POST` | `/cases/{case_id}/documents/{document_id}/retractions` | Append a retraction tombstone |
 | `POST` | `/workers/drain` | Process queued recomputations locally |
 | `GET` | `/cases/{case_id}/artifacts/{artifact_key}` | Read a versioned artifact and lineage |
+| `GET` | `/cases/{case_id}/findings` | Derive contradiction candidates, corroboration, and single-source exposure |
 | `GET` | `/cases/{case_id}/proof` | Verify full-rebuild equivalence and inspect live proof counts |
 
 Interactive API documentation is available at `/docs` while the server runs.
@@ -187,9 +275,9 @@ version, and schema version before entering this kernel.
 
 ### Entity resolution is upstream
 
-Synthetic inputs contain ground-truth entity IDs. Entity resolution is treated
-as an upstream oracle because uncertain merges and splits are a separate hard
-problem that would obscure the incremental-computation experiment.
+Fixtures contain curated entity IDs. Entity resolution is treated as an
+upstream oracle because uncertain merges and splits are a separate hard problem
+that would obscure the incremental-computation experiment.
 
 ### Concurrent mutations
 
@@ -204,8 +292,9 @@ verifies that the stale version never appears.
 Raw PDF ingestion, OCR, audio/video processing, entity resolution, natural
 language question answering, role-based authorization, and disaster recovery
 are outside scope. The hosted API key is controlled-demo access, not a
-production identity system. Synthetic structured assertions keep the central
-correctness property testable and explainable.
+production identity system. Structured assertions keep the central correctness
+property testable and explainable; curated public-record assertions exercise
+the same kernel without implying automated extraction or case solving.
 
 See [DESIGN.md](DESIGN.md) for failure modes and transactional details, and
 [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) for challenged alternatives,

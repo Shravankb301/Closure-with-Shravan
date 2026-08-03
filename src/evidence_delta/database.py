@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, event, select
+from sqlalchemy import create_engine, event, inspect, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -53,6 +53,43 @@ class Database:
 
     def create_schema(self) -> None:
         Base.metadata.create_all(self.engine)
+        if self.engine.dialect.name == "sqlite":
+            self._upgrade_legacy_sqlite_schema()
+
+    def _upgrade_legacy_sqlite_schema(self) -> None:
+        """Keep local databases created before Alembic adoption usable."""
+
+        with self.engine.begin() as connection:
+            inspector = inspect(connection)
+            case_columns = {column["name"] for column in inspector.get_columns("cases")}
+            case_upgrades = {
+                "assigned_officer": "VARCHAR(160)",
+                "assigned_badge": "VARCHAR(80)",
+                "assigned_unit": "VARCHAR(160)",
+                "handoff_note": "TEXT",
+            }
+            for column, definition in case_upgrades.items():
+                if column not in case_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE cases ADD COLUMN {column} {definition}")
+                    )
+
+            document_columns = {column["name"] for column in inspector.get_columns("documents")}
+            if "source_uri" not in document_columns:
+                connection.execute(
+                    text("ALTER TABLE documents ADD COLUMN source_uri VARCHAR(2048)")
+                )
+
+            assertion_columns = {
+                column["name"] for column in inspector.get_columns("assertions")
+            }
+            if "time_precision" not in assertion_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE assertions ADD COLUMN time_precision "
+                        "VARCHAR(16) NOT NULL DEFAULT 'EXACT'"
+                    )
+                )
 
     def drop_schema(self) -> None:
         Base.metadata.drop_all(self.engine)

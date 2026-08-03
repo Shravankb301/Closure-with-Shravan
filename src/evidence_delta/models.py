@@ -29,6 +29,10 @@ class CaseRecord(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    assigned_officer: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    assigned_badge: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    assigned_unit: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    handoff_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
@@ -44,6 +48,7 @@ class DocumentRecord(Base):
     )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     source_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    source_uri: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     added_at_revision: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -72,6 +77,9 @@ class AssertionRecord(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     kind: Mapped[str] = mapped_column(String(80), nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=False)
+    time_precision: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="EXACT", server_default="EXACT"
+    )
     source_locator: Mapped[str] = mapped_column(String(160), nullable=False)
     source_text: Mapped[str] = mapped_column(Text, nullable=False)
     added_at_revision: Mapped[int] = mapped_column(Integer, nullable=False)

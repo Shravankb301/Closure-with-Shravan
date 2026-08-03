@@ -113,3 +113,30 @@ preserves transaction, lease, fencing, and retry semantics, but it is an
 operational compromise: a sleeping web instance cannot process work. A paid or
 production deployment should run the same `evidence-delta-worker` entry point as
 an independently scalable worker service.
+
+## Findings are derived on read
+
+Cross-source findings (contradiction candidates, corroboration, single-source
+exposure) are a pure function of the active assertion set, computed in full on
+every `GET /cases/{id}/findings`. This is deliberate: at case scale the full
+computation is cheaper than the bookkeeping an incremental version would need,
+and recomputing from scratch means findings can never be stale relative to a
+retraction. If findings became expensive, they would become artifacts with
+declared change-key dependencies and flow through the same worker, versioning,
+and full-rebuild oracle as timelines.
+
+Conflict detection is structural and rule-based. Event classes come from an
+explicit kind-suffix allowlist, and the conflict table is a minimal set of
+mutually exclusive class pairs. Free-text semantic comparison is excluded from
+this trusted path for the same reason LLM calls are excluded from derivation:
+the kernel's outputs must be reproducible and explainable to a reviewer. A
+model-assisted contradiction detector belongs upstream, proposing structured
+assertions that a human confirms before they enter the kernel.
+
+## HTTP caching is disabled for evidence reads
+
+Case, artifact, proof, and findings responses are marked `Cache-Control:
+no-store`, and the browser client requests with `cache: "no-store"`. Without
+this, a heuristically cached GET can show a reviewer a retracted source as
+still active — observed in practice as a reloaded case rendering one evidence
+revision behind the database. Only the static social-preview image is cacheable.

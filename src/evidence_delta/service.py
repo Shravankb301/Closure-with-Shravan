@@ -6,6 +6,7 @@ from uuid import uuid4
 from sqlalchemy import and_, exists, func, select
 from sqlalchemy.orm import Session
 
+from evidence_delta.analysis import ActiveEvent, derive_findings
 from evidence_delta.database import Database
 from evidence_delta.domain import (
     AssertionView,
@@ -27,7 +28,7 @@ from evidence_delta.models import (
     DocumentRetractionRecord,
     RecomputeJobRecord,
 )
-from evidence_delta.schemas import DocumentInput, MutationResult
+from evidence_delta.schemas import CaseAssignmentInput, DocumentInput, MutationResult
 
 
 def new_id() -> str:
@@ -44,9 +45,35 @@ class EvidenceService:
             session.add(record)
         return record
 
+    def assign_case(self, case_id: str, assignment: CaseAssignmentInput) -> dict:
+        with self.database.session() as session, session.begin():
+            case = session.scalar(
+                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
+            )
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+            values = assignment.model_dump()
+            case.assigned_officer = values["assigned_officer"]
+            case.assigned_badge = values["assigned_badge"]
+            case.assigned_unit = values["assigned_unit"]
+            case.handoff_note = values["handoff_note"]
+            session.flush()
+            return {
+                "case_id": case.id,
+                "assigned_officer": case.assigned_officer,
+                "assigned_badge": case.assigned_badge,
+                "assigned_unit": case.assigned_unit,
+                "handoff_note": case.handoff_note,
+            }
+
     @staticmethod
     def _document_hash(document: DocumentInput) -> str:
         body = document.model_dump(mode="json", exclude={"filename"})
+        if body["source_uri"] is None:
+            body.pop("source_uri")
+        for assertion in body["assertions"]:
+            if assertion["time_precision"] == "EXACT":
+                assertion.pop("time_precision")
         # Extraction order is not evidence identity. Sorting prevents a
         # harmless parser reorder from bypassing the idempotency key.
         body["assertions"] = sorted(body["assertions"], key=canonical_json)
@@ -92,6 +119,7 @@ class EvidenceService:
                 case_id=case_id,
                 filename=document.filename,
                 source_type=document.source_type,
+                source_uri=document.source_uri,
                 content_hash=content_hash,
                 added_at_revision=revision,
             )
@@ -111,6 +139,7 @@ class EvidenceService:
                     occurred_at=item.occurred_at,
                     kind=item.kind,
                     value=item.value,
+                    time_precision=item.time_precision,
                     source_locator=item.source_locator,
                     source_text=item.source_text,
                     added_at_revision=revision,
@@ -349,6 +378,7 @@ class EvidenceService:
                 occurred_at=row.occurred_at,
                 kind=row.kind,
                 value=row.value,
+                time_precision=row.time_precision,
                 source_locator=row.source_locator,
                 source_text=row.source_text,
             )
@@ -414,6 +444,7 @@ class EvidenceService:
                     DocumentRecord.id,
                     DocumentRecord.filename,
                     DocumentRecord.source_type,
+                    DocumentRecord.source_uri,
                     DocumentRecord.added_at_revision,
                     DocumentRecord.created_at,
                     assertion_count.label("assertion_count"),
@@ -432,6 +463,10 @@ class EvidenceService:
                 "id": case.id,
                 "name": case.name,
                 "revision": case.revision,
+                "assigned_officer": case.assigned_officer,
+                "assigned_badge": case.assigned_badge,
+                "assigned_unit": case.assigned_unit,
+                "handoff_note": case.handoff_note,
                 "created_at": case.created_at.isoformat(),
             }
 
@@ -458,6 +493,7 @@ class EvidenceService:
                     "id": row.id,
                     "filename": row.filename,
                     "source_type": row.source_type,
+                    "source_uri": row.source_uri,
                     "added_at_revision": row.added_at_revision,
                     "created_at": row.created_at.isoformat(),
                     "assertion_count": int(row.assertion_count or 0),
@@ -577,6 +613,52 @@ class EvidenceService:
                 ),
             },
         }
+
+    def case_findings(self, case_id: str) -> dict:
+        """Derive cross-source review findings from the active assertion set.
+
+        Findings are recomputed in full on every read. They are a pure function
+        of active assertions, so they inherit full-rebuild semantics without
+        incremental machinery; if they became expensive they would become
+        artifacts with change keys exactly like timelines.
+        """
+
+        with self.database.session() as session:
+            case = session.get(CaseRecord, case_id)
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+
+            retracted = exists().where(
+                DocumentRetractionRecord.document_id == AssertionRecord.document_id
+            )
+            rows = session.execute(
+                select(AssertionRecord, DocumentRecord)
+                .join(DocumentRecord, DocumentRecord.id == AssertionRecord.document_id)
+                .where(AssertionRecord.case_id == case_id, ~retracted)
+                .order_by(AssertionRecord.occurred_at, AssertionRecord.id)
+            ).all()
+            events = [
+                ActiveEvent(
+                    assertion_id=assertion.id,
+                    document_id=document.id,
+                    document_filename=document.filename,
+                    document_source_type=document.source_type,
+                    entity_id=assertion.entity_id,
+                    day=assertion.occurred_at.date().isoformat(),
+                    kind=assertion.kind,
+                    value=assertion.value,
+                    time_precision=assertion.time_precision,
+                    source_locator=assertion.source_locator,
+                    source_text=assertion.source_text,
+                )
+                for assertion, document in rows
+            ]
+            revision = case.revision
+
+        findings = derive_findings(events)
+        findings["case_id"] = case_id
+        findings["case_revision"] = revision
+        return findings
 
     def current_artifact(self, case_id: str, key: str) -> dict | None:
         with self.database.session() as session:
