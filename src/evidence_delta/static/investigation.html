@@ -2364,16 +2364,27 @@
     async function buildOfficialCase({ recovered = false } = {}) {
       const button = byId("build-case");
       const navigationId = ++state.navigationId;
+      let acquisitionFallback = false;
       setBusy(button, true, recovered ? "Rebuilding case..." : "Building case...");
       setStatus("launch-status", recovered ? "The prior case is unavailable. Fetching and rebuilding from the public record..." : "Fetching official artifacts, fingerprinting responses, organizing cited assertions, and preparing case state...");
       try {
-        const result = await api("/demo/real-case/boston-obstruction?acquire_public_sources=true", { method: "POST", body: "{}" });
+        let result;
+        try {
+          result = await api("/demo/real-case/boston-obstruction?acquire_public_sources=true", { method: "POST", body: "{}" });
+        } catch (error) {
+          if (!error.status || error.status < 500) throw error;
+          acquisitionFallback = true;
+          setStatus("launch-status", "Live source retrieval is constrained on this host. Building the case from the reviewed public-record mapping...");
+          result = await api("/demo/real-case/boston-obstruction?acquire_public_sources=false", { method: "POST", body: "{}" });
+        }
         if (navigationId !== state.navigationId) return false;
         await openCase(result.case_id, navigationId);
         const acquisition = result.source_acquisition?.by_status || {};
         const fetched = acquisition.FETCHED || 0;
         const constrained = (acquisition.ACCESS_CHALLENGE || 0) + (acquisition.FETCH_FAILED || 0) + (acquisition.HTTP_ERROR || 0);
-        setStatus("launch-status", `Official case ready: ${result.official_sources} sources attempted, ${fetched} fetched, ${constrained} access constrained, ${result.assertions} reviewed assertions organized into ${result.materialized_timelines} timelines.`);
+        setStatus("launch-status", acquisitionFallback
+          ? `Case ready from ${result.official_sources} reviewed public-source mappings. Live retrieval was unavailable on this host; source URLs, cited spans, evidence revisions, worker jobs, and ${result.materialized_timelines} materialized timelines remain inspectable.`
+          : `Official case ready: ${result.official_sources} sources attempted, ${fetched} fetched, ${constrained} access constrained, ${result.assertions} reviewed assertions organized into ${result.materialized_timelines} timelines.`);
         byId("case-app").scrollIntoView({ behavior: "smooth" });
         return true;
       } catch (error) {

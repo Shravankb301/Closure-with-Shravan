@@ -455,7 +455,16 @@ class EvidenceService:
             )
 
     def _store_artifact(self, acquisition: ArtifactAcquisition) -> tuple[str, str | None]:
-        receipt = self.artifact_vault.store(acquisition.content or b"", acquisition.content_sha256)
+        try:
+            receipt = self.artifact_vault.store(
+                acquisition.content or b"", acquisition.content_sha256
+            )
+        except OSError:
+            # Some function runtimes expose the deployed application as a
+            # read-only filesystem. The acquisition metadata and fingerprint
+            # remain useful, but the API must not claim that custody storage
+            # succeeded or fail the entire case build.
+            return "STORAGE_UNAVAILABLE", None
         if receipt is None:
             return "NOT_STORED", None
         return "STORED", receipt.uri

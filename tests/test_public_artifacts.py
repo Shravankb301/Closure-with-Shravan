@@ -93,6 +93,21 @@ def test_scanned_pdf_is_fingerprinted_and_marked_for_ocr() -> None:
     assert result.extracted_characters == 0
 
 
+def test_acquire_all_records_unexpected_runtime_failure(monkeypatch) -> None:
+    client = PublicArtifactClient()
+    monkeypatch.setattr(
+        client,
+        "acquire",
+        lambda _document: (_ for _ in ()).throw(RuntimeError("runtime unavailable")),
+    )
+
+    result = client.acquire_all([public_document()])[0]
+
+    assert result.status == "FETCH_FAILED"
+    assert result.extraction_method == "NONE"
+    assert result.error_class == "RuntimeError"
+
+
 class FakePublicArtifactClient:
     def acquire_all(self, documents: list[DocumentInput]) -> list[ArtifactAcquisition]:
         return [
@@ -246,3 +261,28 @@ def test_reviewer_import_is_stored_and_appended_to_custody_chain(
         assert acquisition["custody"]["artifact_integrity"] == "VERIFIED"
         assert len(acquisition["custody"]["attempts"]) == 2
         assert client.get(f"/cases/{case_id}").json()["case"]["revision"] == 4
+
+
+def test_unavailable_artifact_storage_does_not_abort_case_build(tmp_path, monkeypatch) -> None:
+    blocked_root = tmp_path / "blocked-vault"
+    monkeypatch.setenv("ARTIFACT_VAULT_DIR", str(blocked_root))
+    monkeypatch.setattr(
+        "evidence_delta.artifact_vault.ArtifactVault.store",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(PermissionError("read only")),
+    )
+    app = create_app(
+        "sqlite+pysqlite:///:memory:",
+        artifact_client=FakePublicArtifactClient(),
+    )
+
+    with TestClient(app) as client:
+        created = client.post("/demo/real-case/boston-obstruction?acquire_public_sources=true")
+
+        assert created.status_code == 201
+        case_id = created.json()["case_id"]
+        report = client.get(f"/cases/{case_id}/source-acquisitions").json()
+        acquisition = report["sources"][0]["acquisition"]
+        assert acquisition["storage_status"] == "STORAGE_UNAVAILABLE"
+        assert acquisition["storage_uri"] is None
+        assert acquisition["custody"]["chain_status"] == "VERIFIED"
+        assert acquisition["custody"]["artifact_integrity"] == "NOT_VERIFIED"

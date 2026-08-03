@@ -124,8 +124,24 @@ class PublicArtifactClient:
         self.ocr_adapter = ocr_adapter
 
     def acquire_all(self, documents: list[DocumentInput]) -> list[ArtifactAcquisition]:
+        def acquire_safely(document: DocumentInput) -> ArtifactAcquisition:
+            try:
+                return self.acquire(document)
+            except Exception as error:
+                # Public hosts and serverless runtimes can fail outside httpx's
+                # exception hierarchy. Preserve the failed attempt as evidence
+                # pipeline state instead of turning the entire case build into
+                # an opaque 500 response.
+                return self._result(
+                    document,
+                    document.source_uri or "",
+                    status="FETCH_FAILED",
+                    extraction_method="NONE",
+                    error_class=type(error).__name__,
+                )
+
         with ThreadPoolExecutor(max_workers=min(4, len(documents) or 1)) as executor:
-            return list(executor.map(self.acquire, documents))
+            return list(executor.map(acquire_safely, documents))
 
     def acquire(self, document: DocumentInput) -> ArtifactAcquisition:
         uri = document.source_uri
