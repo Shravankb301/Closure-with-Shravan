@@ -221,6 +221,7 @@ class ChangeSetRecord(Base):
     )
     revision: Mapped[int] = mapped_column(Integer, nullable=False)
     operation: Mapped[str] = mapped_column(String(40), nullable=False)
+    performed_by: Mapped[str | None] = mapped_column(String(160), nullable=True)
     document_id: Mapped[str] = mapped_column(
         ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
     )

@@ -70,7 +70,9 @@ class CaseAssignmentInput(BaseModel):
 
 
 class RetractionInput(BaseModel):
-    reason: str = Field(min_length=1)
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field(min_length=1, max_length=10_000)
 
 
 class ExtractionInput(BaseModel):

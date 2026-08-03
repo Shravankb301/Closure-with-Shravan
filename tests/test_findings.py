@@ -88,6 +88,11 @@ def test_conflicting_tip_surfaces_and_clears_contradiction(service, worker) -> N
     assert len(contradiction["documents"]) == 2
     tiers = {event["tier"] for event in contradiction["events"]}
     assert tiers == {"court", "officer"}
+    added_change = service.case_changes(case_id)["changes"][0]
+    assert added_change["findings_delta"]["contradictions"] == {
+        "opened": 1,
+        "cleared": 0,
+    }
 
     service.retract_document(case_id, mutation.document_id, "Tip withdrawn after review")
     worker.run_until_idle()
@@ -98,6 +103,14 @@ def test_conflicting_tip_surfaces_and_clears_contradiction(service, worker) -> N
     proof = service.case_proof(case_id)
     assert proof["evidence"]["retracted_source_assertions_retained"] == 1
     assert proof["equivalent_to_full_rebuild"] is True
+    retracted_change = service.case_changes(case_id)["changes"][0]
+    assert retracted_change["findings_delta"]["contradictions"] == {
+        "opened": 0,
+        "cleared": 1,
+    }
+    assert retracted_change["document"]["retraction_reason"] == (
+        "Tip withdrawn after review"
+    )
 
 
 def test_findings_are_deterministic(service, worker) -> None:

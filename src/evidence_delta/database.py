@@ -113,6 +113,18 @@ class Database:
                     )
                 )
 
+            if "change_sets" in inspector.get_table_names():
+                change_set_columns = {
+                    column["name"] for column in inspector.get_columns("change_sets")
+                }
+                if "performed_by" not in change_set_columns:
+                    connection.execute(
+                        text(
+                            "ALTER TABLE change_sets ADD COLUMN "
+                            "performed_by VARCHAR(160)"
+                        )
+                    )
+
     def drop_schema(self) -> None:
         Base.metadata.drop_all(self.engine)
 

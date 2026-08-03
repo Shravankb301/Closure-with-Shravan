@@ -54,6 +54,15 @@ def test_api_vertical_slice() -> None:
         ]
         assert pending_workspace.json()["artifacts"][0]["fresh"] is False
 
+        pending_changes = client.get(f"/cases/{case_id}/changes").json()
+        assert pending_changes["current_verification"]["verified"] is False
+        assert pending_changes["changes"][0]["recomputation"] == {
+            "requested": 1,
+            "by_status": {"QUEUED": 1},
+            "settled": False,
+            "completed_cleanly": False,
+        }
+
         assigned = client.put(
             f"/cases/{case_id}/assignment",
             json={
@@ -72,6 +81,31 @@ def test_api_vertical_slice() -> None:
         drained = client.post("/workers/drain")
         assert drained.status_code == 200
         assert drained.json()["processed"] == 1
+
+        changes = client.get(f"/cases/{case_id}/changes")
+        assert changes.status_code == 200
+        brief = changes.json()
+        assert brief["current_verification"]["verified"] is True
+        assert brief["changes"][0]["operation"] == "ADD_DOCUMENT"
+        assert brief["changes"][0]["document"]["filename"] == "witness.json"
+        assert brief["changes"][0]["affected"]["timeline_count"] == 1
+        assert brief["changes"][0]["affected"]["timelines"] == [
+            {
+                "key": "timeline:john-carter:2026-03-14",
+                "entity_id": "john-carter",
+                "date": "2026-03-14",
+            }
+        ]
+        assert brief["changes"][0]["findings_delta"]["single_source"] == {
+            "opened": 1,
+            "cleared": 0,
+        }
+        assert brief["changes"][0]["recomputation"] == {
+            "requested": 1,
+            "by_status": {"SUCCEEDED": 1},
+            "settled": True,
+            "completed_cleanly": True,
+        }
 
         artifact = client.get(f"/cases/{case_id}/artifacts/timeline:john-carter:2026-03-14")
         assert artifact.status_code == 200
@@ -94,3 +128,22 @@ def test_api_vertical_slice() -> None:
         assert retracted_workspace["documents"][0]["retracted"] is True
         assert retracted_workspace["documents"][0]["retraction_reason"] == "source corrected"
         assert retracted_workspace["artifacts"][0]["payload"]["events"] == []
+
+        retraction_brief = client.get(f"/cases/{case_id}/changes").json()
+        latest = retraction_brief["changes"][0]
+        assert latest["operation"] == "RETRACT_DOCUMENT"
+        assert latest["performed_by"] == "Officer Elena Ruiz"
+        assert latest["document"]["retraction_reason"] == "source corrected"
+        assert latest["findings_delta"]["single_source"] == {
+            "opened": 0,
+            "cleared": 1,
+        }
+
+        missing = client.get("/cases/does-not-exist/changes")
+        assert missing.status_code == 404
+
+        invalid_reason = client.post(
+            f"/cases/{case_id}/documents/{added.json()['document_id']}/retractions",
+            json={"reason": "x" * 10_001},
+        )
+        assert invalid_reason.status_code == 422

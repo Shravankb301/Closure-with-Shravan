@@ -190,6 +190,13 @@ def create_app(database_url: str | None = None) -> FastAPI:
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    @application.get("/cases/{case_id}/changes", dependencies=secured)
+    def get_case_changes(case_id: str) -> dict:
+        try:
+            return service.case_changes(case_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     @application.get("/cases/{case_id}/proof", dependencies=secured)
     def get_case_proof(case_id: str) -> dict:
         try:

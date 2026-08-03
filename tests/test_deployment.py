@@ -22,7 +22,12 @@ def test_api_responses_disable_http_caching() -> None:
         assert health.headers["Cache-Control"] == "no-store"
         created = client.post("/demo/real-case/boston-obstruction")
         case_id = created.json()["case_id"]
-        for path in (f"/cases/{case_id}", f"/cases/{case_id}/findings", f"/cases/{case_id}/proof"):
+        for path in (
+            f"/cases/{case_id}",
+            f"/cases/{case_id}/findings",
+            f"/cases/{case_id}/changes",
+            f"/cases/{case_id}/proof",
+        ):
             assert client.get(path).headers["Cache-Control"] == "no-store"
         assert client.get("/og.png").headers["Cache-Control"] == "public, max-age=3600"
 
@@ -59,6 +64,14 @@ def test_local_sqlite_schema_upgrades_legacy_evidence_columns(tmp_path: Path) ->
             "source_locator VARCHAR(160) NOT NULL, source_text TEXT NOT NULL, "
             "added_at_revision INTEGER NOT NULL, created_at DATETIME NOT NULL)"
         )
+        connection.exec_driver_sql(
+            "CREATE TABLE change_sets ("
+            "id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL, "
+            "revision INTEGER NOT NULL, operation VARCHAR(40) NOT NULL, "
+            "document_id VARCHAR(36) NOT NULL, affected_keys JSON NOT NULL, "
+            "queued_artifact_ids JSON NOT NULL, untouched_artifacts INTEGER NOT NULL, "
+            "created_at DATETIME NOT NULL)"
+        )
 
     database.create_schema()
 
@@ -71,6 +84,9 @@ def test_local_sqlite_schema_upgrades_legacy_evidence_columns(tmp_path: Path) ->
     assert {"assigned_officer", "assigned_badge", "assigned_unit", "handoff_note"} <= (
         case_columns
     )
+    assert "performed_by" in {
+        column["name"] for column in schema.get_columns("change_sets")
+    }
 
 
 def test_demo_key_protects_stateful_routes(monkeypatch) -> None:
@@ -101,13 +117,19 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
     with TestClient(app) as client:
         response = client.get("/")
         assert response.status_code == 200
-        assert "Boston Evidence Command Board" in response.text
-        assert "Reconstruct the case" in response.text
-        assert "Open official-record case" in response.text
-        assert "Run guided case briefing" in response.text
-        assert "AI proposes. A reviewer decides." in response.text
+        assert "Boston Evidence Review" in response.text
+        assert "Boston evidence review" in response.text
+        assert "Open case workspace" in response.text
+        assert "Guided walkthrough" in response.text
+        assert "Review before it enters the record" in response.text
         assert "Evidence relationship graph" in response.text
         assert "Officer review queue" in response.text
+        assert "What changed?" in response.text
+        assert 'id="change-history-list"' in response.text
+        assert 'id="retraction-dialog"' in response.text
+        assert "Download case packet" in response.text
+        assert "Excluded · span not found" in response.text
+        assert "prefers-reduced-motion" in response.text
         assert "Assign case ownership" in response.text
         assert 'id="evidence-form"' in response.text
         assert 'id="evidence-graph"' in response.text

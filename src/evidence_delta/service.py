@@ -157,6 +157,7 @@ class EvidenceService:
                 case_id=case_id,
                 revision=revision,
                 operation="ADD_DOCUMENT",
+                performed_by=case.assigned_officer,
                 document_id=document_record.id,
                 affected_keys=keys,
                 queued_artifact_ids=[item.id for item in artifacts],
@@ -236,6 +237,7 @@ class EvidenceService:
                 case_id=case_id,
                 revision=revision,
                 operation="RETRACT_DOCUMENT",
+                performed_by=case.assigned_officer,
                 document_id=document_id,
                 affected_keys=keys,
                 queued_artifact_ids=[item.id for item in artifacts],
@@ -659,6 +661,195 @@ class EvidenceService:
         findings["case_id"] = case_id
         findings["case_revision"] = revision
         return findings
+
+    def case_changes(self, case_id: str, limit: int = 10) -> dict:
+        """Explain recent evidence mutations from the durable revision ledger.
+
+        The finding delta is derived at each revision boundary, rather than
+        stored as presentation copy. This keeps the brief reproducible from
+        immutable assertions, retractions, and recomputation jobs.
+        """
+
+        with self.database.session() as session:
+            case = session.get(CaseRecord, case_id)
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+
+            changes = session.scalars(
+                select(ChangeSetRecord)
+                .where(ChangeSetRecord.case_id == case_id)
+                .order_by(ChangeSetRecord.revision.desc())
+                .limit(max(1, min(limit, 50)))
+            ).all()
+            documents = {
+                item.id: item
+                for item in session.scalars(
+                    select(DocumentRecord).where(DocumentRecord.case_id == case_id)
+                ).all()
+            }
+            retractions = {
+                item.document_id: item
+                for item in session.scalars(
+                    select(DocumentRetractionRecord).where(
+                        DocumentRetractionRecord.case_id == case_id
+                    )
+                ).all()
+            }
+            assertion_rows = session.execute(
+                select(AssertionRecord, DocumentRecord)
+                .join(DocumentRecord, DocumentRecord.id == AssertionRecord.document_id)
+                .where(AssertionRecord.case_id == case_id)
+                .order_by(AssertionRecord.occurred_at, AssertionRecord.id)
+            ).all()
+            jobs = session.scalars(
+                select(RecomputeJobRecord).where(RecomputeJobRecord.case_id == case_id)
+            ).all()
+
+            retracted_at = {
+                document_id: item.retracted_at_revision
+                for document_id, item in retractions.items()
+            }
+
+            def findings_at(revision: int) -> dict:
+                events = [
+                    ActiveEvent(
+                        assertion_id=assertion.id,
+                        document_id=document.id,
+                        document_filename=document.filename,
+                        document_source_type=document.source_type,
+                        entity_id=assertion.entity_id,
+                        day=assertion.occurred_at.date().isoformat(),
+                        kind=assertion.kind,
+                        value=assertion.value,
+                        time_precision=assertion.time_precision,
+                        source_locator=assertion.source_locator,
+                        source_text=assertion.source_text,
+                    )
+                    for assertion, document in assertion_rows
+                    if assertion.added_at_revision <= revision
+                    and retracted_at.get(document.id, revision + 1) > revision
+                ]
+                return derive_findings(events)
+
+            def finding_keys(findings: dict, category: str) -> set[tuple]:
+                if category == "contradictions":
+                    return {
+                        (
+                            item["entity_id"],
+                            item["date"],
+                            *item.get("classes", []),
+                        )
+                        for item in findings[category]
+                    }
+                if category == "corroborations":
+                    return {
+                        (item["entity_id"], item["date"], item.get("event_class"))
+                        for item in findings[category]
+                    }
+                return {
+                    (item["entity_id"], item["date"])
+                    for item in findings[category]
+                }
+
+            findings_by_revision = {
+                revision: findings_at(revision)
+                for revision in {
+                    max(0, item.revision - offset)
+                    for item in changes
+                    for offset in (0, 1)
+                }
+            }
+            jobs_by_change = {
+                change.id: [
+                    job
+                    for job in jobs
+                    if job.target_revision == change.revision
+                    and job.artifact_id in set(change.queued_artifact_ids)
+                ]
+                for change in changes
+            }
+
+            items = []
+            terminal_statuses = {"SUCCEEDED", "SUPERSEDED", "FAILED_PERMANENT"}
+            clean_statuses = {"SUCCEEDED", "SUPERSEDED"}
+            for change in changes:
+                document = documents[change.document_id]
+                retraction = retractions.get(change.document_id)
+                before = findings_by_revision[max(0, change.revision - 1)]
+                after = findings_by_revision[change.revision]
+                delta = {}
+                for category in ("contradictions", "corroborations", "single_source"):
+                    before_keys = finding_keys(before, category)
+                    after_keys = finding_keys(after, category)
+                    delta[category] = {
+                        "opened": len(after_keys - before_keys),
+                        "cleared": len(before_keys - after_keys),
+                    }
+
+                change_jobs = jobs_by_change[change.id]
+                status_counts = {
+                    status: sum(job.status == status for job in change_jobs)
+                    for status in sorted({job.status for job in change_jobs})
+                }
+                requested = len(change.queued_artifact_ids)
+                settled = len(change_jobs) == requested and all(
+                    job.status in terminal_statuses for job in change_jobs
+                )
+                items.append(
+                    {
+                        "id": change.id,
+                        "revision": change.revision,
+                        "operation": change.operation,
+                        "performed_by": change.performed_by,
+                        "created_at": change.created_at.isoformat(),
+                        "document": {
+                            "id": document.id,
+                            "filename": document.filename,
+                            "source_type": document.source_type,
+                            "source_uri": document.source_uri,
+                            "retraction_reason": (
+                                retraction.reason
+                                if retraction is not None
+                                and retraction.retracted_at_revision == change.revision
+                                else None
+                            ),
+                        },
+                        "affected": {
+                            "timeline_count": len(change.affected_keys),
+                            "timelines": [
+                                {"key": key, "entity_id": entity_id, "date": day}
+                                for key in change.affected_keys
+                                for entity_id, day in [parse_timeline_key(key)]
+                            ],
+                            "untouched_artifacts": change.untouched_artifacts,
+                        },
+                        "findings_delta": delta,
+                        "recomputation": {
+                            "requested": requested,
+                            "by_status": status_counts,
+                            "settled": settled,
+                            "completed_cleanly": settled
+                            and all(job.status in clean_statuses for job in change_jobs),
+                        },
+                    }
+                )
+
+        proof = self.case_proof(case_id)
+        failed_jobs = proof["queue"]["by_status"].get("FAILED_PERMANENT", 0)
+        return {
+            "case_id": case_id,
+            "case_revision": proof["case_revision"],
+            "current_verification": {
+                "verified": (
+                    proof["equivalent_to_full_rebuild"]
+                    and proof["queue"]["settled"]
+                    and failed_jobs == 0
+                ),
+                "equivalent_to_full_rebuild": proof["equivalent_to_full_rebuild"],
+                "queue_settled": proof["queue"]["settled"],
+            },
+            "changes": items,
+        }
 
     def current_artifact(self, case_id: str, key: str) -> dict | None:
         with self.database.session() as session:

@@ -44,7 +44,12 @@ That framing communicates user empathy and integrity before technical depth.
 Choose **Run guided case briefing**. Explain that four public records become 25
 immutable assertions and 15 materialized entity-day timelines.
 
-Point out three things only:
+Start with the **What changed?** brief. It gives the reviewer one compact answer:
+which source changed, which timelines were touched, which findings opened or
+cleared, how much work was deliberately left untouched, and whether the current
+state still matches a full rebuild.
+
+Then point out three supporting details:
 
 - allegations remain visibly distinct from court-established outcomes;
 - broad source windows stay broad instead of becoming invented timestamps;
@@ -54,6 +59,12 @@ Outcome line:
 
 > The investigator gets a useful case surface, while the system retains enough
 > provenance to defend how every line appeared.
+
+FDE framing:
+
+> I would validate this brief with an investigator first because it is the
+> smallest surface that answers the question they face after every update:
+> what requires my attention now?
 
 ### 2. Make uncertainty actionable — 60 seconds
 
@@ -89,7 +100,9 @@ feature, not an embarrassment.
 ### 4. Correct the record — 60 seconds
 
 Move to **Source ledger** and retract only the hypothetical tip. Accept the
-confirmation prompt.
+correction dialog, enter a specific reason, and point out that the assigned
+reviewer is snapshotted with the mutation rather than looked up from mutable
+case metadata later.
 
 Show that:
 
@@ -113,6 +126,11 @@ next action, for example:
 > sentencing record.
 
 Save it and show the generated handoff summary.
+
+Download the case packet and explain that it contains the current sources,
+derived artifacts, findings, revision history, and rebuild proof in a portable
+JSON envelope. It is intentionally simple integration plumbing: another agency
+tool can consume it without scraping the interface.
 
 Finish with:
 
@@ -207,6 +225,8 @@ Volunteer these before someone has to discover them:
 - it does not claim CJIS compliance, agency authorization, or production
   readiness for sensitive evidence;
 - the free hosted profile can embed the queue worker in the web process;
+- mutation actor labels snapshot case assignment metadata; they are not an
+  authenticated identity claim until production SSO and role controls exist;
 - semantic contradiction detection is deliberately excluded from the trusted
   path;
 - SQLite exists for local convenience, while the concurrency claims depend on

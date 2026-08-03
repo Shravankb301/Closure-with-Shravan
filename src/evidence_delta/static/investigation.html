@@ -3,14 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Boston Evidence Command Board</title>
+  <title>Boston Evidence Review</title>
   <meta name="description" content="A source-backed public-record workspace for reconstructing the Boston Marathon bombing investigation evidence trail.">
-  <meta property="og:title" content="Boston Evidence Command Board">
+  <meta property="og:title" content="Boston Evidence Review">
   <meta property="og:description" content="Trace claims to sources, map relationships, separate allegations from court outcomes, and coordinate evidence review.">
   <meta property="og:image" content="{{SITE_ORIGIN}}/og.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --ink: #11171c;
@@ -451,13 +448,216 @@
     .ai-fields .field.full { grid-column: 1 / -1; }
     .ai-rationale { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
     @media (max-width: 720px) { .ai-fields { grid-template-columns: 1fr; } }
+
+    /* Calm, operational visual system: familiar controls, restrained color, and
+       dense information hierarchy suited to day-to-day case review. */
+    :root {
+      --ink: #1d2733;
+      --ink-soft: #273544;
+      --paper: #f4f6f8;
+      --paper-bright: #ffffff;
+      --paper-dim: #eef1f4;
+      --line: #d7dde3;
+      --line-dark: #a9b4bf;
+      --muted: #627080;
+      --muted-dark: #8491a0;
+      --signal: #315f8c;
+      --signal-dark: #244b70;
+      --amber: #b7791f;
+      --cyan: #477e8a;
+      --green: #397455;
+      --blue: #486d96;
+      --shadow: 0 8px 24px rgba(35, 49, 63, 0.08);
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    body { color: var(--ink); background: var(--paper); }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid rgba(49, 95, 140, 0.28); outline-offset: 2px; }
+    .topbar { min-height: 60px; padding: 0 clamp(18px, 4vw, 48px); color: var(--ink); background: rgba(255, 255, 255, 0.96); border-color: var(--line); backdrop-filter: blur(12px); }
+    .brand { gap: 10px; }
+    .brand-mark { width: 32px; height: 32px; color: #fff; border: 0; border-radius: 6px; background: #294f73; box-shadow: none; font-size: 11px; }
+    .brand strong { font-size: 14px; font-weight: 650; }
+    .brand span { margin-top: 1px; color: var(--muted); font: 500 11px/1.2 var(--sans); letter-spacing: 0; text-transform: none; }
+    .system-health { color: var(--muted); font: 500 11px/1 var(--sans); text-transform: none; }
+    .health-dot, .health-dot.live { width: 8px; height: 8px; box-shadow: none; }
+    .health-dot.live { background: #3f7f5c; }
+    .button { min-height: 40px; padding: 0 15px; border-color: #aeb8c2; border-radius: 6px; font-size: 13px; font-weight: 650; transition: background 140ms ease, border-color 140ms ease, color 140ms ease; }
+    .button:hover { transform: none; box-shadow: none; background: #eef2f5; border-color: #8996a3; }
+    .button-primary { color: #fff; border-color: #294f73; background: #315f8c; }
+    .button-primary:hover { color: #fff; border-color: #244b70; background: #244b70; }
+    .button-dark { color: var(--ink); border-color: #aeb8c2; background: #fff; }
+    .button-small { min-height: 34px; padding: 0 11px; font-size: 12px; }
+    main { min-height: calc(100vh - 60px); }
+    .launch { grid-template-columns: minmax(0, 1.25fr) minmax(350px, 0.75fr); min-height: 650px; background: #fff; }
+    .launch-copy { justify-content: flex-start; padding: clamp(64px, 8vw, 110px) clamp(28px, 7vw, 100px); }
+    .eyebrow { margin-bottom: 14px; color: #45698c; font: 650 12px/1.4 var(--sans); letter-spacing: 0; text-transform: none; }
+    h1 { max-width: 680px; font-size: clamp(42px, 5vw, 68px); line-height: 1.04; letter-spacing: -0.045em; }
+    h1 span { display: inline; color: inherit; }
+    .launch-lede { max-width: 650px; margin-top: 22px; color: #526170; font-size: clamp(16px, 1.4vw, 19px); line-height: 1.6; }
+    .launch-actions { gap: 10px; margin-top: 28px; }
+    .guardrail { max-width: 650px; margin-top: 28px; padding: 16px; color: #5c6976; border: 1px solid var(--line); border-radius: 6px; background: #f8f9fa; font: 500 12px/1.55 var(--sans); }
+    .guardrail-mark { color: #8b6425; }
+    .brief-panel { margin: 44px 44px 44px 0; padding: 32px; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; background: #f7f9fb; }
+    .brief-kicker { color: #526170; font: 650 12px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+    .brief-panel h2 { max-width: 430px; margin-top: 10px; font-size: clamp(27px, 2.5vw, 36px); line-height: 1.12; letter-spacing: -0.035em; }
+    .brief-panel > div > p { margin-top: 14px; color: #5f6c79; font-size: 14px; line-height: 1.6; }
+    .brief-list { margin: 24px 0; border-color: var(--line); }
+    .brief-item { grid-template-columns: 30px 1fr auto; gap: 10px; padding: 15px 0; border-color: var(--line); }
+    .brief-index { color: #8a96a2; font-size: 10px; }
+    .brief-item strong { font-size: 13px; font-weight: 650; }
+    .brief-item span:last-child { color: #6d7986; font: 500 11px/1 var(--sans); text-transform: none; }
+    .brief-footer { color: #687583; font: 500 11px/1.5 var(--sans); }
+    .oracle-chip { color: #316948; border-color: #bdd5c6; border-radius: 999px; background: #eef7f1; font-weight: 650; text-transform: none; }
+    .case-app { min-height: calc(100vh - 60px); background: var(--paper); }
+    .case-head { padding: 28px clamp(22px, 4vw, 56px) 24px; color: var(--ink); background: #fff; border-color: var(--line); }
+    .case-head .eyebrow { margin-bottom: 7px; color: #637384; }
+    .case-head h2 { font-size: clamp(28px, 3vw, 40px); line-height: 1.12; letter-spacing: -0.035em; }
+    .case-meta { gap: 8px 18px; margin-top: 12px; color: #6c7884; font-size: 10px; }
+    .case-head .button-ghost { color: var(--ink); border-color: #aeb8c2; }
+    .case-nav { top: 60px; padding: 0 clamp(18px, 4vw, 52px); background: #fff; border-color: var(--line); }
+    .case-nav button { padding: 15px 15px 13px; color: #657281; border-bottom-width: 2px; font: 600 13px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+    .case-nav button.active { color: #244b70; border-color: #315f8c; }
+    .panel { max-width: 1500px; margin: 0 auto; padding: 24px clamp(18px, 4vw, 56px) 56px; }
+    .assignment-strip { margin-bottom: 16px; padding: 15px 17px; color: var(--ink); border: 1px solid var(--line); border-left: 4px solid #758ca2; border-radius: 6px; background: #fff; }
+    .assignment-strip span { color: #6a7682; font: 600 11px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+    .assignment-strip strong { margin-top: 5px; font-size: 14px; }
+    .assignment-strip p { color: var(--muted); }
+    .change-brief { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 0.32fr); margin-bottom: 16px; }
+    .change-brief-main { min-width: 0; padding: 20px 22px; }
+    .change-brief-top { display: flex; flex-wrap: wrap; align-items: center; gap: 9px 12px; }
+    .change-operation { padding: 5px 8px; color: #365c80; border: 1px solid #c5d3df; border-radius: 999px; background: #eef3f7; font-size: 11px; font-weight: 650; }
+    .change-revision { color: #73808d; font: 500 10px/1.4 var(--mono); }
+    .change-brief h3 { margin: 12px 0 0; font-size: 21px; letter-spacing: -0.025em; }
+    .change-summary { max-width: 800px; margin: 7px 0 0; color: #5f6d7a; font-size: 13px; line-height: 1.55; }
+    .change-impact { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 15px; }
+    .change-impact span { padding: 6px 9px; color: #4d5c6a; border: 1px solid var(--line); border-radius: 4px; background: #f7f9fa; font-size: 11px; }
+    .change-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .change-actions button { min-height: 31px; padding: 0 10px; color: #315f8c; border: 1px solid #b8c5d0; border-radius: 5px; background: #fff; font-size: 11px; font-weight: 650; }
+    .change-history { margin-top: 16px; border-top: 1px solid var(--line); }
+    .change-history summary { width: max-content; padding-top: 14px; color: #315f8c; cursor: pointer; font-size: 11px; font-weight: 650; }
+    .change-history-list { display: grid; margin-top: 10px; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .change-history-row { display: grid; grid-template-columns: 72px minmax(150px, 0.8fr) minmax(0, 1.4fr); gap: 12px; align-items: start; padding: 11px 12px; border-bottom: 1px solid var(--line); background: #fff; }
+    .change-history-row:last-child { border-bottom: 0; }
+    .change-history-row code { color: #677481; font: 500 10px/1.5 var(--mono); }
+    .change-history-row strong { display: block; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .change-history-row span { display: block; margin-top: 3px; color: #71808d; font-size: 10px; line-height: 1.45; }
+    .change-verification { display: flex; flex-direction: column; justify-content: center; padding: 20px 22px; border-left: 1px solid var(--line); background: #f4f8f5; }
+    .change-verification.pending { background: #faf7f0; }
+    .change-verification span { color: #65766c; font-size: 11px; font-weight: 650; }
+    .change-verification strong { margin-top: 7px; color: #316948; font-size: 20px; letter-spacing: -0.02em; }
+    .change-verification.pending strong { color: #8b6425; }
+    .change-verification p { margin: 7px 0 0; color: #657281; font-size: 11px; line-height: 1.5; }
+    .retraction-dialog { width: min(520px, calc(100vw - 32px)); padding: 0; color: var(--ink); border: 1px solid #aeb8c2; border-radius: 8px; background: #fff; box-shadow: 0 28px 80px rgba(20, 32, 43, 0.28); }
+    .retraction-dialog::backdrop { background: rgba(24, 34, 43, 0.55); backdrop-filter: blur(2px); }
+    .retraction-dialog form { padding: 24px; }
+    .retraction-dialog h2 { margin: 0; font-size: 23px; letter-spacing: -0.025em; }
+    .retraction-dialog > form > p { margin: 8px 0 20px; color: #61707e; font-size: 13px; line-height: 1.55; }
+    .retraction-context { margin-bottom: 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 5px; background: #f5f7f9; }
+    .retraction-context strong { display: block; font-size: 12px; }
+    .retraction-context span { display: block; margin-top: 4px; color: #6d7a86; font-size: 11px; }
+    .retraction-dialog textarea { min-height: 110px; }
+    .retraction-warning { color: #7b5520 !important; }
+    .metric-grid { gap: 0; margin-bottom: 16px; background: #fff; border-color: var(--line); border-radius: 7px; overflow: hidden; }
+    .metric { min-height: 96px; padding: 17px; border-right: 1px solid var(--line); background: #fff; }
+    .metric:last-child { border-right: 0; }
+    .metric strong { font-size: clamp(27px, 2.6vw, 38px); letter-spacing: -0.045em; }
+    .metric span { margin-top: 9px; color: #6a7682; font: 600 11px/1.4 var(--sans); letter-spacing: 0; text-transform: none; }
+    .metric.signal strong { color: var(--ink); }
+    .metric.verified strong { color: #397455; font-size: clamp(19px, 2vw, 27px); }
+    .metric.alert.active { background: #fff7f5; }
+    .card { border-color: var(--line); border-radius: 7px; box-shadow: 0 2px 8px rgba(35, 49, 63, 0.04); overflow: hidden; }
+    .card-head { padding: 18px 20px; border-color: var(--line); }
+    .card-head h3 { font-size: 18px; letter-spacing: -0.02em; }
+    .card-head p { margin-top: 5px; color: #667382; font-size: 12px; line-height: 1.5; }
+    .card-kicker { color: #60758a; font: 600 11px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+    .graph-toolbar { gap: 6px; padding: 10px 16px; border-color: var(--line); background: #f5f7f9; }
+    .graph-toggle { padding: 7px 10px; color: #657281; border-color: #c5ccd3; border-radius: 5px; background: #fff; font: 600 11px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+    .graph-toggle.active { color: #244b70; border-color: #8ba4bb; background: #eaf0f5; }
+    .graph-scroll { background: #edf1f4; }
+    .gedge line { stroke: #9aa8b5; opacity: 0.62; }
+    .gedge.court line { stroke: #5f8e71; }
+    .gedge.allegation line { stroke: #a78045; }
+    .gedge.doclink line { stroke: #aab4be; }
+    .gedge text { fill: #526170; }
+    .gnode.person circle { fill: #e8edf2; stroke: #5e7489; }
+    .gnode.object circle { fill: #f3eee3; stroke: #98794a; }
+    .gnode.location circle { fill: #e5eff1; stroke: #5f858d; }
+    .gnode.context circle { fill: #e8efe8; stroke: #6e886f; }
+    .gnode.source circle { fill: #f3f5f6; stroke: #7f8d99; }
+    .gnode text { fill: #263442; font-weight: 600; }
+    .gnode .gsub { fill: #687786; }
+    .gnode:hover circle, .gnode:focus-visible circle, .gnode.selected circle { filter: none; stroke-width: 2.5; }
+    .gnode.selected circle { stroke: #315f8c; }
+    .gnode.selected text { fill: #17222d; }
+    .graph-legend { color: #647180; border-color: var(--line); background: #f7f9fa; font-size: 10px; }
+    .legend-dot.person { background: #e8edf2; border-color: #5e7489; }
+    .legend-dot.object { background: #f3eee3; border-color: #98794a; }
+    .legend-dot.location { background: #e5eff1; border-color: #5f858d; }
+    .legend-dot.context { background: #e8efe8; border-color: #6e886f; }
+    .legend-dot.source { background: #f3f5f6; border-color: #7f8d99; }
+    .entity-tag { color: #365c80; border-color: #c5d3df; border-radius: 4px; background: #eef3f7; text-transform: none; }
+    .tier, .queue-state { border-radius: 999px; text-transform: none; }
+    .finding, .claim, .single-row, .status-key div, .timeline-event, .source-card, .handoff-box, .ai-card { border-radius: 5px; }
+    .finding-head small, .findings-empty { font-family: var(--sans); font-size: 11px; text-transform: none; }
+    .inspector-summary, .claim p, .finding > p, .findings-demo p, .single-row p, .queue-item p, .timeline-event p { font-size: 12px; }
+    .entity-tag, .tier, .queue-state, .status-key span, .filter, .source-actions a, .source-actions button { font-family: var(--sans); font-size: 11px; }
+    .claim time, .claim code, .single-row code, .timeline-event small { font-size: 10px; }
+    .day-label, .timeline-entity { font-family: var(--sans); font-size: 12px; }
+    .source-card code { font-size: 10px; }
+    .source-meta { font: 500 12px/1.55 var(--sans); }
+    .source-card.retracted { opacity: 1; border-style: dashed; background: #f3f5f6; }
+    .assignment-preview span { font: 500 12px/1.5 var(--sans); }
+    .handoff-box pre { font-size: 11px; }
+    .drop-zone, details.advanced summary, .access-drawer summary, .access-body p, footer { font-family: var(--sans); font-size: 11px; }
+    .ai-mode-badge, .ai-badge { font-family: var(--sans); font-size: 11px; letter-spacing: 0; text-transform: none; }
+    .ai-card.excluded { opacity: 0.72; background: #f5f7f9; }
+    .filter { border-radius: 5px; font: 600 11px/1 var(--sans); text-transform: none; }
+    .filter.active { border-color: #315f8c; background: #315f8c; }
+    .form-card { border-color: var(--line); border-radius: 7px; background: #fff; }
+    .form-card h3 { font-size: 20px; letter-spacing: -0.025em; }
+    .field label { color: #556372; font: 600 11px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+    .field input, .field select, .field textarea { min-height: 40px; border-color: #bfc8d0; border-radius: 5px; font-size: 13px; }
+    .field-note, .form-status { font: 500 12px/1.5 var(--sans); }
+    .drop-zone { border-color: #aeb8c2; border-radius: 6px; background: #f7f9fa; font-size: 11px; }
+    .assignment-preview { color: var(--ink); border-left-color: #758ca2; border-radius: 5px; background: #f1f4f6; }
+    .assignment-preview span { color: #687583; }
+    .access-drawer details { color: var(--ink); border-color: var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.98); box-shadow: var(--shadow); }
+    .access-drawer summary { font: 600 11px/1 var(--sans); text-transform: none; }
+    .access-body .field label, .access-body p { color: #687583; }
+    .tour-bar { color: #fff; border-color: #425c74; border-radius: 7px; background: rgba(35, 55, 73, 0.98); }
+    .tour-progress { color: #bacbdd; font: 600 10px/1 var(--sans); letter-spacing: 0; text-transform: none; }
+    .tour-copy p { color: #d2dbe3; font-size: 11px; }
+    .tour-focus { outline-color: #6689a8; box-shadow: 0 0 0 7px rgba(49, 95, 140, 0.13); }
+    footer { color: #77828d; background: #e9edf0; }
+    footer a { color: #365c80; }
+
+    @media (max-width: 1050px) {
+      .brief-panel { min-height: auto; margin: 0; border-right: 0; border-left: 0; border-radius: 0; }
+    }
+    @media (max-width: 720px) {
+      .topbar { padding: 0 15px; }
+      .launch-copy { padding: 46px 22px; }
+      h1 { font-size: clamp(38px, 12vw, 54px); }
+      .brief-panel { padding: 32px 22px; }
+      .case-nav { top: 60px; }
+      .change-brief { grid-template-columns: 1fr; }
+      .change-verification { border-top: 1px solid var(--line); border-left: 0; }
+      .change-history-row { grid-template-columns: 58px 1fr; }
+      .change-history-row > div:last-child { grid-column: 2; }
+      .metric { border-right: 0; border-bottom: 1px solid var(--line); }
+      .metric:last-child { border-bottom: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#launch" aria-label="Boston Evidence Command Board home">
+    <a class="brand" href="#launch" aria-label="Boston Evidence Review home">
       <span class="brand-mark">B-15</span>
-      <span><strong>Evidence Command Board</strong><span>Public-record reconstruction</span></span>
+      <span><strong>Boston Evidence Review</strong><span>Public record workspace</span></span>
     </a>
     <div class="top-actions">
       <div class="system-health"><span class="health-dot" id="health-dot"></span><span id="health-label">Checking engine</span></div>
@@ -467,25 +667,25 @@
   <main>
     <section class="launch" id="launch">
       <div class="launch-copy">
-        <p class="eyebrow">Boston Marathon bombing investigation / Evidence review</p>
-        <h1>Reconstruct the case.<span>Prove every claim.</span></h1>
-        <p class="launch-lede">An officer-facing workspace for tracing what the public record says, which source supports it, how entities connect, what changed, and which questions still require human review.</p>
+        <p class="eyebrow">Case 13-CR-10238 · Public record review</p>
+        <h1>Boston evidence review</h1>
+        <p class="launch-lede">Review the evidence-disposal record, trace each statement to its source, distinguish allegations from court outcomes, and preserve a clear handoff for the next reviewer.</p>
         <div class="launch-actions">
-          <button class="button button-primary" id="build-case" type="button">Open official-record case</button>
-          <button class="button button-dark" id="start-tour" type="button">Run guided case briefing <span class="mono">90 sec</span></button>
+          <button class="button button-primary" id="build-case" type="button">Open case workspace</button>
+          <button class="button button-dark" id="start-tour" type="button">Guided walkthrough</button>
           <button class="button button-ghost" id="open-case-toggle" type="button">Open existing case</button>
         </div>
         <form class="hidden" id="open-case-form" style="max-width:620px;margin-top:18px">
           <div class="field"><label for="open-case-id">Case ID</label><input id="open-case-id" placeholder="Paste a case UUID" required></div>
           <button class="button button-dark button-small" type="submit">Open case</button>
         </form>
-        <p class="form-status" id="launch-status" role="status">Ready to materialize 4 official sources into a traceable case workspace.</p>
+        <p class="form-status" id="launch-status" role="status">Ready to load four public records into a traceable case workspace.</p>
         <div class="guardrail"><span class="guardrail-mark">[!]</span><span><strong>Analytical demonstration, not an official law-enforcement system.</strong> This workspace reconstructs a historical public record. It does not identify new suspects, replace investigative judgment, or establish facts beyond cited sources and reported court outcomes.</span></div>
       </div>
       <aside class="brief-panel" aria-label="Official record case brief">
         <div>
-          <span class="brief-kicker">Case brief / Scope locked</span>
-          <h2>Evidence disposal and obstruction sequence</h2>
+          <span class="brief-kicker">Case scope</span>
+          <h2>Evidence disposal and obstruction</h2>
           <p>Follow the removal, concealment, disposal, recovery, and later court outcomes tied to the dorm-room evidence trail.</p>
           <div class="brief-list">
             <div class="brief-item"><span class="brief-index">01</span><strong>Criminal complaint</strong><span>Allegations</span></div>
@@ -494,31 +694,31 @@
             <div class="brief-item"><span class="brief-index">04</span><strong>Sentencing record</strong><span>Court outcomes</span></div>
           </div>
         </div>
-        <div class="brief-footer"><span>25 assertions / 15 entity-day timelines</span><span class="oracle-chip">Full-rebuild checked</span></div>
+        <div class="brief-footer"><span>25 cited assertions · 15 timelines</span><span class="oracle-chip">Rebuild verified</span></div>
       </aside>
     </section>
 
     <section class="case-app hidden" id="case-app" aria-live="polite">
       <div class="case-head">
         <div>
-          <p class="eyebrow">Active evidence workspace</p>
+          <p class="eyebrow">Case workspace</p>
           <h2 id="case-name">Boston evidence-disposal case</h2>
           <div class="case-meta"><span id="case-id"></span><span id="case-revision"></span><span id="case-created"></span></div>
         </div>
         <div class="case-head-actions">
           <button class="button button-ghost button-small" id="copy-link" type="button">Copy case link</button>
-          <button class="button button-primary button-small" id="new-review" type="button">New official review</button>
+          <button class="button button-primary button-small" id="new-review" type="button">Open fresh copy</button>
         </div>
       </div>
 
       <nav class="case-nav" aria-label="Investigation workspace sections">
-        <button class="active" data-panel-target="command" type="button">Command board</button>
+        <button class="active" data-panel-target="command" type="button">Overview</button>
         <button data-panel-target="findings" type="button">Findings<span class="nav-badge hidden" id="findings-badge">0</span></button>
         <button data-panel-target="timeline" type="button">Chronology</button>
-        <button data-panel-target="sources" type="button">Source ledger</button>
-        <button data-panel-target="intake" type="button">Evidence intake</button>
-        <button data-panel-target="ai-intake" type="button">AI intake</button>
-        <button data-panel-target="officer" type="button">Officer handoff</button>
+        <button data-panel-target="sources" type="button">Sources</button>
+        <button data-panel-target="intake" type="button">Add evidence</button>
+        <button data-panel-target="ai-intake" type="button">Assisted intake</button>
+        <button data-panel-target="officer" type="button">Handoff</button>
       </nav>
 
       <section class="panel" data-panel="command">
@@ -527,18 +727,34 @@
           <button class="button button-ghost button-small" data-go-panel="officer" type="button">Assign officer</button>
         </div>
 
+        <article class="change-brief card" id="change-brief">
+          <div class="change-brief-main">
+            <div class="change-brief-top"><span class="change-operation" id="change-operation">No recorded update</span><span class="change-revision" id="change-revision">Evidence revision 0</span></div>
+            <h3 id="change-title">What changed?</h3>
+            <p class="change-summary" id="change-summary">Add a source to create the first durable change brief.</p>
+            <div class="change-impact" id="change-impact"></div>
+            <div class="change-actions"><button data-go-panel="findings" type="button">Review findings</button><button data-go-panel="sources" type="button">Open source ledger</button></div>
+            <details class="change-history" id="change-history"><summary id="change-history-summary">View revision history</summary><div class="change-history-list" id="change-history-list"></div></details>
+          </div>
+          <aside class="change-verification pending" id="change-verification">
+            <span>Current case state</span>
+            <strong id="change-verification-title">Awaiting evidence</strong>
+            <p id="change-verification-copy">Verification begins after the first source is added.</p>
+          </aside>
+        </article>
+
         <div class="metric-grid">
           <div class="metric signal"><strong id="metric-sources">0</strong><span>Source records</span></div>
-          <div class="metric"><strong id="metric-assertions">0</strong><span>Retained assertions</span></div>
-          <div class="metric"><strong id="metric-entities">0</strong><span>Entities and objects</span></div>
-          <div class="metric"><strong id="metric-timelines">0</strong><span>Materialized timelines</span></div>
-          <div class="metric alert"><strong id="metric-contradictions">0</strong><span>Contradiction candidates</span></div>
-          <div class="metric verified"><strong id="metric-oracle">Checking</strong><span>Correctness oracle</span></div>
+          <div class="metric"><strong id="metric-assertions">0</strong><span>Assertions</span></div>
+          <div class="metric"><strong id="metric-entities">0</strong><span>Case subjects</span></div>
+          <div class="metric"><strong id="metric-timelines">0</strong><span>Timelines</span></div>
+          <div class="metric alert"><strong id="metric-contradictions">0</strong><span>Possible conflicts</span></div>
+          <div class="metric verified"><strong id="metric-oracle">Checking</strong><span>Rebuild verification</span></div>
         </div>
 
         <div class="board-grid">
           <article class="card">
-            <div class="card-head"><div><span class="card-kicker">Reasoning surface</span><h3>Evidence relationship graph</h3><p>A live force-directed map of the active source set. Node size reflects evidentiary weight. Drag nodes, pinch or ctrl+scroll to zoom, drag the canvas to pan, and hover to isolate a neighborhood. A connection is not a guilt determination.</p></div></div>
+            <div class="card-head"><div><span class="card-kicker">Case relationships</span><h3>Evidence relationship map</h3><p>Explore connections across the active source set. Node size reflects the amount of supporting material. A connection is not a guilt determination.</p></div></div>
             <div class="graph-toolbar">
               <button class="graph-toggle active" id="toggle-sources" type="button" aria-pressed="true">Source records</button>
               <button class="graph-toggle active" id="toggle-labels" type="button" aria-pressed="true">Labels</button>
@@ -548,7 +764,7 @@
             <div class="graph-legend"><span><i class="legend-dot person"></i>Person</span><span><i class="legend-dot object"></i>Object</span><span><i class="legend-dot location"></i>Location</span><span><i class="legend-dot context"></i>Case context</span><span><i class="legend-dot source"></i>Source record</span><span><i class="legend-line"></i>Court-outcome support</span><span><i class="legend-line allegation"></i>Allegation / agency only</span></div>
           </article>
           <aside class="card inspector" id="graph-inspector">
-            <div class="card-head"><div><span class="card-kicker">Reasoning inspector</span><h3>Select an entity</h3><p>Every displayed claim remains tied to an immutable assertion and source locator.</p></div></div>
+            <div class="card-head"><div><span class="card-kicker">Selected record</span><h3>Select a subject</h3><p>Every displayed statement remains tied to its source and locator.</p></div></div>
             <div class="inspector-body" id="inspector-body"><p class="inspector-summary">Choose a person, object, place, or case-context node in the graph.</p></div>
           </aside>
         </div>
@@ -645,17 +861,18 @@
       <section class="panel hidden" data-panel="ai-intake">
         <div class="work-grid">
           <section class="form-card">
-            <h3>AI-assisted intake</h3>
-            <p>Paste an unstructured excerpt — a report paragraph, a jail-call transcript, a warrant return. Claude proposes structured, source-quoted assertions. Nothing is stored until you confirm: the immutable ledger is only ever written by a reviewer.</p>
+            <h3>Assisted evidence intake</h3>
+            <p>Paste an unstructured excerpt from a report, transcript, or warrant return. The system prepares source-quoted draft assertions for review. Nothing is stored until a reviewer confirms it.</p>
             <div class="field"><label for="ai-filename">Source filename</label><input id="ai-filename" value="ai-intake.txt"></div>
+            <div class="field"><label for="ai-file">Load source text</label><input id="ai-file" type="file" accept=".txt,.md,.csv,text/plain,text/markdown,text/csv"><span class="field-note">The file is read locally; only reviewer-confirmed assertions enter the case.</span></div>
             <div class="field"><label for="ai-source-uri">Source URL</label><input id="ai-source-uri" type="url" placeholder="https://agency.gov/source"></div>
             <div class="field"><label for="ai-source-hint">Source context (optional)</label><input id="ai-source-hint" placeholder="e.g. New Bedford apartment interview, May 2013"></div>
             <div class="field"><label for="ai-text">Evidence excerpt</label><textarea id="ai-text" style="min-height:200px" placeholder="Paste the raw evidence text here."></textarea></div>
-            <div class="form-actions"><button class="button button-primary" id="ai-extract" type="button">Extract with AI</button></div>
+            <div class="form-actions"><button class="button button-primary" id="ai-extract" type="button">Generate draft assertions</button></div>
             <p class="form-status" id="ai-status" role="status">Every extracted field cites a verbatim source span for you to confirm.</p>
           </section>
           <section class="form-card">
-            <div class="card-head"><div><span class="card-kicker">Human-in-the-loop review</span><h3>Proposed assertions</h3><p>Edit any field, then confirm the ones you accept. Confirmed rows are appended as one source and recompute only affected timelines.</p></div><span class="ai-mode-badge hidden" id="ai-mode-badge"></span></div>
+            <div class="card-head"><div><span class="card-kicker">Reviewer confirmation</span><h3>Draft assertions</h3><p>Edit any field, then confirm the rows you accept. Confirmed rows are appended as one source and recompute only affected timelines.</p></div><span class="ai-mode-badge hidden" id="ai-mode-badge"></span></div>
             <div id="ai-proposals" class="ai-proposals"><p class="ai-empty">Extract an excerpt to review proposed assertions.</p></div>
             <div class="form-actions"><button class="button button-primary" id="ai-confirm" type="button" disabled>Confirm &amp; add to case</button></div>
             <p class="form-status" id="ai-confirm-status" role="status"></p>
@@ -682,13 +899,25 @@
             <h3>Officer handoff summary</h3>
             <p>Generate a concise, source-aware snapshot for the next assigned reviewer. This summary never labels allegations as established facts.</p>
             <div class="handoff-box"><strong>Current handoff</strong><pre id="handoff-summary">Open a case to generate the handoff.</pre></div>
-            <div class="form-actions" style="margin-top:14px"><button class="button button-dark" id="copy-handoff" type="button">Copy handoff summary</button></div>
+            <div class="form-actions" style="margin-top:14px"><button class="button button-dark" id="copy-handoff" type="button">Copy handoff summary</button><button class="button button-dark" id="download-packet" type="button">Download case packet</button></div>
             <p class="form-status" id="handoff-status" role="status"></p>
           </section>
         </div>
       </section>
     </section>
   </main>
+
+  <dialog class="retraction-dialog" id="retraction-dialog" aria-labelledby="retraction-title">
+    <form id="retraction-form">
+      <h2 id="retraction-title">Retract source record</h2>
+      <p>Remove this source from active reasoning while preserving its assertions and correction history.</p>
+      <div class="retraction-context"><strong id="retraction-filename">Source record</strong><span id="retraction-reviewer">Reviewer not assigned</span></div>
+      <div class="field"><label for="retraction-reason">Reason for retraction</label><textarea id="retraction-reason" maxlength="10000" placeholder="Describe the correction, withdrawal, duplicate, or scope decision." required></textarea><span class="field-note">This reason becomes part of the durable audit record.</span></div>
+      <p class="retraction-warning">The original assertions will remain visible in the source ledger, but they will no longer contribute to active timelines or findings.</p>
+      <div class="form-actions"><button class="button button-dark" id="cancel-retraction" type="button">Cancel</button><button class="button button-primary" id="confirm-retraction" type="submit">Retract and recompute</button></div>
+      <p class="form-status" id="retraction-status" role="status"></p>
+    </form>
+  </dialog>
 
   <aside class="tour-bar hidden" id="tour-bar" aria-live="polite" aria-label="Guided case briefing">
     <div class="tour-copy">
@@ -737,7 +966,7 @@
       ["azamat-tazhayakov", "backpack", "agreement", 0, 20],
       ["dias-kadyrbayev", "laptop-computer", "concealment", 0, 18],
     ];
-    const state = { caseId: null, data: null, proof: null, findings: null, selectedEntity: null, timelineTier: "all", batch: null, navigationId: 0, tourIndex: -1 };
+    const state = { caseId: null, data: null, proof: null, findings: null, changes: null, selectedEntity: null, timelineTier: "all", batch: null, retractionDocumentId: null, navigationId: 0, tourIndex: -1 };
     const TIER_LABELS = { court: "Court established", allegation: "Allegation", agency: "Agency record", officer: "Officer evidence" };
     const byId = (id) => document.getElementById(id);
     const storedKey = sessionStorage.getItem("evidenceCommandKey") || "";
@@ -1241,7 +1470,7 @@
 
       byId("contradiction-list").innerHTML = contradictions.length
         ? contradictions.map((finding) => findingCard(finding, true)).join("")
-        : '<p class="findings-empty">NO ACTIVE CONTRADICTION - EVERY FLAGGED PAIR HAS BEEN RESOLVED OR NONE EXISTS IN THE ACTIVE SOURCE SET.</p>';
+        : '<p class="findings-empty">No active contradictions. Every flagged pair has been resolved, or none exists in the active source set.</p>';
       const demoBlock = byId("contradiction-demo");
       const demoTipActive = state.data.documents.some((document) => document.filename === "demo-conflicting-tip.txt" && !document.retracted);
       demoBlock.classList.toggle("hidden", demoTipActive);
@@ -1275,7 +1504,11 @@
             source_text: "Caller stated the laptop went into the dumpster too. (Hypothetical demonstration input.)",
           }],
         }, "findings-status");
-        setStatus("findings-status", mutation.deduplicated ? "The demonstration tip already exists in this case." : "Demonstration tip appended. The detector flagged it against the court-established concealment; retract the tip in the source ledger to clear the flag.");
+        setStatus("findings-status", mutation.deduplicated
+          ? "The demonstration tip already exists in this case."
+          : mutation.recomputation_settled
+            ? "Demonstration tip appended. The detector flagged it against the court-established concealment; retract the tip in the source ledger to clear the flag."
+            : "Demonstration tip recorded. Derived findings are still recomputing; wait before relying on the detector.");
       } catch (error) { setStatus("findings-status", error.message, true); }
       finally { setBusy(button, false, ""); }
     }
@@ -1295,8 +1528,81 @@
     }
 
     function renderSources() {
-      byId("source-ledger").innerHTML = state.data.documents.map((document) => `<article class="source-card${document.retracted ? " retracted" : ""}"><div class="source-top"><span class="entity-tag">${escapeHtml(document.source_type)}</span><span class="tier ${document.retracted ? "allegation" : "court"}">${document.retracted ? "Retracted" : "Active"}</span></div><h3>${escapeHtml(document.filename)}</h3><code>${escapeHtml(document.id)}</code><p class="source-meta">${document.assertion_count} retained assertion${document.assertion_count === 1 ? "" : "s"}<br>Added at evidence revision ${document.added_at_revision}${document.retracted ? `<br>Reason: ${escapeHtml(document.retraction_reason)}` : ""}</p><div class="source-actions">${document.source_uri ? `<a href="${escapeHtml(document.source_uri)}" target="_blank" rel="noreferrer">Open source</a>` : ""}${document.retracted ? "" : `<button class="retract-action" data-retract="${escapeHtml(document.id)}" type="button">Retract source</button>`}</div></article>`).join("");
-      document.querySelectorAll("[data-retract]").forEach((button) => button.addEventListener("click", () => retractSource(button.dataset.retract)));
+      const changes = state.changes?.changes || [];
+      byId("source-ledger").innerHTML = state.data.documents.map((document) => {
+        const retraction = changes.find((change) => change.operation === "RETRACT_DOCUMENT" && change.document.id === document.id);
+        const actor = retraction?.performed_by ? `<br>Recorded by ${escapeHtml(retraction.performed_by)}` : "";
+        return `<article class="source-card${document.retracted ? " retracted" : ""}"><div class="source-top"><span class="entity-tag">${escapeHtml(document.source_type)}</span><span class="tier ${document.retracted ? "allegation" : "court"}">${document.retracted ? "Retracted" : "Active"}</span></div><h3>${escapeHtml(document.filename)}</h3><code>${escapeHtml(document.id)}</code><p class="source-meta">${document.assertion_count} retained assertion${document.assertion_count === 1 ? "" : "s"}<br>Added at evidence revision ${document.added_at_revision}${document.retracted ? `<br>Reason: ${escapeHtml(document.retraction_reason)}${actor}` : ""}</p><div class="source-actions">${document.source_uri ? `<a href="${escapeHtml(document.source_uri)}" target="_blank" rel="noreferrer">Open source</a>` : ""}${document.retracted ? "" : `<button class="retract-action" data-retract="${escapeHtml(document.id)}" type="button" aria-label="Retract ${escapeHtml(document.filename)}">Retract source</button>`}</div></article>`;
+      }).join("");
+      document.querySelectorAll("[data-retract]").forEach((button) => button.addEventListener("click", () => openRetractionDialog(button.dataset.retract)));
+    }
+
+    function changeFindingSummary(change) {
+      const labels = {
+        contradictions: "possible conflict",
+        corroborations: "corroborated event",
+        single_source: "single-source review item",
+      };
+      const parts = [];
+      Object.entries(labels).forEach(([key, label]) => {
+        const delta = change.findings_delta?.[key] || { opened: 0, cleared: 0 };
+        if (delta.opened) parts.push(`${delta.opened} ${label}${delta.opened === 1 ? "" : "s"} opened`);
+        if (delta.cleared) parts.push(`${delta.cleared} ${label}${delta.cleared === 1 ? "" : "s"} cleared`);
+      });
+      return parts.length ? parts.join("; ") : "No review findings changed";
+    }
+
+    function renderChangeBrief() {
+      const latest = state.changes?.changes?.[0];
+      const verification = state.changes?.current_verification;
+      const verificationBox = byId("change-verification");
+      if (!latest) {
+        byId("change-operation").textContent = "No recorded update";
+        byId("change-revision").textContent = `Evidence revision ${state.data.case.revision}`;
+        byId("change-title").textContent = "What changed?";
+        byId("change-summary").textContent = "Add a source to create the first durable change brief.";
+        byId("change-impact").innerHTML = "";
+        byId("change-history").hidden = true;
+        byId("change-verification-title").textContent = "Awaiting evidence";
+        byId("change-verification-copy").textContent = "Verification begins after the first source is added.";
+        verificationBox.classList.add("pending");
+        return;
+      }
+
+      const added = latest.operation === "ADD_DOCUMENT";
+      const affected = latest.affected || { timelines: [], timeline_count: 0, untouched_artifacts: 0 };
+      const subjects = [...new Set(affected.timelines.map((item) => entityProfile(item.entity_id).label))];
+      const dates = [...new Set(affected.timelines.map((item) => item.date))];
+      const subjectCopy = subjects.length ? subjects.slice(0, 3).join(", ") : "No timelines";
+      const dateCopy = dates.length === 1 ? new Date(`${dates[0]}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : `${dates.length} dates`;
+      const reason = latest.document.retraction_reason ? ` Reason recorded: ${latest.document.retraction_reason}` : "";
+
+      byId("change-operation").textContent = added ? "Source added" : "Source retracted";
+      byId("change-revision").textContent = `Evidence revision ${latest.revision} · ${new Date(latest.created_at).toLocaleString()}`;
+      byId("change-title").textContent = latest.document.filename;
+      byId("change-summary").textContent = `${affected.timeline_count} timeline${affected.timeline_count === 1 ? "" : "s"} recomputed; ${affected.untouched_artifacts} left untouched.${reason}`;
+      byId("change-impact").innerHTML = [
+        `<span>${escapeHtml(subjectCopy)} · ${escapeHtml(dateCopy)}</span>`,
+        `<span>${escapeHtml(changeFindingSummary(latest))}</span>`,
+        `<span>${latest.recomputation.requested} targeted recomputation${latest.recomputation.requested === 1 ? "" : "s"}</span>`,
+        `<span>${escapeHtml(latest.performed_by || "System or unassigned reviewer")}</span>`,
+      ].join("");
+
+      const history = state.changes.changes;
+      byId("change-history").hidden = false;
+      byId("change-history-summary").textContent = `View revision history (${history.length})`;
+      byId("change-history-list").innerHTML = history.map((change) => {
+        const operation = change.operation === "ADD_DOCUMENT" ? "Added" : "Retracted";
+        const impact = `${change.affected.timeline_count} timeline${change.affected.timeline_count === 1 ? "" : "s"}; ${changeFindingSummary(change)}`;
+        return `<div class="change-history-row"><code>REV ${change.revision}</code><div><strong>${escapeHtml(operation)} · ${escapeHtml(change.document.filename)}</strong><span>${escapeHtml(change.performed_by || "System or unassigned reviewer")} · ${escapeHtml(new Date(change.created_at).toLocaleString())}</span></div><div><span>${escapeHtml(impact)}</span></div></div>`;
+      }).join("");
+
+      const verified = Boolean(verification?.verified);
+      verificationBox.classList.toggle("pending", !verified);
+      byId("change-verification-title").textContent = verified ? "Verified" : "Recomputing";
+      byId("change-verification-copy").textContent = verified
+        ? "Incremental case state matches a deterministic full rebuild; the work queue is settled."
+        : "The latest revision is still being checked against a full rebuild or has work remaining.";
     }
 
     function renderAssignment() {
@@ -1327,9 +1633,10 @@
         `Evidence revision: ${current.revision}`,
         `Assigned: ${current.assigned_officer || "UNASSIGNED"}${current.assigned_badge ? ` / ${current.assigned_badge}` : ""}${current.assigned_unit ? ` / ${current.assigned_unit}` : ""}`,
         `Scope: ${state.data.documents.length} sources, ${events.length} active events, ${state.data.artifacts.length} timelines`,
+        `Latest change: ${state.changes?.changes?.[0] ? `${state.changes.changes[0].operation === "ADD_DOCUMENT" ? "source added" : "source retracted"} - ${state.changes.changes[0].document.filename}; ${changeFindingSummary(state.changes.changes[0])}` : "No evidence mutation recorded"}`,
         `Status split: ${counts.allegation} allegations / ${counts.court} court-established / ${counts.agency} agency / ${counts.officer} officer-added`,
         `Findings: ${state.findings?.contradictions?.length || 0} contradiction candidate(s) / ${state.findings?.corroborations?.length || 0} corroborated event(s) / ${state.findings?.single_source?.length || 0} single-source day(s)`,
-        `Correctness oracle: ${state.proof?.equivalent_to_full_rebuild ? "VERIFIED" : "PENDING"}`,
+        `Rebuild verification: ${state.proof?.equivalent_to_full_rebuild ? "VERIFIED" : "PENDING"}`,
         `Handoff note: ${current.handoff_note || "No handoff note recorded."}`,
         "Priority review: preserve source qualification; resolve broad time windows; compare physical-action attribution across complaint, indictment, and outcome records.",
         `Open: ${caseUrl().toString()}`,
@@ -1337,6 +1644,31 @@
     }
 
     function renderHandoff() { byId("handoff-summary").textContent = handoffText(); }
+
+    function downloadCasePacket() {
+      if (!state.data) return;
+      const packet = {
+        format: "evidence-review-packet-v1",
+        exported_at: new Date().toISOString(),
+        notice: "Analytical review material. Allegations are not established facts.",
+        case: state.data.case,
+        handoff: handoffText(),
+        sources: state.data.documents,
+        artifacts: state.data.artifacts,
+        findings: state.findings,
+        change_history: state.changes,
+        verification: state.proof,
+      };
+      const blob = new Blob([JSON.stringify(packet, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `evidence-review-${state.data.case.id}-revision-${state.data.case.revision}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+      setStatus("handoff-status", "Case packet downloaded with sources, findings, change history, and verification evidence.");
+    }
 
     function renderCase() {
       const current = state.data.case;
@@ -1351,6 +1683,7 @@
       renderGraph();
       renderStatusDistribution(events);
       renderFindings();
+      renderChangeBrief();
       renderReviewQueue(events);
       renderTimeline();
       renderSources();
@@ -1362,14 +1695,13 @@
     async function openCase(caseId, navigationId = ++state.navigationId) {
       const data = await api(`/cases/${caseId}`);
       if (navigationId !== state.navigationId) return false;
-      let proof = null;
-      let findings = null;
-      if (data.artifacts.length) [proof, findings] = await Promise.all([api(`/cases/${caseId}/proof`), api(`/cases/${caseId}/findings`)]);
+      const [proof, findings, changes] = await Promise.all([api(`/cases/${caseId}/proof`), api(`/cases/${caseId}/findings`), api(`/cases/${caseId}/changes`)]);
       if (navigationId !== state.navigationId) return false;
       state.caseId = caseId;
       state.data = data;
       state.proof = proof;
       state.findings = findings;
+      state.changes = changes;
       renderCase();
       return true;
     }
@@ -1378,7 +1710,7 @@
       const button = byId("build-case");
       const navigationId = ++state.navigationId;
       setBusy(button, true, recovered ? "Rebuilding case..." : "Building case...");
-      setStatus("launch-status", recovered ? "The prior case is unavailable. Rebuilding from the official record..." : "Materializing source-backed timelines and checking the full-rebuild oracle...");
+      setStatus("launch-status", recovered ? "The prior case is unavailable. Rebuilding from the public record..." : "Loading sources, preparing timelines, and verifying the case state...");
       try {
         const result = await api("/demo/real-case/boston-obstruction", { method: "POST", body: "{}" });
         if (navigationId !== state.navigationId) return false;
@@ -1399,20 +1731,45 @@
       try { await api("/workers/drain", { method: "POST", body: "{}" }); } catch (error) { if (error.status !== 404) throw error; }
       for (let attempt = 0; attempt < 60; attempt += 1) {
         await openCase(state.caseId, state.navigationId);
-        if (state.data.artifacts.every((artifact) => artifact.fresh) && (!state.data.artifacts.length || state.proof?.equivalent_to_full_rebuild)) return;
+        if (state.data.artifacts.every((artifact) => artifact.fresh) && (!state.data.artifacts.length || state.proof?.equivalent_to_full_rebuild)) return true;
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
       setStatus(messageId, "Recomputation is still pending. Refresh the case before relying on derived timelines.", true);
+      return false;
     }
 
-    async function retractSource(documentId) {
-      if (!window.confirm("Retract this source? Assertions remain auditable but leave active reasoning and timelines.")) return;
-      setStatus("launch-status", "Appending retraction and recomputing affected timelines...");
+    function openRetractionDialog(documentId) {
+      const source = state.data.documents.find((document) => document.id === documentId);
+      if (!source || source.retracted) return;
+      state.retractionDocumentId = documentId;
+      byId("retraction-filename").textContent = source.filename;
+      byId("retraction-reviewer").textContent = state.data.case.assigned_officer
+        ? `Assignment snapshot: ${state.data.case.assigned_officer} (not an authenticated identity)`
+        : "No reviewer is assigned; the mutation will be recorded without an assignment snapshot.";
+      byId("retraction-reason").value = "";
+      setStatus("retraction-status", "");
+      byId("retraction-dialog").showModal();
+      byId("retraction-reason").focus();
+    }
+
+    function closeRetractionDialog() {
+      state.retractionDocumentId = null;
+      byId("retraction-dialog").close();
+    }
+
+    async function retractSource(documentId, reason) {
+      setStatus("retraction-status", "Appending the correction and recomputing affected timelines...");
+      const button = byId("confirm-retraction");
+      setBusy(button, true, "Retracting...");
       try {
-        await api(`/cases/${state.caseId}/documents/${documentId}/retractions`, { method: "POST", body: JSON.stringify({ reason: "Retracted by assigned case reviewer" }) });
-        await drainAndRefresh("launch-status");
-        setStatus("launch-status", "Source retracted. Prior assertions remain visible in the audit ledger; active reasoning has been recomputed.");
-      } catch (error) { setStatus("launch-status", error.message, true); }
+        await api(`/cases/${state.caseId}/documents/${documentId}/retractions`, { method: "POST", body: JSON.stringify({ reason }) });
+        const settled = await drainAndRefresh("retraction-status");
+        closeRetractionDialog();
+        setStatus("launch-status", settled
+          ? "Source retracted. Prior assertions remain visible in the audit ledger; active reasoning has been recomputed."
+          : "Source retraction recorded. Prior assertions remain auditable; derived timelines are still recomputing.", !settled);
+      } catch (error) { setStatus("retraction-status", error.message, true); }
+      finally { setBusy(button, false, ""); }
     }
 
     function normalizeAssertion(raw, index) {
@@ -1457,8 +1814,8 @@
     async function ingestDocument(documentInput, statusId) {
       if (!state.caseId) throw new Error("Open a case before adding evidence.");
       const mutation = await api(`/cases/${state.caseId}/documents`, { method: "POST", body: JSON.stringify(documentInput) });
-      await drainAndRefresh(statusId);
-      return mutation;
+      const settled = mutation.deduplicated ? true : await drainAndRefresh(statusId);
+      return { ...mutation, recomputation_settled: settled };
     }
 
     const AI_KIND_OPTIONS = ["OBSERVED_AT", "CONTACTED", "TRANSFERRED", "MENTIONED", "REMOVED_FROM", "REPORTED_DISPOSAL", "REPORTED_CONCEALMENT", "REPORTED_TRANSFER", "REPORTED_RECOVERY", "REPORTED_AGREEMENT", "OTHER"];
@@ -1505,10 +1862,10 @@
         return;
       }
       container.innerHTML = result.proposals.map((proposal, index) => {
-        const provenance = proposal.provenance_verified ? "" : `<span class="ai-badge warn">Unverified span</span>`;
-        return `<article class="ai-card" data-ai-card="${index}">
+        const provenance = proposal.provenance_verified ? "" : `<span class="ai-badge warn">Excluded · span not found</span>`;
+        return `<article class="ai-card${proposal.provenance_verified ? "" : " excluded"}" data-ai-card="${index}">
           <div class="ai-card-top">
-            <label><input type="checkbox" data-ai-include checked> Include</label>
+            <label><input type="checkbox" data-ai-include${proposal.provenance_verified ? " checked" : " disabled"}> Include</label>
             <span><span class="ai-badge ${escapeHtml(proposal.confidence)}">${escapeHtml(proposal.confidence)} confidence</span> ${provenance}</span>
           </div>
           <blockquote class="ai-quote${proposal.provenance_verified ? "" : " unverified"}" data-ai-source>${escapeHtml(proposal.source_text)}</blockquote>
@@ -1524,8 +1881,11 @@
         </article>`;
       }).join("");
       container.querySelectorAll("[data-ai-include]").forEach((box) => box.addEventListener("change", () => box.closest("[data-ai-card]").classList.toggle("excluded", !box.checked)));
-      byId("ai-confirm").disabled = false;
-      setStatus("ai-confirm-status", "Review each span, then confirm the assertions you accept.");
+      const verifiedCount = result.proposals.filter((proposal) => proposal.provenance_verified).length;
+      byId("ai-confirm").disabled = verifiedCount === 0;
+      setStatus("ai-confirm-status", verifiedCount
+        ? `Review each span, then confirm the assertions you accept. ${result.proposals.length - verifiedCount || "No"} proposal${result.proposals.length - verifiedCount === 1 ? "" : "s"} excluded for unverifiable provenance.`
+        : "No proposal can be confirmed because none quotes a verbatim span from the source.", verifiedCount === 0);
     }
 
     async function confirmProposals() {
@@ -1533,19 +1893,26 @@
       const cards = [...document.querySelectorAll("[data-ai-card]")].filter((card) => card.querySelector("[data-ai-include]").checked);
       if (!cards.length) { setStatus("ai-confirm-status", "Select at least one proposed assertion.", true); return; }
       const assertions = [];
+      const originalExcerpt = byId("ai-text").value;
       for (const card of cards) {
         const occurredRaw = card.querySelector("[data-ai-occurred]").value;
         const occurred = new Date(occurredRaw);
         const entity = card.querySelector("[data-ai-entity]").value.trim();
         const value = card.querySelector("[data-ai-value]").value.trim();
+        const sourceText = card.querySelector("[data-ai-source]").textContent;
         if (!entity || !value || Number.isNaN(occurred.getTime())) { setStatus("ai-confirm-status", "Every included assertion needs an entity, a value, and a valid date.", true); return; }
-        assertions.push({ entity_id: entity, occurred_at: occurred.toISOString(), kind: card.querySelector("[data-ai-kind]").value, value, time_precision: card.querySelector("[data-ai-precision]").value, source_locator: card.querySelector("[data-ai-locator]").value.trim() || "ai-intake", source_text: card.querySelector("[data-ai-source]").textContent });
+        if (!sourceText || !originalExcerpt.includes(sourceText)) { setStatus("ai-confirm-status", "A selected quotation no longer matches the source excerpt. Extract again before confirming.", true); return; }
+        assertions.push({ entity_id: entity, occurred_at: occurred.toISOString(), kind: card.querySelector("[data-ai-kind]").value, value, time_precision: card.querySelector("[data-ai-precision]").value, source_locator: card.querySelector("[data-ai-locator]").value.trim() || "ai-intake", source_text: sourceText });
       }
       const button = byId("ai-confirm");
       setBusy(button, true, "Confirming...");
       try {
         const mutation = await ingestDocument({ filename: byId("ai-filename").value.trim() || "ai-intake.txt", source_type: "user_confirmed_extraction", source_uri: byId("ai-source-uri").value.trim() || null, assertions }, "ai-confirm-status");
-        setStatus("ai-confirm-status", mutation.deduplicated ? "These assertions already exist; no duplicate was created." : `${assertions.length} human-confirmed assertion${assertions.length === 1 ? "" : "s"} appended at revision ${mutation.revision}. Check Findings for new contradictions or corroboration.`);
+        setStatus("ai-confirm-status", mutation.deduplicated
+          ? "These assertions already exist; no duplicate was created."
+          : mutation.recomputation_settled
+            ? `${assertions.length} human-confirmed assertion${assertions.length === 1 ? "" : "s"} appended at revision ${mutation.revision}. Check Findings for new contradictions or corroboration.`
+            : `${assertions.length} human-confirmed assertion${assertions.length === 1 ? "" : "s"} recorded at revision ${mutation.revision}; derived findings are still recomputing.`, !mutation.recomputation_settled);
       } catch (error) {
         setStatus("ai-confirm-status", error.message, true);
       } finally {
@@ -1554,17 +1921,26 @@
     }
 
     function switchPanel(name) {
-      document.querySelectorAll("[data-panel]").forEach((panel) => panel.classList.toggle("hidden", panel.dataset.panel !== name));
-      document.querySelectorAll("[data-panel-target]").forEach((button) => button.classList.toggle("active", button.dataset.panelTarget === name));
+      document.querySelectorAll("[data-panel]").forEach((panel) => {
+        const active = panel.dataset.panel === name;
+        panel.classList.toggle("hidden", !active);
+        panel.setAttribute("aria-hidden", String(!active));
+      });
+      document.querySelectorAll("[data-panel-target]").forEach((button) => {
+        const active = button.dataset.panelTarget === name;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+        button.tabIndex = active ? 0 : -1;
+      });
       byId("case-app").scrollIntoView({ behavior: "smooth" });
     }
 
     const TOUR_STEPS = [
       {
         panel: "command",
-        selector: ".metric-grid",
-        title: "Defensible case state",
-        description: "Start with the operational answer: every claim is source-backed, legal status is explicit, and the current timelines match a deterministic full rebuild.",
+        selector: "#change-brief",
+        title: "Read the delta first",
+        description: "Each evidence mutation states which source changed, what was recomputed, which findings opened or cleared, and whether the current case still matches a full rebuild.",
       },
       {
         panel: "findings",
@@ -1575,8 +1951,8 @@
       {
         panel: "ai-intake",
         selector: "[data-panel='ai-intake'] .work-grid",
-        title: "AI proposes. A reviewer decides.",
-        description: "Unstructured evidence becomes editable, verbatim-cited proposals. Nothing enters the immutable ledger until a human confirms it.",
+        title: "Review before it enters the record",
+        description: "Automated extraction prepares editable, verbatim-cited drafts. Nothing enters the evidence record until a reviewer confirms it.",
         enter() {
           if (!byId("ai-text").value.trim()) {
             byId("ai-filename").value = "sample-investigative-note.txt";
@@ -1657,6 +2033,30 @@
       }
     }
 
+    const workspaceTabs = [...document.querySelectorAll("[data-panel-target]")];
+    document.querySelector(".case-nav").setAttribute("role", "tablist");
+    workspaceTabs.forEach((button) => {
+      const panelName = button.dataset.panelTarget;
+      const panel = document.querySelector(`[data-panel='${panelName}']`);
+      button.id = `tab-${panelName}`;
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-controls", `panel-${panelName}`);
+      button.setAttribute("aria-selected", String(button.classList.contains("active")));
+      button.tabIndex = button.classList.contains("active") ? 0 : -1;
+      panel.id = `panel-${panelName}`;
+      panel.setAttribute("role", "tabpanel");
+      panel.setAttribute("aria-labelledby", button.id);
+      panel.setAttribute("aria-hidden", String(panel.classList.contains("hidden")));
+      button.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const current = workspaceTabs.indexOf(button);
+        const target = event.key === "Home" ? 0 : event.key === "End" ? workspaceTabs.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + workspaceTabs.length) % workspaceTabs.length;
+        workspaceTabs[target].focus();
+        switchPanel(workspaceTabs[target].dataset.panelTarget);
+      });
+    });
+
     wireGraphInteractions();
     byId("toggle-sources").addEventListener("click", () => {
       graphView.showSources = !graphView.showSources;
@@ -1701,8 +2101,24 @@
     });
     byId("ai-extract").addEventListener("click", extractEvidence);
     byId("ai-confirm").addEventListener("click", confirmProposals);
+    byId("ai-file").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { setStatus("ai-status", "Source text files are limited to 5 MB.", true); return; }
+      byId("ai-filename").value = file.name;
+      byId("ai-text").value = await file.text();
+      setStatus("ai-status", `${file.name} loaded locally. Generate draft assertions when ready.`);
+    });
     byId("add-demo-tip").addEventListener("click", appendDemoTip);
     byId("copy-handoff").addEventListener("click", async () => { try { await navigator.clipboard.writeText(handoffText()); setStatus("handoff-status", "Handoff summary copied."); } catch (_error) { setStatus("handoff-status", "Clipboard permission was blocked.", true); } });
+    byId("download-packet").addEventListener("click", downloadCasePacket);
+    byId("cancel-retraction").addEventListener("click", closeRetractionDialog);
+    byId("retraction-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const reason = byId("retraction-reason").value.trim();
+      if (!reason) { setStatus("retraction-status", "Enter a reason before retracting this source.", true); return; }
+      await retractSource(state.retractionDocumentId, reason);
+    });
     byId("tour-exit").addEventListener("click", endTour);
     byId("tour-back").addEventListener("click", () => { if (state.tourIndex > 0) { state.tourIndex -= 1; renderTourStep(); } });
     byId("tour-next").addEventListener("click", () => { if (state.tourIndex >= TOUR_STEPS.length - 1) endTour(); else { state.tourIndex += 1; renderTourStep(); } });
@@ -1715,7 +2131,11 @@
       try {
         const assertion = normalizeAssertion({ entity_id: byId("evidence-entity").value, occurred_at: byId("evidence-occurred").value, kind: byId("evidence-kind").value, value: byId("evidence-value").value, time_precision: byId("evidence-precision").value, source_locator: byId("evidence-locator").value, source_text: byId("evidence-source-text").value }, 0);
         const mutation = await ingestDocument({ filename: byId("evidence-filename").value.trim(), source_type: "officer_observation", source_uri: byId("evidence-source-uri").value.trim() || null, assertions: [assertion] }, "evidence-status");
-        setStatus("evidence-status", mutation.deduplicated ? "This source already exists; no duplicate was created." : `Evidence appended at revision ${mutation.revision}; ${mutation.queued_artifacts} affected timeline${mutation.queued_artifacts === 1 ? "" : "s"} recomputed and oracle checked.`);
+        setStatus("evidence-status", mutation.deduplicated
+          ? "This source already exists; no duplicate was created."
+          : mutation.recomputation_settled
+            ? `Evidence appended at revision ${mutation.revision}; ${mutation.queued_artifacts} affected timeline${mutation.queued_artifacts === 1 ? "" : "s"} recomputed and the case state verified.`
+            : `Evidence recorded at revision ${mutation.revision}; ${mutation.queued_artifacts} affected timeline${mutation.queued_artifacts === 1 ? " is" : "s are"} still recomputing.`, !mutation.recomputation_settled);
       } catch (error) { setStatus("evidence-status", error.message, true); }
       finally { setBusy(button, false, ""); }
     });
@@ -1726,7 +2146,22 @@
     ["dragleave", "drop"].forEach((name) => byId("drop-zone").addEventListener(name, (event) => { event.preventDefault(); byId("drop-zone").style.borderColor = ""; }));
     byId("drop-zone").addEventListener("drop", (event) => loadBatchFile(event.dataTransfer.files[0]));
     byId("validate-batch").addEventListener("click", () => { try { validateBatch(); } catch (error) { state.batch = null; byId("ingest-batch").disabled = true; setStatus("batch-status", error.message, true); } });
-    byId("ingest-batch").addEventListener("click", async () => { const button = byId("ingest-batch"); setBusy(button, true, "Ingesting..."); try { const batch = state.batch || validateBatch(); const mutation = await ingestDocument(batch, "batch-status"); state.batch = null; byId("batch-data").value = ""; setStatus("batch-status", mutation.deduplicated ? "Batch already exists; no duplicate was created." : `${batch.assertions.length} assertions appended at revision ${mutation.revision}.`); } catch (error) { setStatus("batch-status", error.message, true); } finally { setBusy(button, false, ""); button.disabled = state.batch === null; } });
+    byId("ingest-batch").addEventListener("click", async () => {
+      const button = byId("ingest-batch");
+      setBusy(button, true, "Ingesting...");
+      try {
+        const batch = state.batch || validateBatch();
+        const mutation = await ingestDocument(batch, "batch-status");
+        state.batch = null;
+        byId("batch-data").value = "";
+        setStatus("batch-status", mutation.deduplicated
+          ? "Batch already exists; no duplicate was created."
+          : mutation.recomputation_settled
+            ? `${batch.assertions.length} assertions appended at revision ${mutation.revision}; derived case state verified.`
+            : `${batch.assertions.length} assertions recorded at revision ${mutation.revision}; derived case state is still recomputing.`, !mutation.recomputation_settled);
+      } catch (error) { setStatus("batch-status", error.message, true); }
+      finally { setBusy(button, false, ""); button.disabled = state.batch === null; }
+    });
 
     const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
     byId("evidence-occurred").value = localNow;

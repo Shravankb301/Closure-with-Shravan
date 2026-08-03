@@ -194,6 +194,8 @@ of silently presenting an old artifact as current.
 - `documents` are idempotent within a case by canonical content hash.
 - `assertions` are immutable, source-specific statements, not authoritative facts.
 - `document_retractions` are append-only tombstones. Retraction never deletes an assertion.
+- `change_sets.performed_by` snapshots the assigned reviewer at mutation time;
+  later reassignment cannot rewrite the historical actor.
 - `change_keys` identify the smallest supported recomputation partition.
 - `artifact_versions` are immutable results with exact source lineage.
 - `artifact_dependencies` record the keys and versions actually read.
@@ -229,6 +231,7 @@ Core endpoints:
 | `POST` | `/workers/drain` | Process queued recomputations locally |
 | `GET` | `/cases/{case_id}/artifacts/{artifact_key}` | Read a versioned artifact and lineage |
 | `GET` | `/cases/{case_id}/findings` | Derive contradiction candidates, corroboration, and single-source exposure |
+| `GET` | `/cases/{case_id}/changes` | Explain recent source mutations, affected timelines, finding deltas, and recomputation state |
 | `GET` | `/cases/{case_id}/proof` | Verify full-rebuild equivalence and inspect live proof counts |
 
 Interactive API documentation is available at `/docs` while the server runs.
