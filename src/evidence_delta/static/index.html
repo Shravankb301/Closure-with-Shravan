@@ -2303,6 +2303,14 @@
       element.classList.toggle("error", error);
     }
 
+    function guideToDemoKey(message) {
+      navigateToSection("#workspace");
+      const accessDisclosure = workspaceKeyInput.closest("details");
+      if (accessDisclosure) accessDisclosure.open = true;
+      setWorkspaceStatus("workspace-case-status", message, true);
+      window.setTimeout(() => workspaceKeyInput.focus(), 350);
+    }
+
     function setInputMode(mode) {
       document.querySelectorAll("[data-input-mode]").forEach((button) => {
         const selected = button.dataset.inputMode === mode;
@@ -2564,7 +2572,13 @@
         );
         setWorkspaceStatus("workspace-ingest-status", "This is now a normal durable case. Add your own evidence or retract a source to test the model.");
       } catch (error) {
-        setWorkspaceStatus("workspace-case-status", error.message, true);
+        if (error.status === 401) {
+          guideToDemoKey(
+            "Enter the hosted demo key, save it, then build the official-record case again.",
+          );
+        } else {
+          setWorkspaceStatus("workspace-case-status", error.message, true);
+        }
       } finally {
         buttons.forEach((button) => setButtonBusy(button, false, ""));
       }
@@ -2611,10 +2625,11 @@
         await openWorkspaceCase(caseId);
         navigateToSection("#workspace");
       } catch (error) {
-        const message = error.status === 401
-          ? "Enter the hosted demo key above, save it, then reopen this case."
-          : error.message;
-        setWorkspaceStatus("workspace-case-status", message, true);
+        if (error.status === 401) {
+          guideToDemoKey("Enter the hosted demo key, save it, then reopen this case.");
+        } else {
+          setWorkspaceStatus("workspace-case-status", error.message, true);
+        }
       }
     }
 

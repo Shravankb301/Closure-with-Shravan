@@ -54,6 +54,7 @@ def test_dashboard_serves_the_selectivity_experiment() -> None:
         assert "Run the live proof" in response.text
         assert "Open the real case" in response.text
         assert "Boston evidence-disposal case" in response.text
+        assert "Enter the hosted demo key" in response.text
         assert "Bring your own evidence" in response.text
         assert 'id="quick-evidence-form"' in response.text
         assert 'id="evidence-file"' in response.text
