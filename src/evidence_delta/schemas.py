@@ -73,6 +73,14 @@ class RetractionInput(BaseModel):
     reason: str = Field(min_length=1)
 
 
+class ExtractionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(min_length=1, max_length=100_000)
+    filename: str | None = Field(default=None, max_length=255)
+    source_hint: str | None = Field(default=None, max_length=2_048)
+
+
 class MutationResult(BaseModel):
     case_id: str
     document_id: str

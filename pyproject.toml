@@ -23,6 +23,9 @@ dev = [
   "pytest>=8.4,<9",
   "ruff>=0.12,<1",
 ]
+ai = [
+  "anthropic>=0.69,<1",
+]
 
 [tool.ruff]
 line-length = 100

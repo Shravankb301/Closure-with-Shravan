@@ -402,6 +402,26 @@
       .status-key { grid-template-columns: 1fr 1fr; }
       footer { flex-direction: column; }
     }
+    .ai-mode-badge { align-self: flex-start; padding: 4px 10px; border-radius: 999px; font: 600 9px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); }
+    .ai-mode-badge.assisted { color: var(--blue); border-color: var(--blue); background: rgba(73, 111, 156, 0.08); }
+    .ai-mode-badge.deterministic { color: var(--muted); }
+    .ai-proposals { display: flex; flex-direction: column; gap: 14px; margin: 6px 0 16px; }
+    .ai-empty { color: var(--muted); font-size: 14px; }
+    .ai-card { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--paper-bright); }
+    .ai-card.excluded { opacity: 0.5; }
+    .ai-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .ai-card-top label { display: flex; align-items: center; gap: 8px; font: 600 12px/1 var(--sans); }
+    .ai-quote { border-left: 3px solid var(--amber); padding: 8px 12px; margin: 0 0 12px; background: var(--paper-dim); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--ink-soft); }
+    .ai-quote.unverified { border-left-color: var(--signal); }
+    .ai-badge { padding: 3px 8px; border-radius: 999px; font: 600 9px/1.4 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
+    .ai-badge.high { color: var(--green); border: 1px solid var(--green); }
+    .ai-badge.medium { color: var(--amber); border: 1px solid var(--amber); }
+    .ai-badge.low { color: var(--muted); border: 1px solid var(--line); }
+    .ai-badge.warn { color: var(--signal); border: 1px solid var(--signal); }
+    .ai-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ai-fields .field.full { grid-column: 1 / -1; }
+    .ai-rationale { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+    @media (max-width: 720px) { .ai-fields { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -467,6 +487,7 @@
         <button data-panel-target="timeline" type="button">Chronology</button>
         <button data-panel-target="sources" type="button">Source ledger</button>
         <button data-panel-target="intake" type="button">Evidence intake</button>
+        <button data-panel-target="ai-intake" type="button">AI intake</button>
         <button data-panel-target="officer" type="button">Officer handoff</button>
       </nav>
 
@@ -587,6 +608,27 @@
             <div class="field"><label for="batch-data">Structured assertions</label><textarea id="batch-data" style="min-height:280px" placeholder='[{"entity_id":"backpack","occurred_at":"2013-04-19T04:00:00Z","kind":"OTHER","value":"...","time_precision":"WINDOW","source_locator":"page:4","source_text":"..."}]'></textarea></div>
             <div class="form-actions"><button class="button button-dark" id="validate-batch" type="button">Validate import</button><button class="button button-primary" id="ingest-batch" type="button" disabled>Ingest batch</button></div>
             <p class="form-status" id="batch-status" role="status">No batch loaded.</p>
+          </section>
+        </div>
+      </section>
+
+      <section class="panel hidden" data-panel="ai-intake">
+        <div class="work-grid">
+          <section class="form-card">
+            <h3>AI-assisted intake</h3>
+            <p>Paste an unstructured excerpt — a report paragraph, a jail-call transcript, a warrant return. Claude proposes structured, source-quoted assertions. Nothing is stored until you confirm: the immutable ledger is only ever written by a reviewer.</p>
+            <div class="field"><label for="ai-filename">Source filename</label><input id="ai-filename" value="ai-intake.txt"></div>
+            <div class="field"><label for="ai-source-uri">Source URL</label><input id="ai-source-uri" type="url" placeholder="https://agency.gov/source"></div>
+            <div class="field"><label for="ai-source-hint">Source context (optional)</label><input id="ai-source-hint" placeholder="e.g. New Bedford apartment interview, May 2013"></div>
+            <div class="field"><label for="ai-text">Evidence excerpt</label><textarea id="ai-text" style="min-height:200px" placeholder="Paste the raw evidence text here."></textarea></div>
+            <div class="form-actions"><button class="button button-primary" id="ai-extract" type="button">Extract with AI</button></div>
+            <p class="form-status" id="ai-status" role="status">Every extracted field cites a verbatim source span for you to confirm.</p>
+          </section>
+          <section class="form-card">
+            <div class="card-head"><div><span class="card-kicker">Human-in-the-loop review</span><h3>Proposed assertions</h3><p>Edit any field, then confirm the ones you accept. Confirmed rows are appended as one source and recompute only affected timelines.</p></div><span class="ai-mode-badge hidden" id="ai-mode-badge"></span></div>
+            <div id="ai-proposals" class="ai-proposals"><p class="ai-empty">Extract an excerpt to review proposed assertions.</p></div>
+            <div class="form-actions"><button class="button button-primary" id="ai-confirm" type="button" disabled>Confirm &amp; add to case</button></div>
+            <p class="form-status" id="ai-confirm-status" role="status"></p>
           </section>
         </div>
       </section>
@@ -1374,6 +1416,98 @@
       return mutation;
     }
 
+    const AI_KIND_OPTIONS = ["OBSERVED_AT", "CONTACTED", "TRANSFERRED", "MENTIONED", "REMOVED_FROM", "REPORTED_DISPOSAL", "REPORTED_CONCEALMENT", "REPORTED_TRANSFER", "REPORTED_RECOVERY", "REPORTED_AGREEMENT", "OTHER"];
+    const AI_PRECISIONS = ["EXACT", "MINUTE", "HOUR", "DAY", "MONTH", "WINDOW", "UNKNOWN"];
+
+    function toLocalInput(iso) {
+      if (!iso) return "";
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return "";
+      const pad = (value) => String(value).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function selectOptions(values, selected) {
+      const list = values.includes(selected) ? values : [selected, ...values];
+      return list.map((value) => `<option${value === selected ? " selected" : ""}>${escapeHtml(value)}</option>`).join("");
+    }
+
+    async function extractEvidence() {
+      const button = byId("ai-extract");
+      const text = byId("ai-text").value.trim();
+      if (!text) { setStatus("ai-status", "Paste an evidence excerpt to extract.", true); return; }
+      setBusy(button, true, "Extracting...");
+      try {
+        const result = await api("/extract", { method: "POST", body: JSON.stringify({ text, filename: byId("ai-filename").value.trim() || "ai-intake.txt", source_hint: byId("ai-source-hint").value.trim() || null }) });
+        renderProposals(result);
+        setStatus("ai-status", `${result.proposals.length} proposed assertion${result.proposals.length === 1 ? "" : "s"}. ${result.reason}`);
+      } catch (error) {
+        setStatus("ai-status", error.message, true);
+      } finally {
+        setBusy(button, false, "");
+      }
+    }
+
+    function renderProposals(result) {
+      const badge = byId("ai-mode-badge");
+      badge.className = `ai-mode-badge ${result.mode}`;
+      badge.textContent = result.mode === "assisted" ? `Claude ${result.model}` : "Deterministic";
+      badge.classList.remove("hidden");
+      const container = byId("ai-proposals");
+      if (!result.proposals.length) {
+        container.innerHTML = `<p class="ai-empty">No concrete assertions were extracted from this excerpt.</p>`;
+        byId("ai-confirm").disabled = true;
+        return;
+      }
+      container.innerHTML = result.proposals.map((proposal, index) => {
+        const provenance = proposal.provenance_verified ? "" : `<span class="ai-badge warn">Unverified span</span>`;
+        return `<article class="ai-card" data-ai-card="${index}">
+          <div class="ai-card-top">
+            <label><input type="checkbox" data-ai-include checked> Include</label>
+            <span><span class="ai-badge ${escapeHtml(proposal.confidence)}">${escapeHtml(proposal.confidence)} confidence</span> ${provenance}</span>
+          </div>
+          <blockquote class="ai-quote${proposal.provenance_verified ? "" : " unverified"}" data-ai-source>${escapeHtml(proposal.source_text)}</blockquote>
+          <div class="ai-fields">
+            <div class="field"><label>Entity ID</label><input data-ai-entity value="${escapeHtml(proposal.entity_id)}"></div>
+            <div class="field"><label>Occurred at</label><input type="datetime-local" data-ai-occurred value="${toLocalInput(proposal.occurred_at)}"></div>
+            <div class="field"><label>Event kind</label><select data-ai-kind>${selectOptions(AI_KIND_OPTIONS, proposal.kind)}</select></div>
+            <div class="field"><label>Time precision</label><select data-ai-precision>${selectOptions(AI_PRECISIONS, proposal.time_precision)}</select></div>
+            <div class="field full"><label>Analytical value</label><textarea data-ai-value>${escapeHtml(proposal.value)}</textarea></div>
+            <div class="field full"><label>Source locator</label><input data-ai-locator value="${escapeHtml(proposal.source_locator)}"></div>
+          </div>
+          ${proposal.rationale ? `<p class="ai-rationale">${escapeHtml(proposal.rationale)}</p>` : ""}
+        </article>`;
+      }).join("");
+      container.querySelectorAll("[data-ai-include]").forEach((box) => box.addEventListener("change", () => box.closest("[data-ai-card]").classList.toggle("excluded", !box.checked)));
+      byId("ai-confirm").disabled = false;
+      setStatus("ai-confirm-status", "Review each span, then confirm the assertions you accept.");
+    }
+
+    async function confirmProposals() {
+      if (!state.caseId) { setStatus("ai-confirm-status", "Open a case before confirming evidence.", true); return; }
+      const cards = [...document.querySelectorAll("[data-ai-card]")].filter((card) => card.querySelector("[data-ai-include]").checked);
+      if (!cards.length) { setStatus("ai-confirm-status", "Select at least one proposed assertion.", true); return; }
+      const assertions = [];
+      for (const card of cards) {
+        const occurredRaw = card.querySelector("[data-ai-occurred]").value;
+        const occurred = new Date(occurredRaw);
+        const entity = card.querySelector("[data-ai-entity]").value.trim();
+        const value = card.querySelector("[data-ai-value]").value.trim();
+        if (!entity || !value || Number.isNaN(occurred.getTime())) { setStatus("ai-confirm-status", "Every included assertion needs an entity, a value, and a valid date.", true); return; }
+        assertions.push({ entity_id: entity, occurred_at: occurred.toISOString(), kind: card.querySelector("[data-ai-kind]").value, value, time_precision: card.querySelector("[data-ai-precision]").value, source_locator: card.querySelector("[data-ai-locator]").value.trim() || "ai-intake", source_text: card.querySelector("[data-ai-source]").textContent });
+      }
+      const button = byId("ai-confirm");
+      setBusy(button, true, "Confirming...");
+      try {
+        const mutation = await ingestDocument({ filename: byId("ai-filename").value.trim() || "ai-intake.txt", source_type: "user_confirmed_extraction", source_uri: byId("ai-source-uri").value.trim() || null, assertions }, "ai-confirm-status");
+        setStatus("ai-confirm-status", mutation.deduplicated ? "These assertions already exist; no duplicate was created." : `${assertions.length} human-confirmed assertion${assertions.length === 1 ? "" : "s"} appended at revision ${mutation.revision}. Check Findings for new contradictions or corroboration.`);
+      } catch (error) {
+        setStatus("ai-confirm-status", error.message, true);
+      } finally {
+        setBusy(button, false, "");
+      }
+    }
+
     function switchPanel(name) {
       document.querySelectorAll("[data-panel]").forEach((panel) => panel.classList.toggle("hidden", panel.dataset.panel !== name));
       document.querySelectorAll("[data-panel-target]").forEach((button) => button.classList.toggle("active", button.dataset.panelTarget === name));
@@ -1434,6 +1568,8 @@
       } catch (error) { setStatus("assignment-status", error.message, true); }
       finally { setBusy(button, false, ""); }
     });
+    byId("ai-extract").addEventListener("click", extractEvidence);
+    byId("ai-confirm").addEventListener("click", confirmProposals);
     byId("add-demo-tip").addEventListener("click", appendDemoTip);
     byId("copy-handoff").addEventListener("click", async () => { try { await navigator.clipboard.writeText(handoffText()); setStatus("handoff-status", "Handoff summary copied."); } catch (_error) { setStatus("handoff-status", "Clipboard permission was blocked.", true); } });
 

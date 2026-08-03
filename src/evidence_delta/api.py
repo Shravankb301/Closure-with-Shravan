@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_delta.database import Database
+from evidence_delta.extraction import extract_assertions
 from evidence_delta.real_case import build_boston_obstruction_case
 from evidence_delta.runtime import WorkerLoop
 from evidence_delta.scenario import build_selectivity_scenario
@@ -19,6 +20,7 @@ from evidence_delta.schemas import (
     CaseAssignmentInput,
     CaseInput,
     DocumentInput,
+    ExtractionInput,
     RetractionInput,
 )
 from evidence_delta.service import EvidenceService
@@ -134,6 +136,15 @@ def create_app(database_url: str | None = None) -> FastAPI:
     )
     def create_boston_obstruction_case() -> dict:
         return build_boston_obstruction_case(service, worker)
+
+    @application.post("/extract", dependencies=secured)
+    def extract_evidence(body: ExtractionInput) -> dict:
+        # AI proposes only. Nothing here touches the ledger; the reviewer
+        # confirms and posts to /cases/{id}/documents to write immutable
+        # evidence, keeping every stored assertion a human-authorized action.
+        return extract_assertions(
+            body.text, filename=body.filename, source_hint=body.source_hint
+        )
 
     @application.post("/cases/{case_id}/documents", status_code=202, dependencies=secured)
     def add_document(case_id: str, body: DocumentInput) -> dict:
