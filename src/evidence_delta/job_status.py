@@ -1,0 +1,16 @@
+QUEUED = "QUEUED"
+RUNNING = "RUNNING"
+SUCCEEDED = "SUCCEEDED"
+SUPERSEDED = "SUPERSEDED"
+FAILED_PERMANENT = "FAILED_PERMANENT"
+
+TERMINAL_STATUSES = frozenset({SUCCEEDED, SUPERSEDED, FAILED_PERMANENT})
+CLEAN_TERMINAL_STATUSES = frozenset({SUCCEEDED, SUPERSEDED})
+
+
+def is_terminal(status: str) -> bool:
+    return status in TERMINAL_STATUSES
+
+
+def is_clean_terminal(status: str) -> bool:
+    return status in CLEAN_TERMINAL_STATUSES

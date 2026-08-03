@@ -10,6 +10,7 @@ from sqlalchemy.exc import OperationalError
 
 from evidence_delta.database import Database
 from evidence_delta.domain import build_timeline
+from evidence_delta.job_status import FAILED_PERMANENT, QUEUED, RUNNING, SUCCEEDED, SUPERSEDED
 from evidence_delta.models import (
     ArtifactDependencyRecord,
     ArtifactRecord,
@@ -22,15 +23,15 @@ from evidence_delta.service import EvidenceService
 
 
 class SimulatedWorkerCrash(RuntimeError):
-    pass
+    """Raised by tests to force a crash before publication commits."""
 
 
 class SupersededComputation(RuntimeError):
-    pass
+    """Raised when a job no longer owns every dependency version it read."""
 
 
 class RetryableComputationError(RuntimeError):
-    pass
+    """Marks a computation failure as safe to retry within the attempt budget."""
 
 
 @dataclass(frozen=True)
@@ -65,14 +66,14 @@ class RecomputeWorker:
         exhausted = session.scalars(
             select(RecomputeJobRecord)
             .where(
-                RecomputeJobRecord.status == "RUNNING",
+                RecomputeJobRecord.status == RUNNING,
                 RecomputeJobRecord.lease_until <= now,
                 RecomputeJobRecord.attempts >= self.max_attempts,
             )
             .with_for_update(skip_locked=True)
         ).all()
         for job in exhausted:
-            job.status = "FAILED_PERMANENT"
+            job.status = FAILED_PERMANENT
             job.lease_until = None
             job.claim_token = None
             job.last_error = "LeaseExpired"
@@ -97,9 +98,9 @@ class RecomputeWorker:
                 .where(
                     RecomputeJobRecord.attempts < self.max_attempts,
                     or_(
-                        RecomputeJobRecord.status == "QUEUED",
+                        RecomputeJobRecord.status == QUEUED,
                         (
-                            (RecomputeJobRecord.status == "RUNNING")
+                            (RecomputeJobRecord.status == RUNNING)
                             & (RecomputeJobRecord.lease_until <= now)
                         ),
                     ),
@@ -110,7 +111,7 @@ class RecomputeWorker:
             )
             if job is None:
                 return None
-            job.status = "RUNNING"
+            job.status = RUNNING
             job.attempts += 1
             job.lease_until = now + timedelta(seconds=self.lease_seconds)
             job.claim_token = str(uuid4())
@@ -187,7 +188,7 @@ class RecomputeWorker:
                 ).all()
             )
             if current_versions != computation.read_versions:
-                persisted_job.status = "SUPERSEDED"
+                persisted_job.status = SUPERSEDED
                 persisted_job.lease_until = None
                 persisted_job.claim_token = None
                 persisted_job.last_error = "DependencyAdvanced"
@@ -245,7 +246,7 @@ class RecomputeWorker:
                 version = existing
 
             artifact.current_version_id = version.id
-            persisted_job.status = "SUCCEEDED"
+            persisted_job.status = SUCCEEDED
             persisted_job.lease_until = None
             persisted_job.claim_token = None
             session.flush()
@@ -267,7 +268,7 @@ class RecomputeWorker:
     @staticmethod
     def _owns_claim(persisted_job: RecomputeJobRecord, claimed_job: RecomputeJobRecord) -> bool:
         return (
-            persisted_job.status == "RUNNING"
+            persisted_job.status == RUNNING
             and persisted_job.claim_token is not None
             and persisted_job.claim_token == claimed_job.claim_token
         )
@@ -292,7 +293,7 @@ class RecomputeWorker:
                 raise KeyError(f"Missing superseded job: {job.id}")
             if not self._owns_claim(persisted, job):
                 return self._claim_lost(job)
-            persisted.status = "SUPERSEDED"
+            persisted.status = SUPERSEDED
             persisted.lease_until = None
             persisted.claim_token = None
             persisted.last_error = "DependencyAdvanced"
@@ -318,7 +319,7 @@ class RecomputeWorker:
                 (RetryableComputationError, OperationalError, TimeoutError, ConnectionError),
             )
             permanent = not retryable or persisted.attempts >= self.max_attempts
-            persisted.status = "FAILED_PERMANENT" if permanent else "QUEUED"
+            persisted.status = FAILED_PERMANENT if permanent else QUEUED
             persisted.lease_until = None
             persisted.claim_token = None
             # Store only the exception class. Error messages may contain evidence.

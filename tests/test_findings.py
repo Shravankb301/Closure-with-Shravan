@@ -67,9 +67,7 @@ def test_boston_record_is_internally_consistent(service, worker) -> None:
     assert set(disposal[0]["tiers"]) == {"allegation", "court"}
     assert disposal[0]["support"]["level"] == "STRONG"
     assert disposal[0]["support"]["probability"] is None
-    assert disposal[0]["reasoning"]["rule_id"] == (
-        "distinct-source-corroboration-v1"
-    )
+    assert disposal[0]["reasoning"]["rule_id"] == ("distinct-source-corroboration-v1")
 
     single_source_days = {
         (finding["entity_id"], finding["date"]) for finding in findings["single_source"]
@@ -79,8 +77,7 @@ def test_boston_record_is_internally_consistent(service, worker) -> None:
     laptop_gap = next(
         finding
         for finding in findings["single_source"]
-        if finding["entity_id"] == "laptop-computer"
-        and finding["date"] == "2013-04-19"
+        if finding["entity_id"] == "laptop-computer" and finding["date"] == "2013-04-19"
     )
     assert laptop_gap["support"]["level"] == "LIMITED"
     assert laptop_gap["reasoning"]["rule_id"] == "single-source-exposure-v1"
@@ -123,9 +120,7 @@ def test_conflicting_tip_surfaces_and_clears_contradiction(service, worker) -> N
         "opened": 0,
         "cleared": 1,
     }
-    assert retracted_change["document"]["retraction_reason"] == (
-        "Tip withdrawn after review"
-    )
+    assert retracted_change["document"]["retraction_reason"] == ("Tip withdrawn after review")
 
 
 def test_findings_are_deterministic(service, worker) -> None:

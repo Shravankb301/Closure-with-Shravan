@@ -1,7 +1,10 @@
-# Adversarial architecture review
+# Architecture decisions and adversarial review
 
-This document records decisions only after stating the failure they introduce.
-The tests are the evidence for a decision, not the prose in this file.
+This is the project's failure-mode ledger. It records each decision beside the
+tempting alternative, the failure it prevents, the evidence that supports it,
+and the risk that remains. The tests are the evidence for a decision, not the
+prose in this file. See [DESIGN.md](DESIGN.md) for the corresponding transaction
+and worker paths.
 
 | Decision | Tempting alternative | Failure being defended against | Evidence | Remaining risk |
 |---|---|---|---|---|

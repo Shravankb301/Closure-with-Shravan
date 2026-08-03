@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import secrets
 from contextlib import asynccontextmanager
 from html import escape
@@ -8,10 +7,11 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_delta.database import Database
+from evidence_delta.errors import ResourceNotFoundError
 from evidence_delta.extraction import extract_assertions
 from evidence_delta.real_case import build_boston_obstruction_case
 from evidence_delta.runtime import WorkerLoop
@@ -24,20 +24,18 @@ from evidence_delta.schemas import (
     RetractionInput,
 )
 from evidence_delta.service import EvidenceService
+from evidence_delta.settings import AppSettings
 from evidence_delta.worker import RecomputeWorker
 
 
 def create_app(database_url: str | None = None) -> FastAPI:
-    url = database_url or os.getenv("DATABASE_URL", "sqlite:///./evidence_delta.db")
-    database = Database(url)
+    settings = AppSettings.from_environment(database_url)
+    database = Database(settings.database_url)
     service = EvidenceService(database)
     worker = RecomputeWorker(database)
-    configured_key = os.getenv("DEMO_API_KEY") or None
-    demo_key_required = os.getenv("REQUIRE_DEMO_API_KEY", "false").lower() == "true"
-    if demo_key_required and configured_key is None:
-        raise RuntimeError("DEMO_API_KEY is required for this deployment")
-    embedded_worker = os.getenv("RUN_EMBEDDED_WORKER", "false").lower() == "true"
-    manual_drain = os.getenv("ENABLE_MANUAL_DRAIN", "true").lower() == "true"
+    configured_key = settings.demo_api_key
+    embedded_worker = settings.embedded_worker
+    manual_drain = settings.manual_drain
     worker_runtime: WorkerLoop | None = None
 
     def require_demo_key(
@@ -69,6 +67,13 @@ def create_app(database_url: str | None = None) -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+
+    @application.exception_handler(ResourceNotFoundError)
+    async def resource_not_found(
+        _request: Request,
+        error: ResourceNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": str(error)})
 
     @application.middleware("http")
     async def disable_response_caching(request: Request, call_next):
@@ -113,17 +118,11 @@ def create_app(database_url: str | None = None) -> FastAPI:
 
     @application.get("/cases/{case_id}", dependencies=secured)
     def get_case_workspace(case_id: str) -> dict:
-        try:
-            return service.case_workspace(case_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.case_workspace(case_id)
 
     @application.put("/cases/{case_id}/assignment", dependencies=secured)
     def assign_case(case_id: str, body: CaseAssignmentInput) -> dict:
-        try:
-            return service.assign_case(case_id, body)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.assign_case(case_id, body)
 
     @application.post("/demo/scenario", status_code=201, dependencies=secured)
     def create_demo_scenario() -> dict:
@@ -142,16 +141,11 @@ def create_app(database_url: str | None = None) -> FastAPI:
         # AI proposes only. Nothing here touches the ledger; the reviewer
         # confirms and posts to /cases/{id}/documents to write immutable
         # evidence, keeping every stored assertion a human-authorized action.
-        return extract_assertions(
-            body.text, filename=body.filename, source_hint=body.source_hint
-        )
+        return extract_assertions(body.text, filename=body.filename, source_hint=body.source_hint)
 
     @application.post("/cases/{case_id}/documents", status_code=202, dependencies=secured)
     def add_document(case_id: str, body: DocumentInput) -> dict:
-        try:
-            return service.ingest_document(case_id, body).model_dump(mode="json")
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.ingest_document(case_id, body).model_dump(mode="json")
 
     @application.post(
         "/cases/{case_id}/documents/{document_id}/retractions",
@@ -159,12 +153,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
         dependencies=secured,
     )
     def retract_document(case_id: str, document_id: str, body: RetractionInput) -> dict:
-        try:
-            return service.retract_document(case_id, document_id, body.reason).model_dump(
-                mode="json"
-            )
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.retract_document(case_id, document_id, body.reason).model_dump(mode="json")
 
     @application.post("/workers/drain", dependencies=secured)
     def drain_worker() -> dict:
@@ -185,31 +174,19 @@ def create_app(database_url: str | None = None) -> FastAPI:
 
     @application.get("/cases/{case_id}/findings", dependencies=secured)
     def get_case_findings(case_id: str) -> dict:
-        try:
-            return service.case_findings(case_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.case_findings(case_id)
 
     @application.get("/cases/{case_id}/changes", dependencies=secured)
     def get_case_changes(case_id: str) -> dict:
-        try:
-            return service.case_changes(case_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.case_changes(case_id)
 
     @application.get("/cases/{case_id}/operations", dependencies=secured)
     def get_case_operations(case_id: str) -> dict:
-        try:
-            return service.case_operations(case_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.case_operations(case_id)
 
     @application.get("/cases/{case_id}/proof", dependencies=secured)
     def get_case_proof(case_id: str) -> dict:
-        try:
-            return service.case_proof(case_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.case_proof(case_id)
 
     application.state.database = database
     application.state.service = service

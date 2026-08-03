@@ -9,7 +9,7 @@ and each artifact records the exact key versions it read. When the record
 changes, the system can rebuild only affected work while proving that the result
 still matches a clean rebuild from active evidence.
 
-The application gives a reviewer one operational surface for:
+The application gives a reviewer one operational workspace for:
 
 - tracing each displayed claim to an immutable source locator,
 - separating complaint and indictment allegations from later court outcomes,
@@ -17,7 +17,7 @@ The application gives a reviewer one operational surface for:
 - surfacing deterministic cross-source findings: contradiction candidates,
   corroborated events, and single-source exposure,
 - assigning an officer or analyst and persisting handoff context,
-- adding or retracting evidence without erasing the audit trail, and
+- adding or retracting evidence without erasing the audit trail,
 - verifying maintained timelines against a deterministic full rebuild, and
 - inspecting the backend path from committed mutation to published artifact.
 
@@ -56,16 +56,26 @@ The Boston record is valuable because it is a bounded, source-cited acceptance
 scenario. The actual product primitive is keeping analytical work correct and
 explainable as its inputs change.
 
-## The demonstration
+## Quick start
 
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 .venv/bin/python -m pytest
+.venv/bin/uvicorn evidence_delta.api:app --reload
+```
+
+Open [http://localhost:8000](http://localhost:8000), then select **Start guided
+demo**. The guided path introduces the customer problem before revealing the
+case workspace and its backend proof surface.
+
+To run the deterministic engine scenario without the web application:
+
+```bash
 .venv/bin/python -m evidence_delta.demo
 ```
 
-`demo` creates 100 entity-day artifacts, adds one document that affects three,
+The scenario creates 100 entity-day artifacts, adds one document that affects three,
 retracts it without deleting its assertions, simulates a worker crash before
 commit, and runs 300 randomized additions and retractions. After every random
 mutation, it asserts:
@@ -94,9 +104,27 @@ the opening screen. It walks through the case state, cross-source findings,
 the live backend trace, human-confirmed AI intake, append-only retraction, and
 officer handoff without requiring prior knowledge of the architecture.
 
-An outcome-first live-demo script, technical deep-dive prompts, honest
-limitations, and likely FDE interview follow-ups are in
-[INTERVIEW_DEMO.md](INTERVIEW_DEMO.md).
+## Documentation map
+
+| Document | Use it for |
+|---|---|
+| [README.md](README.md) | Product framing, local setup, and capability overview |
+| [INTERVIEW_DEMO.md](INTERVIEW_DEMO.md) | The outcome-first live demo and likely FDE follow-ups |
+| [DESIGN.md](DESIGN.md) | Invariants, transaction boundaries, worker behavior, and verification |
+| [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) | Alternatives considered, failure modes, and remaining risks |
+
+## Repository guide
+
+| Path | Responsibility |
+|---|---|
+| `src/evidence_delta/api.py` | HTTP routes, authentication boundaries, and error mapping |
+| `src/evidence_delta/service.py` | Transactional case mutations and read models |
+| `src/evidence_delta/worker.py` | Durable job claiming, recomputation, and atomic publication |
+| `src/evidence_delta/analysis.py` | Deterministic cross-source finding rules |
+| `src/evidence_delta/extraction.py` | Human-confirmed evidence extraction workflow |
+| `src/evidence_delta/models.py` | Persistent ledger, dependency, job, and artifact records |
+| `src/evidence_delta/settings.py` | Environment-backed application configuration |
+| `src/evidence_delta/static/investigation.html` | Operator workspace and guided demonstration |
 
 ## Case workspace
 

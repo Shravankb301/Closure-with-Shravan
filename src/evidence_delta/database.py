@@ -92,9 +92,7 @@ class Database:
             }
             for column, definition in case_upgrades.items():
                 if column not in case_columns:
-                    connection.execute(
-                        text(f"ALTER TABLE cases ADD COLUMN {column} {definition}")
-                    )
+                    connection.execute(text(f"ALTER TABLE cases ADD COLUMN {column} {definition}"))
 
             document_columns = {column["name"] for column in inspector.get_columns("documents")}
             if "source_uri" not in document_columns:
@@ -102,9 +100,7 @@ class Database:
                     text("ALTER TABLE documents ADD COLUMN source_uri VARCHAR(2048)")
                 )
 
-            assertion_columns = {
-                column["name"] for column in inspector.get_columns("assertions")
-            }
+            assertion_columns = {column["name"] for column in inspector.get_columns("assertions")}
             if "time_precision" not in assertion_columns:
                 connection.execute(
                     text(
@@ -119,10 +115,7 @@ class Database:
                 }
                 if "performed_by" not in change_set_columns:
                     connection.execute(
-                        text(
-                            "ALTER TABLE change_sets ADD COLUMN "
-                            "performed_by VARCHAR(160)"
-                        )
+                        text("ALTER TABLE change_sets ADD COLUMN performed_by VARCHAR(160)")
                     )
 
     def drop_schema(self) -> None:

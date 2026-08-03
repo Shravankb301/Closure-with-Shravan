@@ -24,7 +24,13 @@ def test_deterministic_extraction_quotes_source_verbatim(monkeypatch) -> None:
         assert proposal["source_text"] in EXCERPT
         assert proposal["provenance_verified"] is True
         assert proposal["time_precision"] in {
-            "EXACT", "MINUTE", "HOUR", "DAY", "MONTH", "WINDOW", "UNKNOWN"
+            "EXACT",
+            "MINUTE",
+            "HOUR",
+            "DAY",
+            "MONTH",
+            "WINDOW",
+            "UNKNOWN",
         }
     kinds = {proposal["kind"] for proposal in result["proposals"]}
     assert "REPORTED_DISPOSAL" in kinds
@@ -36,17 +42,19 @@ def test_unverified_model_span_is_flagged(monkeypatch) -> None:
     monkeypatch.setattr("evidence_delta.extraction.model_available", lambda: True)
 
     def fake_extract(excerpt, source_hint):
-        return [{
-            "entity_id": "backpack",
-            "occurred_at": "2013-04-19T00:00:00+00:00",
-            "kind": "REPORTED_DISPOSAL",
-            "value": "backpack disposed",
-            "time_precision": "DAY",
-            "source_text": "a paraphrase that never appeared in the source",
-            "source_locator": "para 1",
-            "confidence": "high",
-            "rationale": "test",
-        }]
+        return [
+            {
+                "entity_id": "backpack",
+                "occurred_at": "2013-04-19T00:00:00+00:00",
+                "kind": "REPORTED_DISPOSAL",
+                "value": "backpack disposed",
+                "time_precision": "DAY",
+                "source_text": "a paraphrase that never appeared in the source",
+                "source_locator": "para 1",
+                "confidence": "high",
+                "rationale": "test",
+            }
+        ]
 
     monkeypatch.setattr("evidence_delta.extraction._extract_with_model", fake_extract)
     result = extract_assertions(EXCERPT)
@@ -92,8 +100,13 @@ def test_confirmed_proposal_round_trips_into_a_document(monkeypatch) -> None:
         assertion = {
             key: dated[key]
             for key in (
-                "entity_id", "occurred_at", "kind", "value",
-                "time_precision", "source_locator", "source_text",
+                "entity_id",
+                "occurred_at",
+                "kind",
+                "value",
+                "time_precision",
+                "source_locator",
+                "source_text",
             )
         }
         added = client.post(

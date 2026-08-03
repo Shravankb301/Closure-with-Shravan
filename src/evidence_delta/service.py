@@ -16,6 +16,14 @@ from evidence_delta.domain import (
     sha256_json,
     timeline_key,
 )
+from evidence_delta.errors import ResourceNotFoundError
+from evidence_delta.job_status import (
+    FAILED_PERMANENT,
+    QUEUED,
+    SUCCEEDED,
+    is_clean_terminal,
+    is_terminal,
+)
 from evidence_delta.models import (
     ArtifactDependencyRecord,
     ArtifactRecord,
@@ -30,9 +38,28 @@ from evidence_delta.models import (
 )
 from evidence_delta.schemas import CaseAssignmentInput, DocumentInput, MutationResult
 
+ADD_DOCUMENT = "ADD_DOCUMENT"
+RETRACT_DOCUMENT = "RETRACT_DOCUMENT"
+
 
 def new_id() -> str:
     return str(uuid4())
+
+
+def _active_event(assertion: AssertionRecord, document: DocumentRecord) -> ActiveEvent:
+    return ActiveEvent(
+        assertion_id=assertion.id,
+        document_id=document.id,
+        document_filename=document.filename,
+        document_source_type=document.source_type,
+        entity_id=assertion.entity_id,
+        day=assertion.occurred_at.date().isoformat(),
+        kind=assertion.kind,
+        value=assertion.value,
+        time_precision=assertion.time_precision,
+        source_locator=assertion.source_locator,
+        source_text=assertion.source_text,
+    )
 
 
 class EvidenceService:
@@ -47,11 +74,7 @@ class EvidenceService:
 
     def assign_case(self, case_id: str, assignment: CaseAssignmentInput) -> dict:
         with self.database.session() as session, session.begin():
-            case = session.scalar(
-                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
-            )
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
+            case = self._locked_case(session, case_id)
             values = assignment.model_dump()
             case.assigned_officer = values["assigned_officer"]
             case.assigned_badge = values["assigned_badge"]
@@ -79,6 +102,83 @@ class EvidenceService:
         body["assertions"] = sorted(body["assertions"], key=canonical_json)
         return sha256_json(body)
 
+    @staticmethod
+    def _case(session: Session, case_id: str) -> CaseRecord:
+        case = session.get(CaseRecord, case_id)
+        if case is None:
+            raise ResourceNotFoundError(f"Unknown case: {case_id}")
+        return case
+
+    @staticmethod
+    def _locked_case(session: Session, case_id: str) -> CaseRecord:
+        case = session.scalar(select(CaseRecord).where(CaseRecord.id == case_id).with_for_update())
+        if case is None:
+            raise ResourceNotFoundError(f"Unknown case: {case_id}")
+        return case
+
+    @staticmethod
+    def _timeline_keys(assertions: list[AssertionRecord]) -> list[str]:
+        return sorted({timeline_key(item.entity_id, item.occurred_at) for item in assertions})
+
+    def _deduplicated_mutation(
+        self,
+        session: Session,
+        case: CaseRecord,
+        document_id: str,
+        operation: str,
+    ) -> MutationResult:
+        return MutationResult(
+            case_id=case.id,
+            document_id=document_id,
+            change_set_id=None,
+            revision=case.revision,
+            operation=operation,
+            deduplicated=True,
+            affected_keys=[],
+            queued_artifacts=0,
+            untouched_artifacts=self._artifact_count(session, case.id),
+        )
+
+    def _record_mutation(
+        self,
+        session: Session,
+        case: CaseRecord,
+        document_id: str,
+        operation: str,
+        affected_keys: list[str],
+    ) -> MutationResult:
+        artifacts = self._touch_keys_and_queue(
+            session,
+            case.id,
+            case.revision,
+            affected_keys,
+        )
+        session.flush()
+        untouched_artifacts = self._artifact_count(session, case.id) - len(artifacts)
+        change_set = ChangeSetRecord(
+            id=new_id(),
+            case_id=case.id,
+            revision=case.revision,
+            operation=operation,
+            performed_by=case.assigned_officer,
+            document_id=document_id,
+            affected_keys=affected_keys,
+            queued_artifact_ids=[item.id for item in artifacts],
+            untouched_artifacts=untouched_artifacts,
+        )
+        session.add(change_set)
+        return MutationResult(
+            case_id=case.id,
+            document_id=document_id,
+            change_set_id=change_set.id,
+            revision=case.revision,
+            operation=operation,
+            deduplicated=False,
+            affected_keys=affected_keys,
+            queued_artifacts=len(artifacts),
+            untouched_artifacts=untouched_artifacts,
+        )
+
     def ingest_document(self, case_id: str, document: DocumentInput) -> MutationResult:
         content_hash = self._document_hash(document)
 
@@ -87,11 +187,7 @@ class EvidenceService:
             # hash check must happen after this lock; checking first allows two
             # concurrent uploads to both observe absence and race the unique
             # constraint instead of returning the same logical result.
-            case = session.scalar(
-                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
-            )
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
+            case = self._locked_case(session, case_id)
 
             existing = session.scalar(
                 select(DocumentRecord).where(
@@ -100,16 +196,11 @@ class EvidenceService:
                 )
             )
             if existing is not None:
-                return MutationResult(
-                    case_id=case_id,
-                    document_id=existing.id,
-                    change_set_id=None,
-                    revision=case.revision,
-                    operation="ADD_DOCUMENT",
-                    deduplicated=True,
-                    affected_keys=[],
-                    queued_artifacts=0,
-                    untouched_artifacts=self._artifact_count(session, case_id),
+                return self._deduplicated_mutation(
+                    session,
+                    case,
+                    existing.id,
+                    ADD_DOCUMENT,
                 )
 
             case.revision += 1
@@ -147,43 +238,17 @@ class EvidenceService:
                 assertions.append(record)
                 session.add(record)
 
-            keys = sorted({timeline_key(item.entity_id, item.occurred_at) for item in assertions})
-            artifacts = self._touch_keys_and_queue(session, case_id, revision, keys)
-            session.flush()
-            total = self._artifact_count(session, case_id)
-
-            change_set = ChangeSetRecord(
-                id=new_id(),
-                case_id=case_id,
-                revision=revision,
-                operation="ADD_DOCUMENT",
-                performed_by=case.assigned_officer,
-                document_id=document_record.id,
-                affected_keys=keys,
-                queued_artifact_ids=[item.id for item in artifacts],
-                untouched_artifacts=total - len(artifacts),
-            )
-            session.add(change_set)
-
-            return MutationResult(
-                case_id=case_id,
-                document_id=document_record.id,
-                change_set_id=change_set.id,
-                revision=revision,
-                operation="ADD_DOCUMENT",
-                deduplicated=False,
-                affected_keys=keys,
-                queued_artifacts=len(artifacts),
-                untouched_artifacts=total - len(artifacts),
+            return self._record_mutation(
+                session,
+                case,
+                document_record.id,
+                ADD_DOCUMENT,
+                self._timeline_keys(assertions),
             )
 
     def retract_document(self, case_id: str, document_id: str, reason: str) -> MutationResult:
         with self.database.session() as session, session.begin():
-            case = session.scalar(
-                select(CaseRecord).where(CaseRecord.id == case_id).with_for_update()
-            )
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
+            case = self._locked_case(session, case_id)
 
             document = session.scalar(
                 select(DocumentRecord).where(
@@ -192,7 +257,7 @@ class EvidenceService:
                 )
             )
             if document is None:
-                raise KeyError(f"Unknown document: {document_id}")
+                raise ResourceNotFoundError(f"Unknown document: {document_id}")
 
             existing = session.scalar(
                 select(DocumentRetractionRecord).where(
@@ -200,16 +265,11 @@ class EvidenceService:
                 )
             )
             if existing is not None:
-                return MutationResult(
-                    case_id=case_id,
-                    document_id=document_id,
-                    change_set_id=None,
-                    revision=case.revision,
-                    operation="RETRACT_DOCUMENT",
-                    deduplicated=True,
-                    affected_keys=[],
-                    queued_artifacts=0,
-                    untouched_artifacts=self._artifact_count(session, case_id),
+                return self._deduplicated_mutation(
+                    session,
+                    case,
+                    document_id,
+                    RETRACT_DOCUMENT,
                 )
 
             case.revision += 1
@@ -227,34 +287,12 @@ class EvidenceService:
             assertions = session.scalars(
                 select(AssertionRecord).where(AssertionRecord.document_id == document_id)
             ).all()
-            keys = sorted({timeline_key(item.entity_id, item.occurred_at) for item in assertions})
-            artifacts = self._touch_keys_and_queue(session, case_id, revision, keys)
-            session.flush()
-            total = self._artifact_count(session, case_id)
-
-            change_set = ChangeSetRecord(
-                id=new_id(),
-                case_id=case_id,
-                revision=revision,
-                operation="RETRACT_DOCUMENT",
-                performed_by=case.assigned_officer,
-                document_id=document_id,
-                affected_keys=keys,
-                queued_artifact_ids=[item.id for item in artifacts],
-                untouched_artifacts=total - len(artifacts),
-            )
-            session.add(change_set)
-
-            return MutationResult(
-                case_id=case_id,
-                document_id=document_id,
-                change_set_id=change_set.id,
-                revision=revision,
-                operation="RETRACT_DOCUMENT",
-                deduplicated=False,
-                affected_keys=keys,
-                queued_artifacts=len(artifacts),
-                untouched_artifacts=total - len(artifacts),
+            return self._record_mutation(
+                session,
+                case,
+                document_id,
+                RETRACT_DOCUMENT,
+                self._timeline_keys(list(assertions)),
             )
 
     def _touch_keys_and_queue(
@@ -337,7 +375,7 @@ class EvidenceService:
                         case_id=case_id,
                         artifact_id=artifact.id,
                         target_revision=revision,
-                        status="QUEUED",
+                        status=QUEUED,
                     )
                 )
 
@@ -419,9 +457,7 @@ class EvidenceService:
         """Return the durable case state needed by the interactive workspace."""
 
         with self.database.session() as session:
-            case = session.get(CaseRecord, case_id)
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
+            case = self._case(session, case_id)
 
             assertion_count = (
                 select(func.count(AssertionRecord.id))
@@ -515,18 +551,14 @@ class EvidenceService:
         rebuilt = self.full_rebuild_state(case_id)
 
         with self.database.session() as session:
-            case = session.get(CaseRecord, case_id)
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
+            case = self._case(session, case_id)
 
             retracted = exists().where(
                 DocumentRetractionRecord.document_id == AssertionRecord.document_id
             )
             total_assertions = int(
                 session.scalar(
-                    select(func.count(AssertionRecord.id)).where(
-                        AssertionRecord.case_id == case_id
-                    )
+                    select(func.count(AssertionRecord.id)).where(AssertionRecord.case_id == case_id)
                 )
                 or 0
             )
@@ -568,9 +600,7 @@ class EvidenceService:
             )
             change_keys = int(
                 session.scalar(
-                    select(func.count(ChangeKeyRecord.id)).where(
-                        ChangeKeyRecord.case_id == case_id
-                    )
+                    select(func.count(ChangeKeyRecord.id)).where(ChangeKeyRecord.case_id == case_id)
                 )
                 or 0
             )
@@ -609,10 +639,7 @@ class EvidenceService:
             "queue": {
                 "jobs_total": sum(job_counts.values()),
                 "by_status": job_counts,
-                "settled": all(
-                    status in {"SUCCEEDED", "SUPERSEDED", "FAILED_PERMANENT"}
-                    for status in job_counts
-                ),
+                "settled": all(is_terminal(status) for status in job_counts),
             },
         }
 
@@ -626,9 +653,7 @@ class EvidenceService:
         """
 
         with self.database.session() as session:
-            case = session.get(CaseRecord, case_id)
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
+            case = self._case(session, case_id)
 
             retracted = exists().where(
                 DocumentRetractionRecord.document_id == AssertionRecord.document_id
@@ -639,22 +664,7 @@ class EvidenceService:
                 .where(AssertionRecord.case_id == case_id, ~retracted)
                 .order_by(AssertionRecord.occurred_at, AssertionRecord.id)
             ).all()
-            events = [
-                ActiveEvent(
-                    assertion_id=assertion.id,
-                    document_id=document.id,
-                    document_filename=document.filename,
-                    document_source_type=document.source_type,
-                    entity_id=assertion.entity_id,
-                    day=assertion.occurred_at.date().isoformat(),
-                    kind=assertion.kind,
-                    value=assertion.value,
-                    time_precision=assertion.time_precision,
-                    source_locator=assertion.source_locator,
-                    source_text=assertion.source_text,
-                )
-                for assertion, document in rows
-            ]
+            events = [_active_event(assertion, document) for assertion, document in rows]
             revision = case.revision
 
         findings = derive_findings(events)
@@ -671,9 +681,7 @@ class EvidenceService:
         """
 
         with self.database.session() as session:
-            case = session.get(CaseRecord, case_id)
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
+            self._case(session, case_id)
 
             changes = session.scalars(
                 select(ChangeSetRecord)
@@ -706,25 +714,12 @@ class EvidenceService:
             ).all()
 
             retracted_at = {
-                document_id: item.retracted_at_revision
-                for document_id, item in retractions.items()
+                document_id: item.retracted_at_revision for document_id, item in retractions.items()
             }
 
             def findings_at(revision: int) -> dict:
                 events = [
-                    ActiveEvent(
-                        assertion_id=assertion.id,
-                        document_id=document.id,
-                        document_filename=document.filename,
-                        document_source_type=document.source_type,
-                        entity_id=assertion.entity_id,
-                        day=assertion.occurred_at.date().isoformat(),
-                        kind=assertion.kind,
-                        value=assertion.value,
-                        time_precision=assertion.time_precision,
-                        source_locator=assertion.source_locator,
-                        source_text=assertion.source_text,
-                    )
+                    _active_event(assertion, document)
                     for assertion, document in assertion_rows
                     if assertion.added_at_revision <= revision
                     and retracted_at.get(document.id, revision + 1) > revision
@@ -746,17 +741,12 @@ class EvidenceService:
                         (item["entity_id"], item["date"], item.get("event_class"))
                         for item in findings[category]
                     }
-                return {
-                    (item["entity_id"], item["date"])
-                    for item in findings[category]
-                }
+                return {(item["entity_id"], item["date"]) for item in findings[category]}
 
             findings_by_revision = {
                 revision: findings_at(revision)
                 for revision in {
-                    max(0, item.revision - offset)
-                    for item in changes
-                    for offset in (0, 1)
+                    max(0, item.revision - offset) for item in changes for offset in (0, 1)
                 }
             }
             jobs_by_change = {
@@ -770,8 +760,6 @@ class EvidenceService:
             }
 
             items = []
-            terminal_statuses = {"SUCCEEDED", "SUPERSEDED", "FAILED_PERMANENT"}
-            clean_statuses = {"SUCCEEDED", "SUPERSEDED"}
             for change in changes:
                 document = documents[change.document_id]
                 retraction = retractions.get(change.document_id)
@@ -793,7 +781,7 @@ class EvidenceService:
                 }
                 requested = len(change.queued_artifact_ids)
                 settled = len(change_jobs) == requested and all(
-                    job.status in terminal_statuses for job in change_jobs
+                    is_terminal(job.status) for job in change_jobs
                 )
                 items.append(
                     {
@@ -829,13 +817,13 @@ class EvidenceService:
                             "by_status": status_counts,
                             "settled": settled,
                             "completed_cleanly": settled
-                            and all(job.status in clean_statuses for job in change_jobs),
+                            and all(is_clean_terminal(job.status) for job in change_jobs),
                         },
                     }
                 )
 
         proof = self.case_proof(case_id)
-        failed_jobs = proof["queue"]["by_status"].get("FAILED_PERMANENT", 0)
+        failed_jobs = proof["queue"]["by_status"].get(FAILED_PERMANENT, 0)
         return {
             "case_id": case_id,
             "case_revision": proof["case_revision"],
@@ -863,9 +851,7 @@ class EvidenceService:
 
         changes = self.case_changes(case_id, limit=1)
         with self.database.session() as session:
-            case = session.get(CaseRecord, case_id)
-            if case is None:
-                raise KeyError(f"Unknown case: {case_id}")
+            case = self._case(session, case_id)
 
             job_rows = session.execute(
                 select(RecomputeJobRecord, ArtifactRecord)
@@ -886,9 +872,7 @@ class EvidenceService:
                 if job_ids
                 else []
             )
-            versions_by_job = {
-                version.source_job_id: version for version in published_versions
-            }
+            versions_by_job = {version.source_job_id: version for version in published_versions}
             version_ids = [version.id for version in published_versions]
             dependencies = (
                 session.scalars(
@@ -1023,13 +1007,10 @@ class EvidenceService:
         for artifact in artifact_records:
             current = current_versions.get(artifact.current_version_id or "")
             observed = (
-                current_dependencies_by_version.get(current.id, [])
-                if current is not None
-                else []
+                current_dependencies_by_version.get(current.id, []) if current is not None else []
             )
             dependencies_matched = bool(observed) and all(
-                dependency.observed_version
-                == change_versions.get(dependency.change_key)
+                dependency.observed_version == change_versions.get(dependency.change_key)
                 for dependency in observed
             )
             artifact_items.append(
@@ -1052,28 +1033,19 @@ class EvidenceService:
         latest_change = changes["changes"][0] if changes["changes"] else None
         latest_recomputation = latest_change["recomputation"] if latest_change else None
         latest_requested = latest_recomputation["requested"] if latest_recomputation else 0
-        latest_status_counts = (
-            latest_recomputation["by_status"] if latest_recomputation else {}
-        )
+        latest_status_counts = latest_recomputation["by_status"] if latest_recomputation else {}
         latest_job_count = sum(latest_status_counts.values())
-        latest_has_failure = latest_status_counts.get("FAILED_PERMANENT", 0) > 0
-        latest_published = latest_change is not None and latest_change["recomputation"][
-            "completed_cleanly"
-        ]
-        all_artifacts_fresh = bool(artifact_items) and all(
-            item["fresh"] for item in artifact_items
+        latest_has_failure = latest_status_counts.get(FAILED_PERMANENT, 0) > 0
+        latest_published = (
+            latest_change is not None and latest_change["recomputation"]["completed_cleanly"]
         )
+        all_artifacts_fresh = bool(artifact_items) and all(item["fresh"] for item in artifact_items)
         latest_dependencies_match = latest_published and all_artifacts_fresh
-        equivalent_to_full_rebuild = changes["current_verification"][
-            "equivalent_to_full_rebuild"
-        ]
+        equivalent_to_full_rebuild = changes["current_verification"]["equivalent_to_full_rebuild"]
         queue = {
             "jobs_total": sum(job_counts.values()),
             "by_status": job_counts,
-            "settled": all(
-                status in {"SUCCEEDED", "SUPERSEDED", "FAILED_PERMANENT"}
-                for status in job_counts
-            ),
+            "settled": all(is_terminal(status) for status in job_counts),
         }
 
         def stage(stage_id: str, label: str, status: str, evidence: str) -> dict:
@@ -1127,8 +1099,7 @@ class EvidenceService:
                 "Artifact versions published",
                 "failed" if latest_has_failure else "complete" if latest_published else "pending",
                 (
-                    f"{latest_status_counts.get('SUCCEEDED', 0)} "
-                    "immutable versions published"
+                    f"{latest_status_counts.get(SUCCEEDED, 0)} immutable versions published"
                     if latest_change
                     else "Waiting for worker publication"
                 ),
@@ -1177,9 +1148,7 @@ class EvidenceService:
                 "affected_artifacts": affected,
                 "untouched_artifacts": untouched,
                 "artifacts_considered": considered,
-                "recomputed_percent": round(affected / considered * 100, 1)
-                if considered
-                else 0.0,
+                "recomputed_percent": round(affected / considered * 100, 1) if considered else 0.0,
             },
             "queue": queue,
             "artifacts": artifact_items,

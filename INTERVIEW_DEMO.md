@@ -5,6 +5,9 @@ goal is not to show every feature. The goal is to demonstrate that you can sit
 with an investigator, find the consequential workflow gap, ship a dependable
 solution quickly, and carry what you learn back into the product.
 
+For local setup, use the quick start in [README.md](README.md). Keep this guide
+open as the talk track while the application runs in a separate window.
+
 Closure's current Founding FDE description emphasizes living with users,
 shipping useful pre-scale solutions, turning frontline pain into product work,
 mission alignment, ownership, ambiguity, and frequent travel. Keep every part

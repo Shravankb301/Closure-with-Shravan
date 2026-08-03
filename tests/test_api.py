@@ -172,6 +172,7 @@ def test_api_vertical_slice() -> None:
 
         missing = client.get("/cases/does-not-exist/changes")
         assert missing.status_code == 404
+        assert missing.json() == {"detail": "Unknown case: does-not-exist"}
         missing_operations = client.get("/cases/does-not-exist/operations")
         assert missing_operations.status_code == 404
 

@@ -77,16 +77,10 @@ def test_local_sqlite_schema_upgrades_legacy_evidence_columns(tmp_path: Path) ->
 
     schema = inspect(database.engine)
     assert "source_uri" in {column["name"] for column in schema.get_columns("documents")}
-    assert "time_precision" in {
-        column["name"] for column in schema.get_columns("assertions")
-    }
+    assert "time_precision" in {column["name"] for column in schema.get_columns("assertions")}
     case_columns = {column["name"] for column in schema.get_columns("cases")}
-    assert {"assigned_officer", "assigned_badge", "assigned_unit", "handoff_note"} <= (
-        case_columns
-    )
-    assert "performed_by" in {
-        column["name"] for column in schema.get_columns("change_sets")
-    }
+    assert {"assigned_officer", "assigned_badge", "assigned_unit", "handoff_note"} <= (case_columns)
+    assert "performed_by" in {column["name"] for column in schema.get_columns("change_sets")}
 
 
 def test_demo_key_protects_stateful_routes(monkeypatch) -> None:
@@ -149,8 +143,7 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         assert 'id="graph-inspector"' in response.text
         assert "function parseCsv" in response.text
         assert (
-            'const REAL_CASE_TEMPLATE_ID = "boston-obstruction-public-record-v1"'
-            in response.text
+            'const REAL_CASE_TEMPLATE_ID = "boston-obstruction-public-record-v1"' in response.text
         )
         assert 'content="http://testserver/og.png"' in response.text
 

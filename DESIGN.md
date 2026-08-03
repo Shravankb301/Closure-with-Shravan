@@ -1,5 +1,10 @@
 # Design review notes
 
+This document is the implementation-level reference for invariants,
+transactions, and worker behavior. See [README.md](README.md) for setup and
+[ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) for challenged alternatives and
+remaining risks.
+
 ## Invariant
 
 After every committed addition or retraction and after queued work drains:

@@ -50,8 +50,17 @@ _KNOWN_ENTITIES: tuple[tuple[str, str], ...] = (
 )
 
 _MONTHS = {
-    "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
-    "july": 7, "august": 8, "september": 9, "october": 10, "november": 11,
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
     "december": 12,
 }
 
@@ -139,9 +148,15 @@ def _extract_with_model(excerpt: str, source_hint: str | None) -> list[dict]:
                         "rationale": {"type": "string"},
                     },
                     "required": [
-                        "entity_id", "occurred_at", "kind", "value",
-                        "time_precision", "source_text", "source_locator",
-                        "confidence", "rationale",
+                        "entity_id",
+                        "occurred_at",
+                        "kind",
+                        "value",
+                        "time_precision",
+                        "source_text",
+                        "source_locator",
+                        "confidence",
+                        "rationale",
                     ],
                 },
             }
@@ -200,8 +215,7 @@ def _extract_deterministic(excerpt: str) -> list[dict]:
                 "source_locator": f"excerpt:sentence-{index}",
                 "confidence": "low",
                 "rationale": (
-                    "Keyword and date match; confirm the entity and time "
-                    "before relying on it."
+                    "Keyword and date match; confirm the entity and time before relying on it."
                 ),
             }
         )
@@ -216,11 +230,14 @@ def _match_is_negated(text: str, match_start: int) -> bool:
     human-confirmation boundary remains required for every accepted assertion.
     """
 
-    prefix = text[max(0, match_start - 80):match_start]
-    return re.search(
-        r"\b(?:no|not|never|without)\b(?:\W+\w+){0,6}\W*$",
-        prefix,
-    ) is not None
+    prefix = text[max(0, match_start - 80) : match_start]
+    return (
+        re.search(
+            r"\b(?:no|not|never|without)\b(?:\W+\w+){0,6}\W*$",
+            prefix,
+        )
+        is not None
+    )
 
 
 def _finalize(item: dict, excerpt: str) -> dict:
@@ -279,9 +296,7 @@ def _parse_date(span: str) -> tuple[str | None, str]:
     if month_day_year:
         month = _MONTHS[month_day_year[1].lower()]
         return _iso(int(month_day_year[3]), month, int(month_day_year[2])), "DAY"
-    month_year = re.search(
-        r"\b(" + "|".join(_MONTHS) + r")\s+(\d{4})\b", span, re.IGNORECASE
-    )
+    month_year = re.search(r"\b(" + "|".join(_MONTHS) + r")\s+(\d{4})\b", span, re.IGNORECASE)
     if month_year:
         return _iso(int(month_year[2]), _MONTHS[month_year[1].lower()], 1), "MONTH"
     year = re.search(r"\b(19|20)\d{2}\b", span)

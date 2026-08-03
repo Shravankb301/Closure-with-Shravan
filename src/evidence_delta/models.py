@@ -14,13 +14,15 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from evidence_delta.job_status import QUEUED
+
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base for the Evidence Delta persistence model."""
 
 
 class CaseRecord(Base):
@@ -201,7 +203,7 @@ class RecomputeJobRecord(Base):
         ForeignKey("artifacts.id", ondelete="CASCADE"), nullable=False, index=True
     )
     target_revision: Mapped[int] = mapped_column(Integer, nullable=False)
-    status: Mapped[str] = mapped_column(String(30), nullable=False, default="QUEUED")
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default=QUEUED)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     claim_token: Mapped[str | None] = mapped_column(String(36), nullable=True)

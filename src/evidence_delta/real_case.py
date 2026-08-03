@@ -219,8 +219,7 @@ def boston_obstruction_documents() -> list[DocumentInput]:
                 "The FBI history records that the Boston Marathon attack occurred on "
                 "April 15, 2013 and initiated the investigation.",
                 "case-history:paragraph-1",
-                "On April 15, 2013, two explosives were detonated near the Marathon "
-                "finish line.",
+                "On April 15, 2013, two explosives were detonated near the Marathon finish line.",
                 precision="DAY",
             ),
             event(
