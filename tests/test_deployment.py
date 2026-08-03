@@ -5,6 +5,7 @@ from time import monotonic, sleep
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import inspect
 
 from evidence_delta.api import create_app
 from evidence_delta.database import Database
@@ -21,6 +22,39 @@ def test_provider_postgres_url_uses_psycopg_three() -> None:
     assert Database.normalize_url("postgres://user:pass@db/internal") == (
         "postgresql+psycopg://user:pass@db/internal"
     )
+
+
+def test_local_sqlite_schema_upgrades_legacy_evidence_columns(tmp_path: Path) -> None:
+    database = Database(f"sqlite:///{tmp_path / 'legacy.db'}")
+    with database.engine.begin() as connection:
+        connection.exec_driver_sql(
+            "CREATE TABLE cases ("
+            "id VARCHAR(36) PRIMARY KEY, name VARCHAR(200) NOT NULL, "
+            "revision INTEGER NOT NULL, created_at DATETIME NOT NULL)"
+        )
+        connection.exec_driver_sql(
+            "CREATE TABLE documents ("
+            "id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL, "
+            "filename VARCHAR(255) NOT NULL, source_type VARCHAR(80) NOT NULL, "
+            "content_hash VARCHAR(64) NOT NULL, added_at_revision INTEGER NOT NULL, "
+            "created_at DATETIME NOT NULL)"
+        )
+        connection.exec_driver_sql(
+            "CREATE TABLE assertions ("
+            "id VARCHAR(36) PRIMARY KEY, case_id VARCHAR(36) NOT NULL, "
+            "document_id VARCHAR(36) NOT NULL, entity_id VARCHAR(120) NOT NULL, "
+            "occurred_at DATETIME NOT NULL, kind VARCHAR(80) NOT NULL, value TEXT NOT NULL, "
+            "source_locator VARCHAR(160) NOT NULL, source_text TEXT NOT NULL, "
+            "added_at_revision INTEGER NOT NULL, created_at DATETIME NOT NULL)"
+        )
+
+    database.create_schema()
+
+    schema = inspect(database.engine)
+    assert "source_uri" in {column["name"] for column in schema.get_columns("documents")}
+    assert "time_precision" in {
+        column["name"] for column in schema.get_columns("assertions")
+    }
 
 
 def test_demo_key_protects_stateful_routes(monkeypatch) -> None:
@@ -55,6 +89,12 @@ def test_dashboard_serves_the_selectivity_experiment() -> None:
         assert "Open the real case" in response.text
         assert "Boston evidence-disposal case" in response.text
         assert "Enter the hosted demo key" in response.text
+        assert (
+            'const REAL_CASE_TEMPLATE_ID = "boston-obstruction-public-record-v1"'
+            in response.text
+        )
+        assert "recoverMissingCase" in response.text
+        assert "navigationId" in response.text
         assert "Bring your own evidence" in response.text
         assert 'id="quick-evidence-form"' in response.text
         assert 'id="evidence-file"' in response.text

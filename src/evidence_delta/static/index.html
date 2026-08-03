@@ -2233,7 +2233,10 @@
       data: null,
       proof: null,
       draft: null,
+      templateId: null,
+      navigationId: 0,
     };
+    const REAL_CASE_TEMPLATE_ID = "boston-obstruction-public-record-v1";
     const byId = (id) => document.getElementById(id);
     const keyInput = byId("demo-key");
     const workspaceKeyInput = byId("workspace-demo-key");
@@ -2321,15 +2324,17 @@
       byId("bulk-input-mode").classList.toggle("hidden", mode !== "bulk");
     }
 
-    function caseUrl(caseId) {
+    function caseUrl(caseId, templateId = workspaceState.templateId) {
       const url = new URL(window.location.href);
       url.searchParams.set("case", caseId);
+      if (templateId) url.searchParams.set("demo", templateId);
+      else url.searchParams.delete("demo");
       url.hash = "workspace";
       return url;
     }
 
-    function setCaseInUrl(caseId) {
-      window.history.replaceState({}, "", caseUrl(caseId));
+    function setCaseInUrl(caseId, templateId = workspaceState.templateId) {
+      window.history.replaceState({}, "", caseUrl(caseId, templateId));
     }
 
     function normalizeAssertion(raw, index) {
@@ -2520,18 +2525,23 @@
       return { label: "Agency record", className: "agency" };
     }
 
-    async function refreshWorkspace(caseId = workspaceState.caseId) {
+    async function refreshWorkspace(
+      caseId = workspaceState.caseId,
+      navigationId = workspaceState.navigationId,
+    ) {
       if (!caseId) return null;
       const data = await api(`/cases/${caseId}`);
       let proof = null;
       if (data.artifacts.length) proof = await api(`/cases/${caseId}/proof`);
+      if (navigationId !== workspaceState.navigationId) return null;
       renderWorkspace(data, proof);
       return { data, proof };
     }
 
-    async function waitForWorkspace() {
+    async function waitForWorkspace(navigationId = workspaceState.navigationId) {
       for (let attempt = 0; attempt < 60; attempt += 1) {
-        const result = await refreshWorkspace();
+        const result = await refreshWorkspace(workspaceState.caseId, navigationId);
+        if (!result) return null;
         const artifactsCurrent = result.data.artifacts.length > 0 && result.data.artifacts.every((artifact) => artifact.fresh);
         if (artifactsCurrent && result.proof?.equivalent_to_full_rebuild && result.proof?.queue?.settled) return result;
         await new Promise((resolve) => setTimeout(resolve, 250));
@@ -2539,39 +2549,61 @@
       throw new Error("The case did not become current before the processing deadline");
     }
 
-    async function openWorkspaceCase(caseId) {
+    async function openWorkspaceCase(caseId, { templateId = null, navigationId = null } = {}) {
       const normalizedId = String(caseId || "").trim();
       if (!normalizedId) throw new Error("Enter a case ID");
+      const requestId = navigationId ?? ++workspaceState.navigationId;
       setWorkspaceStatus("workspace-case-status", "Opening case...");
       const data = await api(`/cases/${normalizedId}`);
+      if (requestId !== workspaceState.navigationId) return null;
       workspaceState.caseId = normalizedId;
-      setCaseInUrl(normalizedId);
+      workspaceState.templateId = templateId
+        || (data.case.name === "Boston evidence-disposal case / official public record" ? REAL_CASE_TEMPLATE_ID : null);
+      setCaseInUrl(normalizedId, workspaceState.templateId);
       let proof = null;
       if (data.artifacts.length) proof = await api(`/cases/${normalizedId}/proof`);
+      if (requestId !== workspaceState.navigationId) return null;
       renderWorkspace(data, proof);
       byId("workspace-case-id").value = normalizedId;
       setWorkspaceStatus("workspace-case-status", `Open at revision ${data.case.revision}. New evidence will append to this case.`);
       setWorkspaceStatus("workspace-ingest-status", "Case ready. Add an observation or validate a batch import.");
+      return { data, proof };
     }
 
-    async function loadRealCase() {
+    async function loadRealCase(options = {}) {
+      const recoveredMissingCase = options?.recoverMissingCase === true;
+      const navigationId = ++workspaceState.navigationId;
       const buttons = [...document.querySelectorAll("[data-load-real-case]")];
       buttons.forEach((button) => setButtonBusy(button, true, "Building case..."));
-      setWorkspaceStatus("workspace-case-status", "Materializing official records and verifying every timeline...");
+      setWorkspaceStatus(
+        "workspace-case-status",
+        recoveredMissingCase
+          ? "That case is not in this local database. Rebuilding the official-record demo..."
+          : "Materializing official records and verifying every timeline...",
+      );
       try {
         const result = await api("/demo/real-case/boston-obstruction", {
           method: "POST",
           body: "{}",
         });
-        await openWorkspaceCase(result.case_id);
-        await waitForWorkspace();
+        if (navigationId !== workspaceState.navigationId) return;
+        const opened = await openWorkspaceCase(result.case_id, {
+          templateId: result.template_id,
+          navigationId,
+        });
+        if (!opened) return;
+        const ready = await waitForWorkspace(navigationId);
+        if (!ready || navigationId !== workspaceState.navigationId) return;
         navigateToSection("#workspace");
         setWorkspaceStatus(
           "workspace-case-status",
-          `Official-record case ready: ${result.official_sources} sources, ${result.assertions} retained assertions, ${result.materialized_timelines} timelines, full-rebuild oracle verified.`,
+          recoveredMissingCase
+            ? `The expired local link was replaced. Official-record case ready: ${result.official_sources} sources, ${result.assertions} retained assertions, ${result.materialized_timelines} timelines, full-rebuild oracle verified.`
+            : `Official-record case ready: ${result.official_sources} sources, ${result.assertions} retained assertions, ${result.materialized_timelines} timelines, full-rebuild oracle verified.`,
         );
         setWorkspaceStatus("workspace-ingest-status", "This is now a normal durable case. Add your own evidence or retract a source to test the model.");
       } catch (error) {
+        if (navigationId !== workspaceState.navigationId) return;
         if (error.status === 401) {
           guideToDemoKey(
             "Enter the hosted demo key, save it, then build the official-record case again.",
@@ -2619,14 +2651,29 @@
     }
 
     async function restoreWorkspaceFromUrl() {
-      const caseId = new URL(window.location.href).searchParams.get("case");
-      if (!caseId || workspaceState.caseId === caseId) return;
+      const url = new URL(window.location.href);
+      const caseId = url.searchParams.get("case");
+      const templateId = url.searchParams.get("demo");
+      if (!caseId) {
+        if (templateId === REAL_CASE_TEMPLATE_ID) {
+          await loadRealCase({ recoverMissingCase: true });
+        }
+        return;
+      }
+      if (workspaceState.caseId === caseId) return;
+      const navigationId = ++workspaceState.navigationId;
       try {
-        await openWorkspaceCase(caseId);
-        navigateToSection("#workspace");
+        const opened = await openWorkspaceCase(caseId, { templateId, navigationId });
+        if (opened) navigateToSection("#workspace");
       } catch (error) {
+        if (navigationId !== workspaceState.navigationId) return;
         if (error.status === 401) {
           guideToDemoKey("Enter the hosted demo key, save it, then reopen this case.");
+        } else if (
+          error.status === 404
+          && (templateId === REAL_CASE_TEMPLATE_ID || ["localhost", "127.0.0.1"].includes(window.location.hostname))
+        ) {
+          await loadRealCase({ recoverMissingCase: true });
         } else {
           setWorkspaceStatus("workspace-case-status", error.message, true);
         }
@@ -3147,6 +3194,7 @@
     });
     byId("create-case-form").addEventListener("submit", async (event) => {
       event.preventDefault();
+      const navigationId = ++workspaceState.navigationId;
       const button = byId("create-case");
       setButtonBusy(button, true, "Creating...");
       try {
@@ -3154,7 +3202,8 @@
           method: "POST",
           body: JSON.stringify({ name: byId("workspace-case-name").value.trim() }),
         });
-        await openWorkspaceCase(created.id);
+        if (navigationId !== workspaceState.navigationId) return;
+        await openWorkspaceCase(created.id, { navigationId });
       } catch (error) {
         setWorkspaceStatus("workspace-case-status", error.message, true);
       } finally {
@@ -3182,12 +3231,15 @@
       }
     });
     byId("new-case").addEventListener("click", () => {
+      workspaceState.navigationId += 1;
       workspaceState.caseId = null;
       workspaceState.data = null;
       workspaceState.proof = null;
       workspaceState.draft = null;
+      workspaceState.templateId = null;
       const url = new URL(window.location.href);
       url.searchParams.delete("case");
+      url.searchParams.delete("demo");
       url.hash = "workspace";
       window.history.replaceState({}, "", url);
       byId("workspace-active-case").classList.add("hidden");
