@@ -205,24 +205,44 @@
     .card-head h3 { margin: 0; font-size: 18px; letter-spacing: -0.035em; }
     .card-head p { max-width: 650px; margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
     .card-kicker { color: var(--signal-dark); font: 600 8px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; }
-    .graph-scroll { overflow-x: auto; background: #131a1f; }
-    .evidence-graph { display: block; width: 100%; min-width: 760px; min-height: 500px; }
-    .graph-edge { stroke: #52616a; stroke-width: 1.5; opacity: 0.64; }
-    .graph-edge.court { stroke: #75a688; stroke-width: 2.2; }
-    .graph-edge.allegation { stroke: #d09048; stroke-dasharray: 6 4; }
-    .graph-edge-label { fill: #9aa7ac; font: 500 8px var(--mono); text-anchor: middle; }
-    .graph-node { cursor: pointer; }
-    .graph-node rect { fill: #202a31; stroke: #5b6870; stroke-width: 1.2; transition: fill 140ms ease, stroke 140ms ease; }
-    .graph-node:hover rect, .graph-node.selected rect { fill: #2c3941; stroke: #f3b66b; stroke-width: 2; }
-    .graph-node.object rect { fill: #392721; stroke: #9c5d4d; }
-    .graph-node.location rect { fill: #1d3234; stroke: #497f87; }
-    .graph-node.context rect { fill: #263022; stroke: #607d58; }
-    .graph-node .node-type { fill: #9ba7aa; font: 600 7px var(--mono); letter-spacing: 0.12em; }
-    .graph-node .node-label { fill: #f0f2f1; font: 700 11px var(--sans); }
-    .graph-node .node-count { fill: #dca875; font: 500 8px var(--mono); }
+    .graph-toolbar { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 18px; background: #11171c; border-bottom: 1px solid #262f36; }
+    .graph-toggle { padding: 7px 10px; color: #7e8a90; border: 1px solid #37424a; background: transparent; font: 600 8px/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; }
+    .graph-toggle.active { color: #e9edec; border-color: #5c6b75; background: #232d35; }
+    .graph-scroll { overflow: hidden; background: radial-gradient(circle at 50% 42%, #18212800 0%, #10161b 78%), #131a20; }
+    .evidence-graph { display: block; width: 100%; min-height: 500px; touch-action: none; cursor: grab; }
+    .evidence-graph.panning { cursor: grabbing; }
+    .gedge line { stroke: #465460; stroke-width: 1.2; opacity: 0.5; transition: opacity 160ms ease; }
+    .gedge.court line { stroke: #75a688; stroke-width: 2; opacity: 0.72; }
+    .gedge.allegation line { stroke: #d09048; stroke-dasharray: 6 4; opacity: 0.62; }
+    .gedge.doclink line { stroke: #38454e; stroke-width: 1; opacity: 0.4; }
+    .gedge text { fill: #a6b2b6; font: 500 8px var(--mono); text-anchor: middle; opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
+    .gnode { cursor: grab; outline: none; }
+    .gnode circle { stroke-width: 1.6; transition: opacity 180ms ease, stroke-width 120ms ease; }
+    .gnode.person circle { fill: #3b2822; stroke: #e08a6d; }
+    .gnode.object circle { fill: #38301d; stroke: #d8a35a; }
+    .gnode.location circle { fill: #1c3134; stroke: #55a3ad; }
+    .gnode.context circle { fill: #253021; stroke: #7fa671; }
+    .gnode.source circle { fill: #1d252c; stroke: #5c6b75; stroke-dasharray: 3 2.4; }
+    .gnode text { fill: #c6cecd; font: 500 9.5px var(--sans); text-anchor: middle; pointer-events: none; transition: opacity 180ms ease; }
+    .gnode .gsub { fill: #78868c; font: 500 7px var(--mono); }
+    .gnode:hover circle, .gnode:focus-visible circle, .gnode.selected circle { stroke-width: 2.6; filter: drop-shadow(0 0 7px rgba(243, 182, 107, 0.55)); }
+    .gnode.selected circle { stroke: #f3b66b; }
+    .gnode.selected text { fill: #f2f4f3; }
+    .evidence-graph.focus-mode .gnode:not(.neighbor):not(.hovered) { opacity: 0.13; }
+    .evidence-graph.focus-mode .gedge:not(.neighbor) line { opacity: 0.05; }
+    .evidence-graph.focus-mode .gedge.neighbor line { opacity: 0.95; }
+    .evidence-graph.focus-mode .gedge.neighbor text { opacity: 1; }
+    .evidence-graph.hide-labels .gnode text { opacity: 0; }
+    .evidence-graph.hide-labels .gnode.hovered text, .evidence-graph.hide-labels .gnode.selected text, .evidence-graph.hide-labels .gnode.neighbor text { opacity: 1; }
     .graph-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 12px 18px; color: #9ba6aa; border-top: 1px solid #303a40; background: #11171c; font: 500 8px/1 var(--mono); }
     .legend-line { display: inline-block; width: 24px; margin-right: 6px; border-top: 2px solid #75a688; vertical-align: middle; }
     .legend-line.allegation { border-color: #d09048; border-top-style: dashed; }
+    .legend-dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: middle; border: 1.5px solid; }
+    .legend-dot.person { background: #3b2822; border-color: #e08a6d; }
+    .legend-dot.object { background: #38301d; border-color: #d8a35a; }
+    .legend-dot.location { background: #1c3134; border-color: #55a3ad; }
+    .legend-dot.context { background: #253021; border-color: #7fa671; }
+    .legend-dot.source { background: #1d252c; border-color: #5c6b75; }
 
     .inspector { min-height: 100%; }
     .inspector-body { padding: 20px; }
@@ -468,9 +488,14 @@
 
         <div class="board-grid">
           <article class="card">
-            <div class="card-head"><div><span class="card-kicker">Reasoning surface</span><h3>Evidence relationship graph</h3><p>Edges summarize shared support across active records. Select a node to inspect the exact events and source spans behind it. A connection is not a guilt determination.</p></div></div>
+            <div class="card-head"><div><span class="card-kicker">Reasoning surface</span><h3>Evidence relationship graph</h3><p>A live force-directed map of the active source set. Node size reflects evidentiary weight. Drag nodes, pinch or ctrl+scroll to zoom, drag the canvas to pan, and hover to isolate a neighborhood. A connection is not a guilt determination.</p></div></div>
+            <div class="graph-toolbar">
+              <button class="graph-toggle active" id="toggle-sources" type="button" aria-pressed="true">Source records</button>
+              <button class="graph-toggle active" id="toggle-labels" type="button" aria-pressed="true">Labels</button>
+              <button class="graph-toggle" id="graph-reset" type="button">Reset view</button>
+            </div>
             <div class="graph-scroll"><svg class="evidence-graph" id="evidence-graph" viewBox="0 0 940 520" role="img" aria-label="Evidence relationship graph"></svg></div>
-            <div class="graph-legend"><span><i class="legend-line"></i>Court-outcome support present</span><span><i class="legend-line allegation"></i>Allegation or agency record only</span><span>Node count = active source-backed events</span></div>
+            <div class="graph-legend"><span><i class="legend-dot person"></i>Person</span><span><i class="legend-dot object"></i>Object</span><span><i class="legend-dot location"></i>Location</span><span><i class="legend-dot context"></i>Case context</span><span><i class="legend-dot source"></i>Source record</span><span><i class="legend-line"></i>Court-outcome support</span><span><i class="legend-line allegation"></i>Allegation / agency only</span></div>
           </article>
           <aside class="card inspector" id="graph-inspector">
             <div class="card-head"><div><span class="card-kicker">Reasoning inspector</span><h3>Select an entity</h3><p>Every displayed claim remains tied to an immutable assertion and source locator.</p></div></div>
@@ -743,47 +768,332 @@
       return { count: shared.size, tier: hasCourt ? "court" : "allegation" };
     }
 
+    const GRAPH_W = 940, GRAPH_H = 520, GRAPH_CX = 470, GRAPH_CY = 250;
+    const graphView = {
+      nodes: new Map(), edges: [], neighbors: new Map(),
+      refs: new Map(), edgeRefs: [], viewport: null, built: "",
+      alpha: 0, raf: null, pointer: null, hover: null,
+      pan: { x: 0, y: 0, k: 1 }, showSources: true, showLabels: true,
+    };
+
     function renderGraph() {
       const svg = byId("evidence-graph");
       const evidence = entityEvidence();
       const activeIds = new Set(evidence.keys());
       if (!activeIds.size) {
+        stopGraphLoop();
         state.selectedEntity = null;
+        graphView.nodes.clear(); graphView.edges = []; graphView.edgeRefs = []; graphView.refs = new Map(); graphView.viewport = null; graphView.built = "";
         svg.innerHTML = '<text x="470" y="245" text-anchor="middle" fill="#a7b1b4" font-family="IBM Plex Mono, monospace" font-size="13">NO ACTIVE EVIDENCE - USE EVIDENCE INTAKE TO BEGIN</text>';
         byId("inspector-body").innerHTML = '<p class="inspector-summary">This case has no active evidence yet. Add a source-backed observation or batch import to create the first entity timeline.</p>';
         return;
       }
-      if (!state.selectedEntity || !activeIds.has(state.selectedEntity)) state.selectedEntity = activeIds.has("backpack") ? "backpack" : [...activeIds][0];
-      const edgeMarkup = GRAPH_EDGES.filter(([from, to]) => activeIds.has(from) && activeIds.has(to)).map(([from, to, label, offsetX, offsetY]) => {
-        const start = entityProfile(from);
-        const end = entityProfile(to);
-        const support = edgeSupport(evidence.get(from), evidence.get(to));
-        if (!support.count) return "";
-        const x1 = start.x + 62;
-        const y1 = start.y + 31;
-        const x2 = end.x + 62;
-        const y2 = end.y + 31;
-        return `<g><line class="graph-edge ${support.tier}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"></line><text class="graph-edge-label" x="${(x1 + x2) / 2 + offsetX}" y="${(y1 + y2) / 2 - 7 + offsetY}">${escapeHtml(label)} / ${support.count} source${support.count === 1 ? "" : "s"}</text></g>`;
-      }).join("");
-      const nodeMarkup = [...activeIds].map((entityId) => {
+      if (!state.selectedEntity || (!activeIds.has(state.selectedEntity) && !state.selectedEntity.startsWith("doc:"))) state.selectedEntity = activeIds.has("backpack") ? "backpack" : [...activeIds][0];
+
+      const desired = new Map();
+      activeIds.forEach((entityId) => {
         const profile = entityProfile(entityId);
-        const selected = state.selectedEntity === entityId ? " selected" : "";
-        return `<g class="graph-node ${profile.type}${selected}" data-entity="${escapeHtml(entityId)}" transform="translate(${profile.x} ${profile.y})" role="button" tabindex="0" aria-label="Inspect ${escapeHtml(profile.label)}"><rect width="132" height="62" rx="4"></rect><text class="node-type" x="12" y="17">${profile.type.toUpperCase()}</text><text class="node-label" x="12" y="36">${escapeHtml(profile.label)}</text><text class="node-count" x="12" y="52">${evidence.get(entityId).length} active event${evidence.get(entityId).length === 1 ? "" : "s"}</text></g>`;
-      }).join("");
-      svg.innerHTML = `${edgeMarkup}${nodeMarkup}`;
-      svg.querySelectorAll("[data-entity]").forEach((node) => {
-        const select = () => selectEntity(node.dataset.entity);
-        node.addEventListener("click", select);
-        node.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") select(); });
+        const events = evidence.get(entityId);
+        desired.set(entityId, { id: entityId, kind: "entity", type: profile.type, label: profile.label, events: events.length, r: 11 + 3.4 * Math.sqrt(events.length) });
       });
-      selectEntity(state.selectedEntity, false);
+
+      const documentMap = new Map(state.data.documents.map((document) => [document.id, document]));
+      const docLinks = [];
+      if (graphView.showSources) {
+        const perDoc = new Map();
+        collectEvents().forEach((event) => {
+          const docId = event.lineage.document_id;
+          if (!docId) return;
+          if (!perDoc.has(docId)) perDoc.set(docId, new Map());
+          const counts = perDoc.get(docId);
+          counts.set(event.entityId, (counts.get(event.entityId) || 0) + 1);
+        });
+        perDoc.forEach((entities, docId) => {
+          const document = documentMap.get(docId);
+          const total = [...entities.values()].reduce((sum, count) => sum + count, 0);
+          let label = document ? document.filename.replace(/\.(pdf|html|txt|json|csv)$/i, "") : "source";
+          if (label.length > 30) label = `${label.slice(0, 28)}...`;
+          desired.set(`doc:${docId}`, { id: `doc:${docId}`, kind: "source", type: "source", label, events: total, r: 6.5 + 1.4 * Math.sqrt(total) });
+          entities.forEach((count, entityId) => docLinks.push({ a: `doc:${docId}`, b: entityId, tier: "doclink", label: `${count} event${count === 1 ? "" : "s"}`, length: 148 }));
+        });
+      }
+
+      [...graphView.nodes.keys()].forEach((id) => { if (!desired.has(id)) graphView.nodes.delete(id); });
+      let seed = graphView.nodes.size;
+      desired.forEach((node, id) => {
+        const existing = graphView.nodes.get(id);
+        if (existing) Object.assign(existing, node);
+        else {
+          seed += 1;
+          const angle = seed * 2.399963;
+          const radius = 60 + 13 * seed;
+          graphView.nodes.set(id, { ...node, x: GRAPH_CX + radius * Math.cos(angle), y: GRAPH_CY + radius * Math.sin(angle) * 0.72, vx: 0, vy: 0, fx: null, fy: null });
+        }
+      });
+
+      const entityEdges = GRAPH_EDGES.filter(([from, to]) => activeIds.has(from) && activeIds.has(to)).map(([from, to, label]) => {
+        const support = edgeSupport(evidence.get(from), evidence.get(to));
+        if (!support.count) return null;
+        return { a: from, b: to, tier: support.tier, label: `${label} / ${support.count} source${support.count === 1 ? "" : "s"}`, length: 205 };
+      }).filter(Boolean);
+      graphView.edges = [...entityEdges, ...docLinks];
+
+      graphView.neighbors = new Map();
+      graphView.nodes.forEach((_, id) => graphView.neighbors.set(id, new Set([id])));
+      graphView.edges.forEach((edge) => { graphView.neighbors.get(edge.a)?.add(edge.b); graphView.neighbors.get(edge.b)?.add(edge.a); });
+
+      const structureChanged = buildGraphDom(svg);
+      updateGraphClasses();
+      if (structureChanged) { graphView.alpha = Math.max(graphView.alpha, 0.9); startGraphLoop(); }
+      updateInspector();
     }
 
-    function selectEntity(entityId, rerender = true) {
+    function buildGraphDom(svg) {
+      const signature = `${[...graphView.nodes.keys()].join("|")}#${graphView.edges.map((edge) => `${edge.a}>${edge.b}`).join("|")}`;
+      if (graphView.built === signature) return false;
+      graphView.built = signature;
+      const edgeMarkup = graphView.edges.map((edge, index) => `<g class="gedge ${edge.tier}" data-edge="${index}"><line></line><text>${escapeHtml(edge.label)}</text></g>`).join("");
+      const nodeMarkup = [...graphView.nodes.values()].map((node) => {
+        const sub = node.kind === "source" ? "SOURCE RECORD" : `${node.events} EVENT${node.events === 1 ? "" : "S"}`;
+        return `<g class="gnode ${node.type}" data-node="${escapeHtml(node.id)}" role="button" tabindex="0" aria-label="Inspect ${escapeHtml(node.label)}"><circle r="${node.r}"></circle><text y="${node.r + 13}">${escapeHtml(node.label)}</text><text class="gsub" y="${node.r + 23}">${sub}</text></g>`;
+      }).join("");
+      svg.innerHTML = `<g id="graph-viewport">${edgeMarkup}${nodeMarkup}</g>`;
+      graphView.viewport = svg.querySelector("#graph-viewport");
+      graphView.refs = new Map();
+      svg.querySelectorAll("[data-node]").forEach((group) => graphView.refs.set(group.dataset.node, group));
+      graphView.edgeRefs = [...svg.querySelectorAll("[data-edge]")];
+      applyGraphTransform();
+      positionGraph();
+      return true;
+    }
+
+    function positionGraph() {
+      graphView.nodes.forEach((node, id) => {
+        const group = graphView.refs.get(id);
+        if (group) group.setAttribute("transform", `translate(${node.x.toFixed(1)} ${node.y.toFixed(1)})`);
+      });
+      graphView.edges.forEach((edge, index) => {
+        const ref = graphView.edgeRefs[index];
+        if (!ref) return;
+        const a = graphView.nodes.get(edge.a);
+        const b = graphView.nodes.get(edge.b);
+        if (!a || !b) return;
+        const line = ref.querySelector("line");
+        const text = ref.querySelector("text");
+        line.setAttribute("x1", a.x.toFixed(1)); line.setAttribute("y1", a.y.toFixed(1));
+        line.setAttribute("x2", b.x.toFixed(1)); line.setAttribute("y2", b.y.toFixed(1));
+        text.setAttribute("x", ((a.x + b.x) / 2).toFixed(1));
+        text.setAttribute("y", ((a.y + b.y) / 2 - 6).toFixed(1));
+      });
+    }
+
+    function graphTick() {
+      const nodes = [...graphView.nodes.values()];
+      const alpha = graphView.alpha;
+      for (let i = 0; i < nodes.length; i += 1) {
+        const a = nodes[i];
+        for (let j = i + 1; j < nodes.length; j += 1) {
+          const b = nodes[j];
+          let dx = a.x - b.x, dy = a.y - b.y;
+          let dist2 = dx * dx + dy * dy;
+          if (dist2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; dist2 = 1; }
+          const dist = Math.sqrt(dist2);
+          const minGap = a.r + b.r + 44;
+          let force = (6200 / dist2) * alpha;
+          if (dist < minGap) force += (minGap - dist) * 0.08;
+          const fx = (dx / dist) * force, fy = (dy / dist) * force;
+          a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+        }
+      }
+      graphView.edges.forEach((edge) => {
+        const a = graphView.nodes.get(edge.a);
+        const b = graphView.nodes.get(edge.b);
+        if (!a || !b) return;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+        const pull = ((dist - edge.length) / dist) * (edge.tier === "doclink" ? 0.012 : 0.02);
+        a.vx += dx * pull; a.vy += dy * pull; b.vx -= dx * pull; b.vy -= dy * pull;
+      });
+      nodes.forEach((node) => {
+        if (node.fx !== null) { node.x = node.fx; node.y = node.fy; node.vx = 0; node.vy = 0; return; }
+        node.vx += (GRAPH_CX - node.x) * 0.0014 * alpha;
+        node.vy += (GRAPH_CY - node.y) * 0.0026 * alpha;
+        node.vx *= 0.82; node.vy *= 0.82;
+        node.x += Math.max(-14, Math.min(14, node.vx));
+        node.y += Math.max(-14, Math.min(14, node.vy));
+      });
+      graphView.alpha *= 0.99;
+    }
+
+    function startGraphLoop() {
+      if (graphView.raf) return;
+      const step = () => {
+        graphTick();
+        positionGraph();
+        if (graphView.alpha > 0.005 || graphView.pointer?.mode === "node") graphView.raf = requestAnimationFrame(step);
+        else graphView.raf = null;
+      };
+      graphView.raf = requestAnimationFrame(step);
+    }
+
+    function stopGraphLoop() {
+      if (graphView.raf) cancelAnimationFrame(graphView.raf);
+      graphView.raf = null;
+    }
+
+    function applyGraphTransform() {
+      if (graphView.viewport) graphView.viewport.setAttribute("transform", `translate(${graphView.pan.x} ${graphView.pan.y}) scale(${graphView.pan.k})`);
+    }
+
+    function svgCoords(event) {
+      const svg = byId("evidence-graph");
+      const point = svg.createSVGPoint();
+      point.x = event.clientX; point.y = event.clientY;
+      const mapped = point.matrixTransform(svg.getScreenCTM().inverse());
+      return { x: mapped.x, y: mapped.y };
+    }
+
+    function worldCoords(event) {
+      const point = svgCoords(event);
+      return { x: (point.x - graphView.pan.x) / graphView.pan.k, y: (point.y - graphView.pan.y) / graphView.pan.k };
+    }
+
+    function setGraphHover(id) {
+      if (graphView.hover === id) return;
+      graphView.hover = id;
+      updateGraphClasses();
+    }
+
+    function updateGraphClasses() {
+      const svg = byId("evidence-graph");
+      svg.classList.toggle("hide-labels", !graphView.showLabels);
+      svg.classList.toggle("focus-mode", Boolean(graphView.hover));
+      const neighborhood = graphView.hover ? graphView.neighbors.get(graphView.hover) || new Set([graphView.hover]) : null;
+      graphView.refs.forEach((group, id) => {
+        group.classList.toggle("selected", id === state.selectedEntity);
+        group.classList.toggle("hovered", id === graphView.hover);
+        group.classList.toggle("neighbor", Boolean(neighborhood?.has(id)));
+      });
+      graphView.edgeRefs.forEach((ref, index) => {
+        const edge = graphView.edges[index];
+        ref.classList.toggle("neighbor", Boolean(graphView.hover && (edge.a === graphView.hover || edge.b === graphView.hover)));
+      });
+    }
+
+    function activateGraphNode(id) {
+      if (id.startsWith("doc:")) selectSource(id.slice(4));
+      else selectEntity(id);
+    }
+
+    function wireGraphInteractions() {
+      const svg = byId("evidence-graph");
+      svg.addEventListener("pointerdown", (event) => {
+        const nodeGroup = event.target.closest("[data-node]");
+        svg.setPointerCapture(event.pointerId);
+        if (nodeGroup) {
+          const node = graphView.nodes.get(nodeGroup.dataset.node);
+          if (!node) return;
+          graphView.pointer = { mode: "node", id: nodeGroup.dataset.node, moved: 0, lastX: event.clientX, lastY: event.clientY };
+          node.fx = node.x; node.fy = node.y;
+          graphView.alpha = Math.max(graphView.alpha, 0.25);
+          startGraphLoop();
+        } else {
+          graphView.pointer = { mode: "pan", moved: 0, lastX: event.clientX, lastY: event.clientY, lastSvg: svgCoords(event) };
+          svg.classList.add("panning");
+        }
+      });
+      svg.addEventListener("pointermove", (event) => {
+        const pointer = graphView.pointer;
+        if (!pointer) {
+          const nodeGroup = event.target.closest("[data-node]");
+          setGraphHover(nodeGroup ? nodeGroup.dataset.node : null);
+          return;
+        }
+        pointer.moved += Math.abs(event.clientX - pointer.lastX) + Math.abs(event.clientY - pointer.lastY);
+        pointer.lastX = event.clientX; pointer.lastY = event.clientY;
+        if (pointer.mode === "node") {
+          const world = worldCoords(event);
+          const node = graphView.nodes.get(pointer.id);
+          if (node) { node.fx = world.x; node.fy = world.y; }
+          graphView.alpha = Math.max(graphView.alpha, 0.12);
+          startGraphLoop();
+        } else {
+          const current = svgCoords(event);
+          graphView.pan.x += current.x - pointer.lastSvg.x;
+          graphView.pan.y += current.y - pointer.lastSvg.y;
+          pointer.lastSvg = current;
+          applyGraphTransform();
+        }
+      });
+      const finishPointer = () => {
+        const pointer = graphView.pointer;
+        if (!pointer) return;
+        graphView.pointer = null;
+        svg.classList.remove("panning");
+        if (pointer.mode === "node") {
+          const node = graphView.nodes.get(pointer.id);
+          if (node) { node.fx = null; node.fy = null; }
+          if (pointer.moved < 6) activateGraphNode(pointer.id);
+          graphView.alpha = Math.max(graphView.alpha, 0.2);
+          startGraphLoop();
+        }
+      };
+      svg.addEventListener("pointerup", finishPointer);
+      svg.addEventListener("pointercancel", finishPointer);
+      svg.addEventListener("pointerleave", () => { if (!graphView.pointer) setGraphHover(null); });
+      svg.addEventListener("wheel", (event) => {
+        if (!graphView.viewport) return;
+        // Plain scroll keeps scrolling the page; pinch gestures and
+        // ctrl/cmd+scroll zoom the graph, matching embedded-map conventions.
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        const point = svgCoords(event);
+        const factor = Math.exp(-event.deltaY * 0.0016);
+        const k = Math.min(2.6, Math.max(0.35, graphView.pan.k * factor));
+        const applied = k / graphView.pan.k;
+        graphView.pan.x = point.x - (point.x - graphView.pan.x) * applied;
+        graphView.pan.y = point.y - (point.y - graphView.pan.y) * applied;
+        graphView.pan.k = k;
+        applyGraphTransform();
+      }, { passive: false });
+      svg.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const nodeGroup = event.target.closest?.("[data-node]");
+        if (!nodeGroup) return;
+        event.preventDefault();
+        activateGraphNode(nodeGroup.dataset.node);
+      });
+    }
+
+    function selectEntity(entityId) {
       state.selectedEntity = entityId;
-      if (rerender) renderGraph();
-      const profile = entityProfile(entityId);
-      const events = entityEvidence().get(entityId) || [];
+      updateGraphClasses();
+      updateInspector();
+    }
+
+    function selectSource(documentId) {
+      state.selectedEntity = `doc:${documentId}`;
+      updateGraphClasses();
+      updateInspector();
+    }
+
+    function updateInspector() {
+      const selected = state.selectedEntity;
+      if (!selected) return;
+      if (selected.startsWith("doc:")) {
+        const documentId = selected.slice(4);
+        const document = state.data.documents.find((item) => item.id === documentId);
+        if (!document) return;
+        const supported = collectEvents().filter((event) => event.lineage.document_id === documentId);
+        const entities = [...new Set(supported.map((event) => event.entityId))];
+        byId("inspector-body").innerHTML = `<span class="entity-tag">${escapeHtml(document.source_type)}</span><h4>${escapeHtml(document.filename)}</h4><p class="inspector-summary">${supported.length} active event${supported.length === 1 ? "" : "s"} across ${entities.length} entit${entities.length === 1 ? "y" : "ies"}: ${escapeHtml(entities.map((id) => entityProfile(id).label).join(", "))}. Added at evidence revision ${document.added_at_revision}.</p><div class="claim-list">${supported.map((event) => {
+          const tier = eventTier(event);
+          return `<article class="claim"><div class="claim-top"><span class="tier ${tier.key}">${tier.label}</span><time>${escapeHtml(event.occurred_at.slice(0, 16).replace("T", " "))} / ${escapeHtml(event.time_precision)}</time></div><p>${escapeHtml(event.value)}</p><code>${escapeHtml(event.entity.label)} @ ${escapeHtml(event.lineage.source_locator || "locator unavailable")}</code></article>`;
+        }).join("")}</div>${document.source_uri ? `<p class="inspector-summary" style="margin-top:14px"><a href="${escapeHtml(document.source_uri)}" target="_blank" rel="noreferrer">Open original source</a></p>` : ""}`;
+        return;
+      }
+      const profile = entityProfile(selected);
+      const events = entityEvidence().get(selected) || [];
       const sourceIds = new Set(events.map((event) => event.lineage.document_id).filter(Boolean));
       byId("inspector-body").innerHTML = `<span class="entity-tag">${escapeHtml(profile.type)}</span><h4>${escapeHtml(profile.label)}</h4><p class="inspector-summary">${events.length} active event${events.length === 1 ? "" : "s"} supported by ${sourceIds.size} source record${sourceIds.size === 1 ? "" : "s"}. Select a claim to follow its immutable locator.</p><div class="claim-list">${events.map((event) => {
         const tier = eventTier(event);
@@ -1084,6 +1394,26 @@
       }
     }
 
+    wireGraphInteractions();
+    byId("toggle-sources").addEventListener("click", () => {
+      graphView.showSources = !graphView.showSources;
+      byId("toggle-sources").classList.toggle("active", graphView.showSources);
+      byId("toggle-sources").setAttribute("aria-pressed", String(graphView.showSources));
+      if (state.data) renderGraph();
+    });
+    byId("toggle-labels").addEventListener("click", () => {
+      graphView.showLabels = !graphView.showLabels;
+      byId("toggle-labels").classList.toggle("active", graphView.showLabels);
+      byId("toggle-labels").setAttribute("aria-pressed", String(graphView.showLabels));
+      updateGraphClasses();
+    });
+    byId("graph-reset").addEventListener("click", () => {
+      graphView.pan = { x: 0, y: 0, k: 1 };
+      applyGraphTransform();
+      graphView.nodes.forEach((node) => { node.vx = 0; node.vy = 0; });
+      graphView.alpha = 1;
+      startGraphLoop();
+    });
     byId("build-case").addEventListener("click", () => buildOfficialCase());
     byId("new-review").addEventListener("click", () => buildOfficialCase());
     byId("open-case-toggle").addEventListener("click", () => byId("open-case-form").classList.toggle("hidden"));
