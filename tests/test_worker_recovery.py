@@ -56,6 +56,7 @@ def test_worker_killed_before_commit_retries_without_orphans(
                 "document_id": added.document_id,
                 "source_locator": "record:1",
                 "source_text": "Event 1 for entity-1",
+                "time_precision": "EXACT",
             }
         ]
         assert job is not None

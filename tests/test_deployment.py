@@ -52,6 +52,8 @@ def test_dashboard_serves_the_selectivity_experiment() -> None:
         response = client.get("/")
         assert response.status_code == 200
         assert "Run the live proof" in response.text
+        assert "Open the real case" in response.text
+        assert "Boston evidence-disposal case" in response.text
         assert "Bring your own evidence" in response.text
         assert 'id="quick-evidence-form"' in response.text
         assert 'id="evidence-file"' in response.text
@@ -66,6 +68,34 @@ def test_dashboard_serves_the_selectivity_experiment() -> None:
         preview = client.get("/og.png")
         assert preview.status_code == 200
         assert preview.headers["content-type"] == "image/png"
+
+
+def test_official_record_case_is_materialized_with_status_separation() -> None:
+    app = create_app("sqlite+pysqlite:///:memory:")
+    with TestClient(app) as client:
+        created = client.post("/demo/real-case/boston-obstruction")
+        assert created.status_code == 201
+        real_case = created.json()
+        assert real_case["template_id"] == "boston-obstruction-public-record-v1"
+        assert real_case["official_sources"] == 4
+        assert real_case["assertions"] == 25
+        assert real_case["court_established_assertions"] == 9
+        assert real_case["materialized_timelines"] == 15
+        assert real_case["equivalent_to_full_rebuild"] is True
+        assert all(uri.startswith("https://www.") for uri in real_case["source_uris"])
+
+        workspace = client.get(f"/cases/{real_case['case_id']}").json()
+        assert len(workspace["documents"]) == 4
+        assert all(document["source_uri"] for document in workspace["documents"])
+
+        backpack = client.get(
+            f"/cases/{real_case['case_id']}/artifacts/timeline:backpack:2013-04-19"
+        ).json()
+        kinds = {event["kind"] for event in backpack["payload"]["events"]}
+        assert "COMPLAINT_OBJECT_DISPOSAL" in kinds
+        assert "INDICTMENT_ALLEGED_DISPOSAL" in kinds
+        assert "COURT_ESTABLISHED_DISPOSAL" in kinds
+        assert all(event["time_precision"] == "WINDOW" for event in backpack["payload"]["events"])
 
 
 def test_dashboard_scenario_runs_addition_and_retraction() -> None:

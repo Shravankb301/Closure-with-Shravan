@@ -17,6 +17,7 @@ class AssertionView:
     occurred_at: datetime
     kind: str
     value: str
+    time_precision: str
     source_locator: str
     source_text: str
 
@@ -65,6 +66,7 @@ def build_timeline(
             "occurred_at": iso_utc(item.occurred_at),
             "kind": item.kind,
             "value": item.value,
+            "time_precision": item.time_precision,
         }
         for item in ordered
     ]
@@ -74,6 +76,7 @@ def build_timeline(
             "document_id": item.document_id,
             "source_locator": item.source_locator,
             "source_text": item.source_text,
+            "time_precision": item.time_precision,
         }
         for item in ordered
     ]
@@ -88,7 +91,7 @@ def build_timeline(
             "artifact_key": artifact_key,
             "payload": payload,
             "lineage": lineage,
-            "deriver_version": "timeline-v1",
+            "deriver_version": "timeline-v2",
         }
     )
     return payload, lineage, fingerprint

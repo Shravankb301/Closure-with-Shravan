@@ -5,13 +5,14 @@ A small backend prototype for one question:
 > When evidence is added or retracted, can derived investigative artifacts be
 > updated selectively without changing the result of a full rebuild?
 
-The engine maintains deterministic entity-day timelines over synthetic,
-structured evidence. It records the exact keys each artifact reads, queues only
-affected artifacts, preserves source lineage, and verifies incremental state
-against a full rebuild after every mutation.
+The engine maintains deterministic entity-day timelines over structured
+evidence. It records the exact keys each artifact reads, queues only affected
+artifacts, preserves source lineage, and verifies incremental state against a
+full rebuild after every mutation.
 
 This is an incremental-computation experiment, not an investigation platform.
-It does not process real evidence and does not claim CJIS compliance.
+It includes a curated public-record case but does not perform raw evidence
+extraction, make investigative conclusions, or claim CJIS compliance.
 
 ## The demonstration
 
@@ -61,6 +62,25 @@ crash-before-commit rollback, stale-worker fencing, bounded retries, and
 PostgreSQL multi-worker claims. Its link-preview image uses the same impact map,
 so a shared demo URL communicates the result before the page opens.
 
+### Official-record use case
+
+The **Open the real case** action creates a durable workspace for the narrow
+evidence-disposal obstruction case associated with the Boston Marathon bombing
+investigation. It materializes 25 source-backed assertions into 15 timelines
+from four official records:
+
+- [May 2013 criminal complaint](https://www.justice.gov/iso/opa/resources/628201351145721158286.pdf)
+- [August 2013 indictment announcement](https://www.justice.gov/usao-ma/pr/federal-grand-jury-indicts-two-men-obstruction-justice-boston-marathon-bombing)
+- [FBI case history](https://www.fbi.gov/history/cases-and-criminals/boston-marathon-bombing)
+- [June 2015 sentencing record](https://www.justice.gov/usao-ma/pr/dias-kadyrbayev-sentenced-six-years-impeding-boston-marathon-bombing-investigation)
+
+Complaint and indictment events remain labeled as allegations. The interface
+uses court-established labels only for events reported after a guilty plea or
+jury verdict. Coarse source times retain `DAY`, `MONTH`, or `WINDOW` precision
+instead of presenting invented exact timestamps. The resulting case is a
+normal workspace: a reviewer can add evidence, inspect source spans and
+lineage, share the case URL, or retract a source.
+
 ### Use your own evidence
 
 The browser also exposes a durable case workspace intended for hands-on review.
@@ -71,14 +91,15 @@ share the case URL, and retract a source without deleting its audit record.
 JSON and CSV inputs use these fields:
 
 ```text
-entity_id, occurred_at, kind, value, source_locator, source_text
+entity_id, occurred_at, kind, value, time_precision, source_locator, source_text
 ```
 
-The first four fields are required. `source_locator` defaults to the input row
-and `source_text` defaults to `value`. Uploaded bytes are parsed in the browser;
-the durable record is the validated assertion set and its provenance, not the
-original file blob. Imports are limited to 1,000 assertions and 5 MB in the
-hosted workspace.
+The first four fields are required. `time_precision` defaults to `EXACT`,
+`source_locator` defaults to the input row, and `source_text` defaults to
+`value`. A document envelope may also include an absolute `source_uri`.
+Uploaded bytes are parsed in the browser; the durable record is the validated
+assertion set and its provenance, not the original file blob. Imports are
+limited to 1,000 assertions and 5 MB in the hosted workspace.
 
 The hosted demo can require an `X-Demo-Key`. The browser keeps that value in
 session storage only and never places it in a URL.
@@ -144,8 +165,9 @@ Core endpoints:
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/cases` | Create an isolated synthetic case |
+| `POST` | `/cases` | Create an isolated durable case |
 | `GET` | `/cases/{case_id}` | Reopen a case with its source history and current artifacts |
+| `POST` | `/demo/real-case/boston-obstruction` | Materialize the curated official-record case |
 | `POST` | `/cases/{case_id}/documents` | Add structured assertions idempotently |
 | `POST` | `/cases/{case_id}/documents/{document_id}/retractions` | Append a retraction tombstone |
 | `POST` | `/workers/drain` | Process queued recomputations locally |
@@ -187,9 +209,9 @@ version, and schema version before entering this kernel.
 
 ### Entity resolution is upstream
 
-Synthetic inputs contain ground-truth entity IDs. Entity resolution is treated
-as an upstream oracle because uncertain merges and splits are a separate hard
-problem that would obscure the incremental-computation experiment.
+Fixtures contain curated entity IDs. Entity resolution is treated as an
+upstream oracle because uncertain merges and splits are a separate hard problem
+that would obscure the incremental-computation experiment.
 
 ### Concurrent mutations
 
@@ -204,8 +226,9 @@ verifies that the stale version never appears.
 Raw PDF ingestion, OCR, audio/video processing, entity resolution, natural
 language question answering, role-based authorization, and disaster recovery
 are outside scope. The hosted API key is controlled-demo access, not a
-production identity system. Synthetic structured assertions keep the central
-correctness property testable and explainable.
+production identity system. Structured assertions keep the central correctness
+property testable and explainable; curated public-record assertions exercise
+the same kernel without implying automated extraction or case solving.
 
 See [DESIGN.md](DESIGN.md) for failure modes and transactional details, and
 [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) for challenged alternatives,

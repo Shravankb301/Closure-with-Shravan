@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from evidence_delta.database import Database
+from evidence_delta.real_case import build_boston_obstruction_case
 from evidence_delta.runtime import WorkerLoop
 from evidence_delta.scenario import build_selectivity_scenario
 from evidence_delta.schemas import CaseInput, DocumentInput, RetractionInput
@@ -102,6 +103,14 @@ def create_app(database_url: str | None = None) -> FastAPI:
     @application.post("/demo/scenario", status_code=201, dependencies=secured)
     def create_demo_scenario() -> dict:
         return build_selectivity_scenario(service, worker)
+
+    @application.post(
+        "/demo/real-case/boston-obstruction",
+        status_code=201,
+        dependencies=secured,
+    )
+    def create_boston_obstruction_case() -> dict:
+        return build_boston_obstruction_case(service, worker)
 
     @application.post("/cases/{case_id}/documents", status_code=202, dependencies=secured)
     def add_document(case_id: str, body: DocumentInput) -> dict:

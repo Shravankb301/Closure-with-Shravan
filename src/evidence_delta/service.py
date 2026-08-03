@@ -47,6 +47,11 @@ class EvidenceService:
     @staticmethod
     def _document_hash(document: DocumentInput) -> str:
         body = document.model_dump(mode="json", exclude={"filename"})
+        if body["source_uri"] is None:
+            body.pop("source_uri")
+        for assertion in body["assertions"]:
+            if assertion["time_precision"] == "EXACT":
+                assertion.pop("time_precision")
         # Extraction order is not evidence identity. Sorting prevents a
         # harmless parser reorder from bypassing the idempotency key.
         body["assertions"] = sorted(body["assertions"], key=canonical_json)
@@ -92,6 +97,7 @@ class EvidenceService:
                 case_id=case_id,
                 filename=document.filename,
                 source_type=document.source_type,
+                source_uri=document.source_uri,
                 content_hash=content_hash,
                 added_at_revision=revision,
             )
@@ -111,6 +117,7 @@ class EvidenceService:
                     occurred_at=item.occurred_at,
                     kind=item.kind,
                     value=item.value,
+                    time_precision=item.time_precision,
                     source_locator=item.source_locator,
                     source_text=item.source_text,
                     added_at_revision=revision,
@@ -349,6 +356,7 @@ class EvidenceService:
                 occurred_at=row.occurred_at,
                 kind=row.kind,
                 value=row.value,
+                time_precision=row.time_precision,
                 source_locator=row.source_locator,
                 source_text=row.source_text,
             )
@@ -414,6 +422,7 @@ class EvidenceService:
                     DocumentRecord.id,
                     DocumentRecord.filename,
                     DocumentRecord.source_type,
+                    DocumentRecord.source_uri,
                     DocumentRecord.added_at_revision,
                     DocumentRecord.created_at,
                     assertion_count.label("assertion_count"),
@@ -458,6 +467,7 @@ class EvidenceService:
                     "id": row.id,
                     "filename": row.filename,
                     "source_type": row.source_type,
+                    "source_uri": row.source_uri,
                     "added_at_revision": row.added_at_revision,
                     "created_at": row.created_at.isoformat(),
                     "assertion_count": int(row.assertion_count or 0),

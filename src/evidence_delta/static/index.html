@@ -1762,6 +1762,17 @@
     .result-row-head code, .result-meta, .user-event span, .user-lineage { color: var(--obsidian-muted); font-size: 9px; }
     .result-badge, .status-badge { border-radius: 5px; color: #cfc4f7; border-color: rgba(167, 139, 250, 0.32); background: rgba(167, 139, 250, 0.09); font-size: 8px; }
     .user-event { border-color: rgba(142, 181, 255, 0.5); background: rgba(142, 181, 255, 0.06); }
+    .real-case-card { position: relative; overflow: hidden; border-color: rgba(111, 191, 115, 0.34); background: linear-gradient(145deg, rgba(34, 50, 39, 0.88), rgba(20, 24, 24, 0.9)); }
+    .real-case-card::after { position: absolute; right: -32px; bottom: -54px; width: 130px; height: 130px; border: 1px solid rgba(111, 191, 115, 0.16); border-radius: 50%; content: ""; }
+    .real-case-meta { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 16px; }
+    .real-case-meta span, .evidence-tier { padding: 4px 7px; border: 1px solid rgba(111, 191, 115, 0.24); border-radius: 999px; color: #a9d9ac; background: rgba(111, 191, 115, 0.07); font: 600 8px/1 var(--mono); letter-spacing: 0.03em; text-transform: uppercase; }
+    .source-link { display: inline-block; margin-top: 8px; color: #9fbefa; border-bottom: 1px solid rgba(159, 190, 250, 0.3); font-size: 9px; text-decoration: none; }
+    .source-link:hover { color: #c2d5fb; }
+    .event-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+    .event-heading strong { min-width: 0; }
+    .evidence-tier { flex: none; border-color: rgba(142, 181, 255, 0.3); color: #b8caf0; background: rgba(142, 181, 255, 0.08); }
+    .evidence-tier.court { border-color: rgba(111, 191, 115, 0.32); color: #a9d9ac; background: rgba(111, 191, 115, 0.08); }
+    .evidence-tier.allegation { border-color: rgba(229, 181, 102, 0.34); color: #e3c88f; background: rgba(229, 181, 102, 0.08); }
 
     .proof-console { border: 1px solid var(--obsidian-border); border-radius: 15px; color: var(--obsidian-text); background: rgba(23, 25, 30, 0.82); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18); overflow: hidden; }
     .console-top { min-height: 43px; border-color: var(--obsidian-border); color: var(--obsidian-text); background: rgba(255, 255, 255, 0.02); }
@@ -1905,6 +1916,7 @@
           <p class="hero-copy">A deterministic evidence engine that remembers every input each artifact read, invalidates only what changed, and verifies the result against a full rebuild.</p>
           <div class="hero-actions">
             <button class="button button-primary" id="run-scenario" type="button">Run the live proof</button>
+            <button class="button button-secondary" data-load-real-case type="button">Open the real case</button>
             <a class="button button-secondary" href="#workspace">Use your own data</a>
           </div>
           <ul class="capability-list" aria-label="Core capabilities">
@@ -1951,6 +1963,13 @@
 
         <div class="workspace-app">
           <div class="workspace-stack">
+            <article class="workspace-card real-case-card">
+              <div class="workspace-card-header">
+                <div><span class="workspace-step">Public record / Real case</span><h3>Boston evidence-disposal case</h3><p class="workspace-card-copy">Materialize a narrow obstruction case from official DOJ, FBI, complaint, and court-outcome records. Allegations remain separate from later established outcomes.</p></div>
+              </div>
+              <div class="real-case-meta"><span>4 official sources</span><span>No invented metrics</span><span>Editable after load</span></div>
+              <button class="button button-primary" data-load-real-case type="button">Build official-record case</button>
+            </article>
             <article class="workspace-card case-card">
               <div class="workspace-card-header">
                 <div><span class="workspace-step">01 / Case</span><h3>Start a workspace</h3><p class="workspace-card-copy">Create a durable case, then add evidence. You can reopen it from the same URL later.</p></div>
@@ -1986,7 +2005,7 @@
               <summary><span><span class="workspace-step">Input contract</span><strong>See accepted fields</strong></span></summary>
               <div class="contract-body">
                 <p class="workspace-card-copy">JSON and CSV may contain many assertions. Quick entry handles a single observation with a known entity and time.</p>
-                <div class="data-contract">Required: entity_id, occurred_at, kind, value.<br>Optional: source_locator, source_text.<br>File bytes are parsed locally and are not retained.</div>
+                <div class="data-contract">Required: entity_id, occurred_at, kind, value.<br>Optional document field: source_uri.<br>Optional assertion fields: time_precision, source_locator, source_text.<br>File bytes are parsed locally and are not retained.</div>
               </div>
             </details>
           </div>
@@ -2004,9 +2023,11 @@
               <form id="quick-evidence-form">
                 <div class="field-grid">
                   <div class="field"><label for="quick-filename">Source filename</label><input id="quick-filename" value="observation.txt" required></div>
+                  <div class="field"><label for="quick-source-uri">Official source URL</label><input id="quick-source-uri" type="url" placeholder="https://example.gov/source"><span class="field-note">Optional. Retained with the immutable source record.</span></div>
                   <div class="field"><label for="quick-entity">Entity ID</label><input id="quick-entity" placeholder="person-42" required></div>
                   <div class="field"><label for="quick-occurred">Occurred at</label><input id="quick-occurred" type="datetime-local" required></div>
                   <div class="field"><label for="quick-kind">Event kind</label><select id="quick-kind"><option>OBSERVED_AT</option><option>CONTACTED</option><option>TRANSFERRED</option><option>MENTIONED</option><option>OTHER</option></select></div>
+                  <div class="field"><label for="quick-time-precision">Time precision</label><select id="quick-time-precision"><option>EXACT</option><option>MINUTE</option><option>HOUR</option><option>DAY</option><option>MONTH</option><option>WINDOW</option><option>UNKNOWN</option></select></div>
                   <div class="field field-wide"><label for="quick-value">Timeline value</label><input id="quick-value" placeholder="Entered Northside Storage" required></div>
                   <div class="field"><label for="quick-locator">Source locator</label><input id="quick-locator" value="manual:1" required><span class="field-note">Page, paragraph, row, timestamp, or another stable locator.</span></div>
                   <div class="field field-wide"><label for="quick-source-text">Original source text</label><textarea id="quick-source-text" placeholder="Paste the raw observation or source excerpt here." required></textarea></div>
@@ -2126,7 +2147,7 @@
                 <button class="button button-secondary" id="copy-report" type="button" disabled>Copy proof JSON</button>
                 <button class="button button-secondary" id="toggle-raw" type="button">Raw state</button>
               </div>
-              <p class="activity" id="activity">Ready. All displayed evidence is synthetic; all displayed state is live.</p>
+              <p class="activity" id="activity">Ready. The proof harness is synthetic; the public-record case is source-linked and live.</p>
               <pre class="raw-output" id="raw-output"></pre>
             </aside>
           </div>
@@ -2182,6 +2203,7 @@
         <div class="command-results" id="command-results">
           <div class="command-group-label" id="command-palette-title">Suggested commands</div>
           <button class="command-item" type="button" data-command-target="#workspace" data-command-label="Open evidence workspace create case add source"><span>◇</span><span>Open evidence workspace</span><small>Navigate</small></button>
+          <button class="command-item" type="button" data-command-action="real-case" data-command-label="Build Boston real public case official records"><span>◎</span><span>Build official-record case</span><small>Real case</small></button>
           <button class="command-item" type="button" data-command-action="new-case" data-command-label="Create a new case workspace"><span>＋</span><span>Create a new case</span><small>Action</small></button>
           <button class="command-item" type="button" data-command-action="run-proof" data-command-label="Run live proof invariant test"><span>▶</span><span>Run the live proof</span><small>Action</small></button>
           <button class="command-item" type="button" data-command-target="#proof" data-command-label="Open proof graph provenance"><span>⌁</span><span>Open evidence graph</span><small>Navigate</small></button>
@@ -2306,16 +2328,21 @@
       const entityId = String(raw.entity_id ?? "").trim();
       const kind = String(raw.kind ?? "").trim();
       const value = String(raw.value ?? "").trim();
+      const timePrecision = String(raw.time_precision || "EXACT").trim().toUpperCase();
       const occurredAt = new Date(raw.occurred_at);
       if (!entityId) throw new Error(`Row ${index + 1}: entity_id is required`);
       if (Number.isNaN(occurredAt.getTime())) throw new Error(`Row ${index + 1}: occurred_at must be a valid date with time`);
       if (!kind) throw new Error(`Row ${index + 1}: kind is required`);
       if (!value) throw new Error(`Row ${index + 1}: value is required`);
+      if (!["EXACT", "MINUTE", "HOUR", "DAY", "MONTH", "WINDOW", "UNKNOWN"].includes(timePrecision)) {
+        throw new Error(`Row ${index + 1}: time_precision is not supported`);
+      }
       return {
         entity_id: entityId,
         occurred_at: occurredAt.toISOString(),
         kind,
         value,
+        time_precision: timePrecision,
         source_locator: String(raw.source_locator || `row:${index + 1}`).trim(),
         source_text: String(raw.source_text || value).trim(),
       };
@@ -2396,6 +2423,7 @@
       const documentInput = {
         filename: String(payload.filename || fallbackFilename).trim(),
         source_type: String(payload.source_type || "user_upload").trim(),
+        source_uri: String(payload.source_uri || "").trim() || null,
         assertions: assertions.map(normalizeAssertion),
       };
       renderDraft(documentInput);
@@ -2449,6 +2477,7 @@
             <span class="result-badge${document.retracted ? " retracted" : ""}">${document.retracted ? "Retracted" : "Active"}</span>
           </div>
           <p class="result-meta">${document.assertion_count} assertion${document.assertion_count === 1 ? "" : "s"} / revision ${document.added_at_revision} / ${escapeHtml(document.source_type)}</p>
+          ${document.source_uri ? `<a class="source-link" href="${escapeHtml(document.source_uri)}" target="_blank" rel="noreferrer">Open official source ↗</a>` : ""}
           ${document.retracted
             ? `<p class="result-meta">Reason: ${escapeHtml(document.retraction_reason)}</p>`
             : `<button class="row-action" data-retract-document="${escapeHtml(document.id)}" type="button">Retract this source</button>`}
@@ -2462,7 +2491,10 @@
             <div><strong>${escapeHtml(artifact.artifact_key)}</strong><code>computed at revision ${artifact.computed_at_revision || "pending"}</code></div>
             <span class="result-badge${artifact.fresh ? "" : " retracted"}">${artifact.fresh ? `Current v${artifact.version}` : "Pending"}</span>
           </div>
-          <div class="user-artifact-events">${events.length ? events.map((event) => `<div class="user-event"><strong>${escapeHtml(event.value)}</strong><span>${escapeHtml(event.kind)} / ${escapeHtml(event.occurred_at)}</span></div>`).join("") : '<div class="user-event"><strong>No active events</strong><span>The source may be retracted or recomputation may still be pending.</span></div>'}</div>
+          <div class="user-artifact-events">${events.length ? events.map((event) => {
+            const status = evidenceStatus(event.kind);
+            return `<div class="user-event"><div class="event-heading"><strong>${escapeHtml(event.value)}</strong><span class="evidence-tier ${status.className}">${status.label}</span></div><span>${escapeHtml(event.kind)} / ${escapeHtml(event.occurred_at)} / ${escapeHtml(event.time_precision || "EXACT")} precision</span></div>`;
+          }).join("") : '<div class="user-event"><strong>No active events</strong><span>The source may be retracted or recomputation may still be pending.</span></div>'}</div>
           ${lineage.length ? `<p class="user-lineage">Source proof: ${lineage.map((item) => `${escapeHtml(item.document_id)} @ ${escapeHtml(item.source_locator)}`).join(" / ")}</p>` : ""}
         </article>`;
       }).join("") : '<div class="empty-state"><div><strong>No timelines yet</strong><span>Materialized artifacts appear here after ingestion.</span></div></div>';
@@ -2470,6 +2502,14 @@
       document.querySelectorAll("[data-retract-document]").forEach((button) => {
         button.addEventListener("click", () => retractWorkspaceDocument(button.dataset.retractDocument));
       });
+    }
+
+    function evidenceStatus(kind) {
+      if (kind.startsWith("COURT_")) return { label: "Court established", className: "court" };
+      if (kind.startsWith("COMPLAINT_") || kind.startsWith("INDICTMENT_")) {
+        return { label: "Allegation", className: "allegation" };
+      }
+      return { label: "Agency record", className: "agency" };
     }
 
     async function refreshWorkspace(caseId = workspaceState.caseId) {
@@ -2504,6 +2544,30 @@
       byId("workspace-case-id").value = normalizedId;
       setWorkspaceStatus("workspace-case-status", `Open at revision ${data.case.revision}. New evidence will append to this case.`);
       setWorkspaceStatus("workspace-ingest-status", "Case ready. Add an observation or validate a batch import.");
+    }
+
+    async function loadRealCase() {
+      const buttons = [...document.querySelectorAll("[data-load-real-case]")];
+      buttons.forEach((button) => setButtonBusy(button, true, "Building case..."));
+      setWorkspaceStatus("workspace-case-status", "Materializing official records and verifying every timeline...");
+      try {
+        const result = await api("/demo/real-case/boston-obstruction", {
+          method: "POST",
+          body: "{}",
+        });
+        await openWorkspaceCase(result.case_id);
+        await waitForWorkspace();
+        navigateToSection("#workspace");
+        setWorkspaceStatus(
+          "workspace-case-status",
+          `Official-record case ready: ${result.official_sources} sources, ${result.assertions} retained assertions, ${result.materialized_timelines} timelines, full-rebuild oracle verified.`,
+        );
+        setWorkspaceStatus("workspace-ingest-status", "This is now a normal durable case. Add your own evidence or retract a source to test the model.");
+      } catch (error) {
+        setWorkspaceStatus("workspace-case-status", error.message, true);
+      } finally {
+        buttons.forEach((button) => setButtonBusy(button, false, ""));
+      }
     }
 
     async function ingestWorkspaceDocument(documentInput) {
@@ -3036,6 +3100,7 @@
         if (commandTarget) navigateToSection(commandTarget);
         if (commandAction === "new-case") createNewWorkspaceCase();
         if (commandAction === "run-proof") triggerLiveProof();
+        if (commandAction === "real-case") loadRealCase();
       });
     });
 
@@ -3139,12 +3204,14 @@
           occurred_at: byId("quick-occurred").value,
           kind: byId("quick-kind").value,
           value: byId("quick-value").value,
+          time_precision: byId("quick-time-precision").value,
           source_locator: byId("quick-locator").value,
           source_text: byId("quick-source-text").value,
         }, 0);
         await ingestWorkspaceDocument({
           filename: byId("quick-filename").value.trim(),
           source_type: "user_quick_entry",
+          source_uri: byId("quick-source-uri").value.trim() || null,
           assertions: [assertion],
         });
         byId("quick-value").value = "";
@@ -3245,6 +3312,9 @@
       dropZone.classList.remove("dragging");
     }));
     dropZone.addEventListener("drop", (event) => loadEvidenceFile(event.dataTransfer.files[0]));
+    document.querySelectorAll("[data-load-real-case]").forEach((button) => {
+      button.addEventListener("click", loadRealCase);
+    });
     byId("run-scenario").addEventListener("click", runScenario);
     byId("retract").addEventListener("click", retractSource);
     byId("copy-report").addEventListener("click", copyReport);
