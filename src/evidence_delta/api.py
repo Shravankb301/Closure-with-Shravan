@@ -88,12 +88,6 @@ def create_app(database_url: str | None = None) -> FastAPI:
         html = (static_dir / "investigation.html").read_text(encoding="utf-8")
         return HTMLResponse(html.replace("{{SITE_ORIGIN}}", origin))
 
-    @application.get("/engineering", include_in_schema=False)
-    def engineering_proof(request: Request) -> HTMLResponse:
-        origin = escape(str(request.base_url).rstrip("/"), quote=True)
-        html = (static_dir / "index.html").read_text(encoding="utf-8")
-        return HTMLResponse(html.replace("{{SITE_ORIGIN}}", origin))
-
     @application.get("/og.png", include_in_schema=False)
     def social_preview() -> FileResponse:
         return FileResponse(static_dir / "og.png", media_type="image/png")

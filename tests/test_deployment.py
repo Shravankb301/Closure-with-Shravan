@@ -117,12 +117,6 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         )
         assert 'content="http://testserver/og.png"' in response.text
 
-        engineering = client.get("/engineering")
-        assert engineering.status_code == 200
-        assert "Run the live proof" in engineering.text
-        assert "Withdrawn evidence stays visible" in engineering.text
-        assert 'entry.querySelector(".journal-copy span")' in engineering.text
-
         preview = client.get("/og.png")
         assert preview.status_code == 200
         assert preview.headers["content-type"] == "image/png"

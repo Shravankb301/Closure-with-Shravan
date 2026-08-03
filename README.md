@@ -74,24 +74,6 @@ assignment/handoff metadata, and a findings board that surfaces contradiction
 candidates, corroboration, and single-source exposure across the active
 source set.
 
-The original incremental-computation demonstration remains available at
-`/engineering`.
-
-## Interactive engineering proof
-
-The root route turns the 3-of-100 scenario into a guided live proof. One action
-materializes 100 independent entity-day artifacts, highlights the exact three
-invalidated partitions, publishes their replacement versions, renders source
-lineage and dependency observations, and verifies every maintained artifact
-against a deterministic full rebuild. The same source can then be retracted to
-show that derived state changes while all three original assertions and prior
-artifact versions remain auditable.
-
-The interface also explains the failure envelope covered by automated tests:
-crash-before-commit rollback, stale-worker fencing, bounded retries, and
-PostgreSQL multi-worker claims. Its link-preview image uses the same impact map,
-so a shared demo URL communicates the result before the page opens.
-
 ### Official-record use case
 
 The **Open the real case** action creates a durable workspace for the narrow
