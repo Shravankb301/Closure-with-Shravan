@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Boston Evidence Review</title>
-  <meta name="description" content="A source-backed public-record workspace for reconstructing the Boston Marathon bombing investigation evidence trail.">
-  <meta property="og:title" content="Boston Evidence Review">
-  <meta property="og:description" content="Trace claims to sources, map relationships, separate allegations from court outcomes, and coordinate evidence review.">
+  <title>Evidence Delta | Case Operations</title>
+  <meta name="description" content="A working evidence operations system that keeps derived case artifacts current, traceable, and reviewable as source records change.">
+  <meta property="og:title" content="Evidence Delta | Case Operations">
+  <meta property="og:description" content="Inspect the complete path from evidence mutation to verified case artifact.">
   <meta property="og:image" content="{{SITE_ORIGIN}}/og.png">
   <style>
     :root {
@@ -211,15 +211,24 @@
     .gedge line { stroke: #465460; stroke-width: 1.2; opacity: 0.5; transition: opacity 160ms ease; }
     .gedge.court line { stroke: #75a688; stroke-width: 2; opacity: 0.72; }
     .gedge.allegation line { stroke: #d09048; stroke-dasharray: 6 4; opacity: 0.62; }
-    .gedge.doclink line { stroke: #38454e; stroke-width: 1; opacity: 0.4; }
+    .gedge.contains line { stroke: #7d8993; }
+    .gedge.describes line { stroke: #4f799d; }
+    .gedge.supports line { stroke: #4b8b69; stroke-width: 1.8; }
+    .gedge.conflicts line { stroke: #b64a3b; stroke-width: 2; stroke-dasharray: 5 4; }
+    .gedge.exposes line { stroke: #a8752b; stroke-dasharray: 3 3; }
     .gedge text { fill: #a6b2b6; font: 500 8px var(--mono); text-anchor: middle; opacity: 0; transition: opacity 160ms ease; pointer-events: none; }
     .gnode { cursor: grab; outline: none; }
+    .gnode .node-hit-target { fill: transparent; pointer-events: all; stroke: none; }
     .gnode circle { stroke-width: 1.6; transition: opacity 180ms ease, stroke-width 120ms ease; }
     .gnode.person circle { fill: #3b2822; stroke: #e08a6d; }
     .gnode.object circle { fill: #38301d; stroke: #d8a35a; }
     .gnode.location circle { fill: #1c3134; stroke: #55a3ad; }
     .gnode.context circle { fill: #253021; stroke: #7fa671; }
     .gnode.source circle { fill: #1d252c; stroke: #5c6b75; stroke-dasharray: 3 2.4; }
+    .gnode.event circle { fill: #1e303e; stroke: #7199b5; }
+    .gnode.conclusion circle { fill: #20372b; stroke: #71a783; }
+    .gnode.conflict circle { fill: #442620; stroke: #d66b59; }
+    .gnode.gap circle { fill: #44351f; stroke: #cf9a48; stroke-dasharray: 3 2; }
     .gnode text { fill: #c6cecd; font: 500 9.5px var(--sans); text-anchor: middle; pointer-events: none; transition: opacity 180ms ease; }
     .gnode .gsub { fill: #78868c; font: 500 7px var(--mono); }
     .gnode:hover circle, .gnode:focus-visible circle, .gnode.selected circle { stroke-width: 2.6; filter: drop-shadow(0 0 7px rgba(243, 182, 107, 0.55)); }
@@ -231,6 +240,8 @@
     .evidence-graph.focus-mode .gedge.neighbor text { opacity: 1; }
     .evidence-graph.hide-labels .gnode text { opacity: 0; }
     .evidence-graph.hide-labels .gnode.hovered text, .evidence-graph.hide-labels .gnode.selected text, .evidence-graph.hide-labels .gnode.neighbor text { opacity: 1; }
+    .gnode.event text { opacity: 0; }
+    .gnode.event.hovered text, .gnode.event.selected text, .gnode.event.neighbor text { opacity: 1; }
     .graph-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 12px 18px; color: #9ba6aa; border-top: 1px solid #303a40; background: #11171c; font: 500 8px/1 var(--mono); }
     .legend-line { display: inline-block; width: 24px; margin-right: 6px; border-top: 2px solid #75a688; vertical-align: middle; }
     .legend-line.allegation { border-color: #d09048; border-top-style: dashed; }
@@ -240,12 +251,41 @@
     .legend-dot.location { background: #1c3134; border-color: #55a3ad; }
     .legend-dot.context { background: #253021; border-color: #7fa671; }
     .legend-dot.source { background: #1d252c; border-color: #5c6b75; }
+    .legend-dot.entity { background: #e8edf2; border-color: #5e7489; }
+    .legend-dot.event { background: #e6eff5; border-color: #6d93ad; }
+    .legend-dot.conclusion { background: #e8f2eb; border-color: #5f9472; }
+    .legend-dot.conflict { background: #fae9e5; border-color: #b95142; }
+    .legend-dot.gap { background: #f7efdf; border-color: #b78435; }
+    .legend-line.supports { border-color: #5f9472; }
+    .legend-line.conflict { border-color: #b95142; border-top-style: dashed; }
 
     .inspector { min-height: 100%; }
     .inspector-body { padding: 20px; }
     .entity-tag { display: inline-block; padding: 5px 7px; color: var(--signal-dark); border: 1px solid #d6a79f; background: #fff4f0; font: 600 8px/1 var(--mono); text-transform: uppercase; }
     .inspector h4 { margin: 13px 0 5px; font-size: 25px; line-height: 1.1; letter-spacing: -0.045em; }
     .inspector-summary { margin: 0 0 18px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .reasoning-support { margin: 14px 0; padding: 12px; border: 1px solid var(--line); background: var(--paper-dim); }
+    .reasoning-support strong { display: block; font-size: 14px; }
+    .reasoning-support p { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .support-level { display: inline-block; margin-bottom: 8px; padding: 5px 8px; border: 1px solid currentColor; border-radius: 999px; font-size: 9px; font-weight: 700; }
+    .support-level.strong { color: #2e6549; background: #e4f1e8; }
+    .support-level.moderate { color: #315b82; background: #e4edf6; }
+    .support-level.limited { color: #8a5726; background: #f6ead9; }
+    .support-level.conflicted { color: #8f2d1f; background: #fff2ef; }
+    .reasoning-rule { margin: 14px 0; padding: 14px; border-left: 3px solid #73889b; background: #f6f8fa; }
+    .reasoning-rule code { color: #5c6976; font: 600 9px/1.4 var(--mono); }
+    .reasoning-rule p { margin: 8px 0 0; font-size: 11px; line-height: 1.55; }
+    .premise-list { display: grid; gap: 6px; margin-top: 11px; }
+    .premise-list div { display: grid; grid-template-columns: minmax(90px, 0.7fr) minmax(0, 1.3fr); gap: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+    .premise-list span { color: var(--muted); font-size: 10px; }
+    .premise-list strong { font-size: 10px; font-weight: 650; }
+    .trace-section { margin-top: 18px; }
+    .trace-section h5 { margin: 0 0 8px; font-size: 11px; }
+    .trace-links { display: grid; gap: 6px; }
+    .trace-link { display: grid; grid-template-columns: 1fr auto; gap: 8px; width: 100%; padding: 9px 10px; color: var(--ink); border: 1px solid var(--line); background: #fff; text-align: left; }
+    .trace-link strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .trace-link span { color: var(--muted); font-size: 9px; }
+    .source-quote { margin: 14px 0; padding: 12px 14px; border-left: 3px solid #8b9baa; background: #f4f6f8; font-size: 11px; line-height: 1.55; }
     .claim-list { display: grid; gap: 9px; }
     .claim { padding: 12px; border: 1px solid var(--line); background: #fff; }
     .claim-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -360,12 +400,11 @@
     .handoff-box strong { display: block; font-size: 11px; }
     .handoff-box pre { max-height: 230px; overflow: auto; margin: 10px 0 0; white-space: pre-wrap; color: #59615d; font: 500 8px/1.65 var(--mono); }
 
-    .access-drawer { position: fixed; right: 18px; bottom: 18px; z-index: 30; width: min(220px, calc(100vw - 36px)); }
-    .access-drawer details { color: white; border: 1px solid #4b5860; background: rgba(17, 23, 28, 0.97); box-shadow: var(--shadow); }
-    .access-drawer summary { padding: 13px 15px; cursor: pointer; font: 600 9px/1 var(--mono); text-transform: uppercase; }
-    .access-body { padding: 0 15px 15px; }
-    .access-body .field label { color: #aab3b6; }
-    .access-body p { color: #96a2a6; font-size: 9px; line-height: 1.5; }
+    .access-gate { max-width: 620px; margin-top: 18px; padding: 17px; border: 1px solid var(--line); background: var(--paper-bright); }
+    .access-gate strong { display: block; font-size: 13px; }
+    .access-gate p { margin: 5px 0 14px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .access-gate-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; align-items: end; }
+    .access-gate-row .field { margin: 0; }
 
     .tour-bar {
       position: fixed;
@@ -392,7 +431,6 @@
     .tour-actions { display: flex; flex-wrap: wrap; gap: 7px; justify-content: flex-end; }
     .tour-actions .button-ghost { color: #dfe5e4; border-color: #536169; }
     .tour-focus { position: relative; z-index: 1; outline: 3px solid var(--amber); outline-offset: 5px; box-shadow: 0 0 0 9px rgba(226, 169, 59, 0.13), var(--shadow); }
-    body.tour-active .access-drawer { display: none; }
 
     footer { display: flex; justify-content: space-between; gap: 20px; padding: 24px clamp(22px, 4vw, 62px); color: #939da1; background: #0d1216; font: 500 8px/1.6 var(--mono); }
     footer a { color: #dbe0df; }
@@ -577,13 +615,21 @@
     .gedge line { stroke: #9aa8b5; opacity: 0.62; }
     .gedge.court line { stroke: #5f8e71; }
     .gedge.allegation line { stroke: #a78045; }
-    .gedge.doclink line { stroke: #aab4be; }
+    .gedge.contains line { stroke: #98a5b0; }
+    .gedge.describes line { stroke: #6f91ae; }
+    .gedge.supports line { stroke: #5f9472; }
+    .gedge.conflicts line { stroke: #b95142; }
+    .gedge.exposes line { stroke: #b78435; }
     .gedge text { fill: #526170; }
     .gnode.person circle { fill: #e8edf2; stroke: #5e7489; }
     .gnode.object circle { fill: #f3eee3; stroke: #98794a; }
     .gnode.location circle { fill: #e5eff1; stroke: #5f858d; }
     .gnode.context circle { fill: #e8efe8; stroke: #6e886f; }
     .gnode.source circle { fill: #f3f5f6; stroke: #7f8d99; }
+    .gnode.event circle { fill: #e6eff5; stroke: #6d93ad; }
+    .gnode.conclusion circle { fill: #e8f2eb; stroke: #5f9472; }
+    .gnode.conflict circle { fill: #fae9e5; stroke: #b95142; }
+    .gnode.gap circle { fill: #f7efdf; stroke: #b78435; }
     .gnode text { fill: #263442; font-weight: 600; }
     .gnode .gsub { fill: #687786; }
     .gnode:hover circle, .gnode:focus-visible circle, .gnode.selected circle { filter: none; stroke-width: 2.5; }
@@ -595,6 +641,9 @@
     .legend-dot.location { background: #e5eff1; border-color: #5f858d; }
     .legend-dot.context { background: #e8efe8; border-color: #6e886f; }
     .legend-dot.source { background: #f3f5f6; border-color: #7f8d99; }
+    .reasoning-support, .reasoning-rule, .trace-link { border-radius: 5px; }
+    .reasoning-support p, .reasoning-rule p, .source-quote { font-size: 12px; }
+    .support-level, .reasoning-rule code, .premise-list span, .premise-list strong, .trace-link strong, .trace-link span { font-family: var(--sans); font-size: 11px; }
     .entity-tag { color: #365c80; border-color: #c5d3df; border-radius: 4px; background: #eef3f7; text-transform: none; }
     .tier, .queue-state { border-radius: 999px; text-transform: none; }
     .finding, .claim, .single-row, .status-key div, .timeline-event, .source-card, .handoff-box, .ai-card { border-radius: 5px; }
@@ -608,7 +657,7 @@
     .source-card.retracted { opacity: 1; border-style: dashed; background: #f3f5f6; }
     .assignment-preview span { font: 500 12px/1.5 var(--sans); }
     .handoff-box pre { font-size: 11px; }
-    .drop-zone, details.advanced summary, .access-drawer summary, .access-body p, footer { font-family: var(--sans); font-size: 11px; }
+    .drop-zone, details.advanced summary, footer { font-family: var(--sans); font-size: 11px; }
     .ai-mode-badge, .ai-badge { font-family: var(--sans); font-size: 11px; letter-spacing: 0; text-transform: none; }
     .ai-card.excluded { opacity: 0.72; background: #f5f7f9; }
     .filter { border-radius: 5px; font: 600 11px/1 var(--sans); text-transform: none; }
@@ -621,13 +670,54 @@
     .drop-zone { border-color: #aeb8c2; border-radius: 6px; background: #f7f9fa; font-size: 11px; }
     .assignment-preview { color: var(--ink); border-left-color: #758ca2; border-radius: 5px; background: #f1f4f6; }
     .assignment-preview span { color: #687583; }
-    .access-drawer details { color: var(--ink); border-color: var(--line); border-radius: 6px; background: rgba(255, 255, 255, 0.98); box-shadow: var(--shadow); }
-    .access-drawer summary { font: 600 11px/1 var(--sans); text-transform: none; }
-    .access-body .field label, .access-body p { color: #687583; }
+    .access-gate { border-radius: 6px; background: #f7f9fa; }
+    .access-gate p { font-size: 12px; }
     .tour-bar { color: #fff; border-color: #425c74; border-radius: 7px; background: rgba(35, 55, 73, 0.98); }
     .tour-progress { color: #bacbdd; font: 600 10px/1 var(--sans); letter-spacing: 0; text-transform: none; }
     .tour-copy p { color: #d2dbe3; font-size: 11px; }
     .tour-focus { outline-color: #6689a8; box-shadow: 0 0 0 7px rgba(49, 95, 140, 0.13); }
+    .operations-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; margin-bottom: 16px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+    .operations-hero h3 { margin: 4px 0 0; font-size: 24px; letter-spacing: -0.03em; }
+    .operations-hero p { max-width: 780px; margin: 8px 0 0; color: #60707f; font-size: 13px; line-height: 1.55; }
+    .operations-state { min-width: 150px; padding: 13px 15px; color: #316948; border: 1px solid #bdd5c6; border-radius: 6px; background: #eef7f1; text-align: center; }
+    .operations-state.pending { color: #8b6425; border-color: #dccaa9; background: #faf7f0; }
+    .operations-state strong { display: block; font-size: 16px; }
+    .operations-state span { display: block; margin-top: 4px; font-size: 10px; }
+    .pipeline { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 16px; border: 1px solid var(--line); border-radius: 7px; background: #fff; overflow: hidden; }
+    .pipeline-stage { position: relative; min-height: 150px; padding: 19px 17px; border-right: 1px solid var(--line); }
+    .pipeline-stage:last-child { border-right: 0; }
+    .pipeline-stage::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: #c6cdd3; }
+    .pipeline-stage.complete::before { background: #4e8664; }
+    .pipeline-stage.failed::before { background: #b95142; }
+    .stage-index { display: flex; align-items: center; justify-content: space-between; color: #778491; font: 600 10px/1 var(--mono); }
+    .stage-status { width: 8px; height: 8px; border-radius: 50%; background: #aeb8c2; }
+    .pipeline-stage.complete .stage-status { background: #4e8664; }
+    .pipeline-stage.failed .stage-status { background: #b95142; }
+    .pipeline-stage strong { display: block; margin-top: 18px; font-size: 13px; line-height: 1.35; }
+    .pipeline-stage p { margin: 7px 0 0; color: #687684; font-size: 11px; line-height: 1.5; }
+    .operations-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.55fr); gap: 16px; margin-bottom: 16px; }
+    .ops-metrics { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+    .ops-metric { padding: 17px 20px; border-right: 1px solid var(--line); }
+    .ops-metric:last-child { border-right: 0; }
+    .ops-metric strong { display: block; font-size: 26px; letter-spacing: -0.04em; }
+    .ops-metric span { display: block; margin-top: 5px; color: #6b7885; font-size: 11px; }
+    .ops-table-wrap { overflow-x: auto; }
+    .ops-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .ops-table th { padding: 10px 14px; color: #6c7986; background: #f5f7f9; font-size: 10px; font-weight: 650; text-align: left; white-space: nowrap; }
+    .ops-table td { padding: 11px 14px; border-top: 1px solid var(--line); color: #455462; vertical-align: top; }
+    .ops-table code { color: #315f8c; font: 500 10px/1.4 var(--mono); }
+    .ops-table small { display: block; margin-top: 3px; color: #7b8792; font-size: 9px; }
+    .job-status { display: inline-flex; padding: 4px 7px; border: 1px solid #c9d1d8; border-radius: 999px; background: #f5f7f9; font-size: 9px; font-weight: 700; }
+    .job-status.succeeded { color: #316948; border-color: #bdd5c6; background: #eef7f1; }
+    .job-status.failed-permanent { color: #993e34; border-color: #e2bdb7; background: #fff2ef; }
+    .job-status.queued, .job-status.running { color: #8b6425; border-color: #dccaa9; background: #faf7f0; }
+    .integration-list { display: grid; padding: 4px 20px 18px; }
+    .integration-row { padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .integration-row:last-child { border-bottom: 0; }
+    .integration-row strong { display: block; font-size: 12px; }
+    .integration-row p { margin: 4px 0 0; color: #697784; font-size: 11px; line-height: 1.5; }
+    .integration-row code { color: #315f8c; font: 500 10px/1.4 var(--mono); }
+    .integration-note { margin: 0 20px 20px; padding: 11px 12px; color: #6e5b3a; border: 1px solid #ded2bb; border-radius: 5px; background: #faf8f2; font-size: 10px; line-height: 1.5; }
     footer { color: #77828d; background: #e9edf0; }
     footer a { color: #365c80; }
 
@@ -640,10 +730,16 @@
       h1 { font-size: clamp(38px, 12vw, 54px); }
       .brief-panel { padding: 32px 22px; }
       .case-nav { top: 60px; }
+      .access-gate-row { grid-template-columns: 1fr; }
       .change-brief { grid-template-columns: 1fr; }
       .change-verification { border-top: 1px solid var(--line); border-left: 0; }
       .change-history-row { grid-template-columns: 58px 1fr; }
       .change-history-row > div:last-child { grid-column: 2; }
+      .operations-hero { grid-template-columns: 1fr; }
+      .pipeline { grid-template-columns: 1fr; }
+      .pipeline-stage { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .pipeline-stage:last-child { border-bottom: 0; }
+      .operations-grid { grid-template-columns: 1fr; }
       .metric { border-right: 0; border-bottom: 1px solid var(--line); }
       .metric:last-child { border-bottom: 0; }
     }
@@ -655,9 +751,9 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#launch" aria-label="Boston Evidence Review home">
-      <span class="brand-mark">B-15</span>
-      <span><strong>Boston Evidence Review</strong><span>Public record workspace</span></span>
+    <a class="brand" href="#launch" aria-label="Evidence Delta home">
+      <span class="brand-mark">ED</span>
+      <span><strong>Evidence Delta</strong><span>Case operations</span></span>
     </a>
     <div class="top-actions">
       <div class="system-health"><span class="health-dot" id="health-dot"></span><span id="health-label">Checking engine</span></div>
@@ -667,11 +763,11 @@
   <main>
     <section class="launch" id="launch">
       <div class="launch-copy">
-        <p class="eyebrow">Case 13-CR-10238 · Public record review</p>
-        <h1>Boston evidence review</h1>
-        <p class="launch-lede">Review the evidence-disposal record, trace each statement to its source, distinguish allegations from court outcomes, and preserve a clear handoff for the next reviewer.</p>
+        <p class="eyebrow">Evidence operations for records that keep changing</p>
+        <h1>Keep every case artifact current</h1>
+        <p class="launch-lede">Turn source records into traceable findings, then keep every timeline, conflict, and handoff synchronized as evidence is added, corrected, or withdrawn.</p>
         <div class="launch-actions">
-          <button class="button button-primary" id="build-case" type="button">Open case workspace</button>
+          <button class="button button-primary" id="build-case" type="button">Open demonstration case</button>
           <button class="button button-dark" id="start-tour" type="button">Guided walkthrough</button>
           <button class="button button-ghost" id="open-case-toggle" type="button">Open existing case</button>
         </div>
@@ -679,14 +775,19 @@
           <div class="field"><label for="open-case-id">Case ID</label><input id="open-case-id" placeholder="Paste a case UUID" required></div>
           <button class="button button-dark button-small" type="submit">Open case</button>
         </form>
-        <p class="form-status" id="launch-status" role="status">Ready to load four public records into a traceable case workspace.</p>
-        <div class="guardrail"><span class="guardrail-mark">[!]</span><span><strong>Analytical demonstration, not an official law-enforcement system.</strong> This workspace reconstructs a historical public record. It does not identify new suspects, replace investigative judgment, or establish facts beyond cited sources and reported court outcomes.</span></div>
+        <form class="access-gate hidden" id="access-gate">
+          <strong>Protected interview demo</strong>
+          <p>Enter the private access code to continue. The code stays in this browser session and is never included in a shared case link.</p>
+          <div class="access-gate-row"><div class="field"><label for="demo-key">Access code</label><input id="demo-key" type="password" autocomplete="current-password" required></div><button class="button button-primary" id="save-key" type="submit">Continue</button></div>
+        </form>
+        <p class="form-status" id="launch-status" role="status">Ready to run a public-record test case through the evidence pipeline.</p>
+        <div class="guardrail"><span class="guardrail-mark">[!]</span><span><strong>Working engineering demonstration, not an official law-enforcement system.</strong> Boston is the test case, not the product. The system proves evidence mutation, targeted recomputation, provenance, review findings, and operational handoff without claiming to have solved a historical investigation.</span></div>
       </div>
       <aside class="brief-panel" aria-label="Official record case brief">
         <div>
-          <span class="brief-kicker">Case scope</span>
-          <h2>Evidence disposal and obstruction</h2>
-          <p>Follow the removal, concealment, disposal, recovery, and later court outcomes tied to the dorm-room evidence trail.</p>
+          <span class="brief-kicker">Demonstration case</span>
+          <h2>Boston evidence review</h2>
+          <p>One bounded public record exercises the same workflow a live case would use: ingest, reconcile, recompute, verify, review, and hand off.</p>
           <div class="brief-list">
             <div class="brief-item"><span class="brief-index">01</span><strong>Criminal complaint</strong><span>Allegations</span></div>
             <div class="brief-item"><span class="brief-index">02</span><strong>Federal indictment record</strong><span>Allegations</span></div>
@@ -713,6 +814,7 @@
 
       <nav class="case-nav" aria-label="Investigation workspace sections">
         <button class="active" data-panel-target="command" type="button">Overview</button>
+        <button data-panel-target="operations" type="button">Operations</button>
         <button data-panel-target="findings" type="button">Findings<span class="nav-badge hidden" id="findings-badge">0</span></button>
         <button data-panel-target="timeline" type="button">Chronology</button>
         <button data-panel-target="sources" type="button">Sources</button>
@@ -733,7 +835,7 @@
             <h3 id="change-title">What changed?</h3>
             <p class="change-summary" id="change-summary">Add a source to create the first durable change brief.</p>
             <div class="change-impact" id="change-impact"></div>
-            <div class="change-actions"><button data-go-panel="findings" type="button">Review findings</button><button data-go-panel="sources" type="button">Open source ledger</button></div>
+            <div class="change-actions"><button data-go-panel="operations" type="button">Inspect backend work</button><button data-go-panel="findings" type="button">Review findings</button><button data-go-panel="sources" type="button">Open source ledger</button></div>
             <details class="change-history" id="change-history"><summary id="change-history-summary">View revision history</summary><div class="change-history-list" id="change-history-list"></div></details>
           </div>
           <aside class="change-verification pending" id="change-verification">
@@ -754,18 +856,20 @@
 
         <div class="board-grid">
           <article class="card">
-            <div class="card-head"><div><span class="card-kicker">Case relationships</span><h3>Evidence relationship map</h3><p>Explore connections across the active source set. Node size reflects the amount of supporting material. A connection is not a guilt determination.</p></div></div>
+            <div class="card-head"><div><span class="card-kicker">Inspectable reasoning</span><h3>Evidence-to-insight map</h3><p>Traverse from source records to assertions, entities, and review findings, or start with a finding and work backward to every cited locator. Findings use visible deterministic rules, not hidden model reasoning.</p></div></div>
             <div class="graph-toolbar">
               <button class="graph-toggle active" id="toggle-sources" type="button" aria-pressed="true">Source records</button>
+              <button class="graph-toggle active" id="toggle-events" type="button" aria-pressed="true">Assertions</button>
+              <button class="graph-toggle active" id="toggle-findings" type="button" aria-pressed="true">Findings &amp; gaps</button>
               <button class="graph-toggle active" id="toggle-labels" type="button" aria-pressed="true">Labels</button>
               <button class="graph-toggle" id="graph-reset" type="button">Reset view</button>
             </div>
-            <div class="graph-scroll"><svg class="evidence-graph" id="evidence-graph" viewBox="0 0 940 520" role="img" aria-label="Evidence relationship graph"></svg></div>
-            <div class="graph-legend"><span><i class="legend-dot person"></i>Person</span><span><i class="legend-dot object"></i>Object</span><span><i class="legend-dot location"></i>Location</span><span><i class="legend-dot context"></i>Case context</span><span><i class="legend-dot source"></i>Source record</span><span><i class="legend-line"></i>Court-outcome support</span><span><i class="legend-line allegation"></i>Allegation / agency only</span></div>
+            <div class="graph-scroll"><svg class="evidence-graph" id="evidence-graph" viewBox="0 0 940 600" role="img" aria-label="Bidirectional evidence and reasoning graph"></svg></div>
+            <div class="graph-legend"><span><i class="legend-dot source"></i>Document</span><span><i class="legend-dot event"></i>Assertion</span><span><i class="legend-dot person"></i>Person</span><span><i class="legend-dot location"></i>Location</span><span><i class="legend-dot object"></i>Physical artifact</span><span><i class="legend-dot conclusion"></i>Corroboration</span><span><i class="legend-dot conflict"></i>Conflict</span><span><i class="legend-dot gap"></i>Missing support</span><span><i class="legend-line supports"></i>Supports</span><span><i class="legend-line conflict"></i>Conflicts</span></div>
           </article>
           <aside class="card inspector" id="graph-inspector">
-            <div class="card-head"><div><span class="card-kicker">Selected record</span><h3>Select a subject</h3><p>Every displayed statement remains tied to its source and locator.</p></div></div>
-            <div class="inspector-body" id="inspector-body"><p class="inspector-summary">Choose a person, object, place, or case-context node in the graph.</p></div>
+            <div class="card-head"><div><span class="card-kicker">Reasoning inspector</span><h3>Select any node</h3><p>Follow inputs and outputs in either direction. Every analytical step remains tied to exact source text.</p></div></div>
+            <div class="inspector-body" id="inspector-body"><p class="inspector-summary">Choose a source, assertion, entity, finding, or evidence gap.</p></div>
           </aside>
         </div>
 
@@ -779,6 +883,39 @@
             <div class="queue" id="review-queue"></div>
           </article>
         </div>
+      </section>
+
+      <section class="panel hidden" data-panel="operations">
+        <div class="operations-hero">
+          <div><span class="card-kicker">Live backend proof</span><h3>What the system did with the latest evidence change</h3><p>This trace is assembled from durable database records. It shows the committed revision, selective invalidation, worker jobs, immutable publications, dependency checks, and rebuild verification behind the current case state.</p></div>
+          <div class="operations-state pending" id="operations-state"><strong>Checking</strong><span>Current case state</span></div>
+        </div>
+
+        <div class="pipeline" id="operations-pipeline" aria-label="Evidence mutation pipeline"></div>
+
+        <div class="operations-grid">
+          <article class="card">
+            <div class="card-head"><div><span class="card-kicker">Selective recomputation</span><h3>Only rebuild what changed</h3><p>The latest revision advances addressable change keys, queues affected artifacts, and leaves unrelated artifacts alone.</p></div><button class="button button-ghost button-small" data-go-panel="findings" type="button">Run a controlled change</button></div>
+            <div class="ops-metrics"><div class="ops-metric"><strong id="ops-affected">0</strong><span>Artifacts recomputed</span></div><div class="ops-metric"><strong id="ops-untouched">0</strong><span>Artifacts untouched</span></div><div class="ops-metric"><strong id="ops-percent">0%</strong><span>Latest impact</span></div></div>
+            <div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Revision</th><th>Artifact job</th><th>Status</th><th>Attempt</th><th>Publication</th><th>Dependency</th></tr></thead><tbody id="operations-jobs"></tbody></table></div>
+          </article>
+
+          <aside class="card">
+            <div class="card-head"><div><span class="card-kicker">Real integration boundary</span><h3>Inputs and outputs</h3><p>The interface is one client of an API and worker system.</p></div></div>
+            <div class="integration-list">
+              <div class="integration-row"><strong>Structured evidence intake</strong><p>Idempotent document and assertion writes through <code>POST /cases/{id}/documents</code>.</p></div>
+              <div class="integration-row"><strong>Review-gated extraction</strong><p><code>POST /extract</code> proposes cited assertions. A human must confirm before the ledger changes.</p></div>
+              <div class="integration-row"><strong>Portable case packet</strong><p>Sources, findings, history, operational proof, and artifact lineage export as one durable JSON handoff.</p></div>
+              <div class="integration-row"><strong>API and worker deployment</strong><p>Independent processes coordinate through PostgreSQL leases, fencing tokens, and immutable version records.</p></div>
+            </div>
+            <p class="integration-note">No live agency connector is claimed in this demo. A customer connector would map into the same ingestion contract without bypassing the evidence ledger.</p>
+          </aside>
+        </div>
+
+        <article class="card">
+          <div class="card-head"><div><span class="card-kicker">Materialized case state</span><h3>Published artifacts</h3><p>Each current artifact points to an immutable version with a content fingerprint and observed dependency version.</p></div></div>
+          <div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Artifact key</th><th>Current version</th><th>Computed at revision</th><th>Version history</th><th>Input fingerprint</th><th>Freshness</th></tr></thead><tbody id="operations-artifacts"></tbody></table></div>
+        </article>
       </section>
 
       <section class="panel hidden" data-panel="findings">
@@ -921,7 +1058,7 @@
 
   <aside class="tour-bar hidden" id="tour-bar" aria-live="polite" aria-label="Guided case briefing">
     <div class="tour-copy">
-      <span class="tour-progress" id="tour-progress">Briefing 1 of 5</span>
+      <span class="tour-progress" id="tour-progress">Briefing 1 of 6</span>
       <strong id="tour-title">Defensible case state</strong>
       <p id="tour-description"></p>
     </div>
@@ -932,14 +1069,7 @@
     </div>
   </aside>
 
-  <div class="access-drawer">
-    <details>
-      <summary>Hosted access key</summary>
-      <div class="access-body"><div class="field"><label for="demo-key">Demo key</label><input id="demo-key" type="password" autocomplete="current-password" placeholder="Blank when running locally"></div><button class="button button-primary button-small" id="save-key" type="button">Save for session</button><p>The key stays in session storage and is never added to a shared case URL.</p></div>
-    </details>
-  </div>
-
-  <footer><span>Public-record analytical reconstruction. Not affiliated with or operated by the FBI, DOJ, or another law-enforcement agency.</span><span><a href="/docs">API</a> / <a href="https://github.com/Shravankb301/Closure-with-Shravan">Source</a></span></footer>
+  <footer><span>Evidence Delta engineering demonstration. Boston public records are a test case. Not affiliated with or operated by the FBI, DOJ, or another law-enforcement agency.</span><span><a href="/docs">API contract</a> / <a href="https://github.com/Shravankb301/Closure-with-Shravan">Source</a></span></footer>
 
   <script>
     const REAL_CASE_TEMPLATE_ID = "boston-obstruction-public-record-v1";
@@ -954,19 +1084,7 @@
       "backpack": { label: "Backpack / fireworks", type: "object", x: 815, y: 205 },
       "laptop-computer": { label: "Laptop computer", type: "object", x: 815, y: 385 },
     };
-    const GRAPH_EDGES = [
-      ["boston-marathon-investigation", "fbi-public-identification", "public release", -30, 0],
-      ["dzhokhar-tsarnaev", "dias-kadyrbayev", "phone record", 24, 0],
-      ["dias-kadyrbayev", "dzhokhar-dorm-room", "entry / removal", 0, -15],
-      ["azamat-tazhayakov", "dzhokhar-dorm-room", "entry / removal", -10, 18],
-      ["dzhokhar-dorm-room", "backpack", "backpack removed", 0, -15],
-      ["dzhokhar-dorm-room", "laptop-computer", "laptop removed", 20, 18],
-      ["backpack", "new-bedford-apartment", "disposal location", -22, 14],
-      ["dias-kadyrbayev", "backpack", "physical disposal", 0, -15],
-      ["azamat-tazhayakov", "backpack", "agreement", 0, 20],
-      ["dias-kadyrbayev", "laptop-computer", "concealment", 0, 18],
-    ];
-    const state = { caseId: null, data: null, proof: null, findings: null, changes: null, selectedEntity: null, timelineTier: "all", batch: null, retractionDocumentId: null, navigationId: 0, tourIndex: -1 };
+    const state = { caseId: null, data: null, proof: null, findings: null, changes: null, operations: null, selectedNode: null, timelineTier: "all", batch: null, retractionDocumentId: null, retryAfterAccess: null, navigationId: 0, tourIndex: -1 };
     const TIER_LABELS = { court: "Court established", allegation: "Allegation", agency: "Agency record", officer: "Officer evidence" };
     const byId = (id) => document.getElementById(id);
     const storedKey = sessionStorage.getItem("evidenceCommandKey") || "";
@@ -979,6 +1097,14 @@
     function headers() {
       const key = byId("demo-key").value.trim();
       return key ? { "X-Demo-Key": key } : {};
+    }
+
+    function requestAccess(retry) {
+      state.retryAfterAccess = retry;
+      byId("access-gate").classList.remove("hidden");
+      setStatus("launch-status", "This hosted interview demo is protected. Enter the private access code to continue.", true);
+      byId("access-gate").scrollIntoView({ behavior: "smooth", block: "center" });
+      byId("demo-key").focus();
     }
 
     async function api(path, options = {}) {
@@ -1073,83 +1199,149 @@
       return map;
     }
 
-    function edgeSupport(fromEvents, toEvents) {
-      const fromDocs = new Set(fromEvents.map((event) => event.lineage.document_id).filter(Boolean));
-      const shared = new Set(toEvents.map((event) => event.lineage.document_id).filter((id) => fromDocs.has(id)));
-      const sharedEvents = [...fromEvents, ...toEvents].filter((event) => shared.has(event.lineage.document_id));
-      const hasCourt = sharedEvents.some((event) => eventTier(event).key === "court");
-      return { count: shared.size, tier: hasCourt ? "court" : "allegation" };
+    function findingEntries() {
+      const groups = [
+        ["contradictions", "conflict"],
+        ["corroborations", "conclusion"],
+        ["single_source", "gap"],
+      ];
+      return groups.flatMap(([category, type]) => (state.findings?.[category] || []).map((finding) => ({ finding, category, type })));
     }
 
-    const GRAPH_W = 940, GRAPH_H = 520, GRAPH_CX = 470, GRAPH_CY = 250;
+    function humanizeKind(kind) {
+      return String(kind || "event").toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+
+    function findingLabel(finding, type) {
+      const entity = entityProfile(finding.entity_id).label;
+      if (type === "conflict") return `Conflict: ${entity}`;
+      if (type === "gap") return `Missing support: ${entity}`;
+      return `Corroborated: ${entity}`;
+    }
+
+    const GRAPH_W = 940, GRAPH_H = 600;
     const graphView = {
       nodes: new Map(), edges: [], neighbors: new Map(),
       refs: new Map(), edgeRefs: [], viewport: null, built: "",
       alpha: 0, raf: null, pointer: null, hover: null,
-      pan: { x: 0, y: 0, k: 1 }, showSources: true, showLabels: true,
+      pan: { x: 0, y: 0, k: 1 }, showSources: true, showEvents: true,
+      showFindings: true, showLabels: true,
     };
 
     function renderGraph() {
       const svg = byId("evidence-graph");
-      const evidence = entityEvidence();
-      const activeIds = new Set(evidence.keys());
-      if (!activeIds.size) {
+      const events = collectEvents();
+      if (!events.length) {
         stopGraphLoop();
-        state.selectedEntity = null;
+        state.selectedNode = null;
         graphView.nodes.clear(); graphView.edges = []; graphView.edgeRefs = []; graphView.refs = new Map(); graphView.viewport = null; graphView.built = "";
-        svg.innerHTML = '<text x="470" y="245" text-anchor="middle" fill="#a7b1b4" font-family="IBM Plex Mono, monospace" font-size="13">NO ACTIVE EVIDENCE - USE EVIDENCE INTAKE TO BEGIN</text>';
+        svg.innerHTML = '<text x="470" y="290" text-anchor="middle" fill="#6b7884" font-family="system-ui, sans-serif" font-size="14">No active evidence. Add a source to begin the reasoning trace.</text>';
         byId("inspector-body").innerHTML = '<p class="inspector-summary">This case has no active evidence yet. Add a source-backed observation or batch import to create the first entity timeline.</p>';
         return;
       }
-      if (!state.selectedEntity || (!activeIds.has(state.selectedEntity) && !state.selectedEntity.startsWith("doc:"))) state.selectedEntity = activeIds.has("backpack") ? "backpack" : [...activeIds][0];
-
       const desired = new Map();
-      activeIds.forEach((entityId) => {
+      const edges = [];
+      const evidence = entityEvidence();
+      const documentMap = new Map(state.data.documents.map((document) => [document.id, document]));
+
+      evidence.forEach((entityEvents, entityId) => {
         const profile = entityProfile(entityId);
-        const events = evidence.get(entityId);
-        desired.set(entityId, { id: entityId, kind: "entity", type: profile.type, label: profile.label, events: events.length, r: 11 + 3.4 * Math.sqrt(events.length) });
+        desired.set(`entity:${entityId}`, {
+          id: `entity:${entityId}`, kind: "entity", type: profile.type,
+          entityId, label: profile.label, subtitle: `${entityEvents.length} assertion${entityEvents.length === 1 ? "" : "s"}`,
+          events: entityEvents.length, layer: 2, r: 11 + 2.6 * Math.sqrt(entityEvents.length),
+        });
       });
 
-      const documentMap = new Map(state.data.documents.map((document) => [document.id, document]));
-      const docLinks = [];
+      const eventsByDocument = new Map();
+      events.forEach((event) => {
+        const documentId = event.lineage.document_id;
+        if (!eventsByDocument.has(documentId)) eventsByDocument.set(documentId, []);
+        eventsByDocument.get(documentId).push(event);
+      });
+
       if (graphView.showSources) {
-        const perDoc = new Map();
-        collectEvents().forEach((event) => {
-          const docId = event.lineage.document_id;
-          if (!docId) return;
-          if (!perDoc.has(docId)) perDoc.set(docId, new Map());
-          const counts = perDoc.get(docId);
-          counts.set(event.entityId, (counts.get(event.entityId) || 0) + 1);
-        });
-        perDoc.forEach((entities, docId) => {
-          const document = documentMap.get(docId);
-          const total = [...entities.values()].reduce((sum, count) => sum + count, 0);
+        eventsByDocument.forEach((documentEvents, documentId) => {
+          const document = documentMap.get(documentId);
           let label = document ? document.filename.replace(/\.(pdf|html|txt|json|csv)$/i, "") : "source";
-          if (label.length > 30) label = `${label.slice(0, 28)}...`;
-          desired.set(`doc:${docId}`, { id: `doc:${docId}`, kind: "source", type: "source", label, events: total, r: 6.5 + 1.4 * Math.sqrt(total) });
-          entities.forEach((count, entityId) => docLinks.push({ a: `doc:${docId}`, b: entityId, tier: "doclink", label: `${count} event${count === 1 ? "" : "s"}`, length: 148 }));
+          if (label.length > 26) label = `${label.slice(0, 24)}...`;
+          desired.set(`doc:${documentId}`, {
+            id: `doc:${documentId}`, kind: "source", type: "source", documentId,
+            label, subtitle: `${documentEvents.length} assertion${documentEvents.length === 1 ? "" : "s"}`,
+            layer: 0, r: 8 + 1.25 * Math.sqrt(documentEvents.length),
+          });
         });
       }
 
+      if (graphView.showEvents) {
+        events.forEach((event) => {
+          const eventId = `event:${event.assertion_id}`;
+          desired.set(eventId, {
+            id: eventId, kind: "event", type: "event", event,
+            label: humanizeKind(event.kind), subtitle: event.occurred_at.slice(0, 10),
+            layer: 1, r: 6.5,
+          });
+          edges.push({ a: eventId, b: `entity:${event.entityId}`, tier: "describes", label: "describes", length: 125 });
+          if (graphView.showSources && event.lineage.document_id) {
+            edges.push({ a: `doc:${event.lineage.document_id}`, b: eventId, tier: "contains", label: "contains", length: 105 });
+          }
+        });
+      } else if (graphView.showSources) {
+        eventsByDocument.forEach((documentEvents, documentId) => {
+          const counts = new Map();
+          documentEvents.forEach((event) => counts.set(event.entityId, (counts.get(event.entityId) || 0) + 1));
+          counts.forEach((count, entityId) => edges.push({
+            a: `doc:${documentId}`, b: `entity:${entityId}`, tier: "contains",
+            label: `${count} assertion${count === 1 ? "" : "s"}`, length: 210,
+          }));
+        });
+      }
+
+      if (graphView.showFindings) {
+        findingEntries().forEach(({ finding, category, type }) => {
+          const findingId = `finding:${finding.finding_id}`;
+          desired.set(findingId, {
+            id: findingId, kind: "finding", type, finding, category,
+            label: findingLabel(finding, type), subtitle: finding.support?.level || "REVIEW",
+            layer: 3, r: type === "conflict" ? 13 : 11,
+          });
+          if (graphView.showEvents) {
+            finding.events.forEach((event) => {
+              const eventId = `event:${event.assertion_id}`;
+              if (!desired.has(eventId)) return;
+              const tier = type === "conflict" ? "conflicts" : type === "gap" ? "exposes" : "supports";
+              const label = type === "conflict" ? "conflicts within" : type === "gap" ? "reveals gap" : "supports";
+              edges.push({ a: eventId, b: findingId, tier, label, length: 135 });
+            });
+          } else {
+            edges.push({ a: `entity:${finding.entity_id}`, b: findingId, tier: type === "conflict" ? "conflicts" : type === "gap" ? "exposes" : "supports", label: "produces finding", length: 210 });
+          }
+        });
+      }
+
+      const layers = [0, 1, 2, 3].map((layer) => [...desired.values()].filter((node) => node.layer === layer).sort((left, right) => left.label.localeCompare(right.label)));
+      const layerX = [85, 315, 600, 835];
+      layers.forEach((nodes, layer) => nodes.forEach((node, index) => {
+        node.targetX = layerX[layer];
+        node.targetY = 48 + ((index + 1) * (GRAPH_H - 96)) / (nodes.length + 1);
+      }));
+
       [...graphView.nodes.keys()].forEach((id) => { if (!desired.has(id)) graphView.nodes.delete(id); });
-      let seed = graphView.nodes.size;
       desired.forEach((node, id) => {
         const existing = graphView.nodes.get(id);
         if (existing) Object.assign(existing, node);
         else {
-          seed += 1;
-          const angle = seed * 2.399963;
-          const radius = 60 + 13 * seed;
-          graphView.nodes.set(id, { ...node, x: GRAPH_CX + radius * Math.cos(angle), y: GRAPH_CY + radius * Math.sin(angle) * 0.72, vx: 0, vy: 0, fx: null, fy: null });
+          graphView.nodes.set(id, { ...node, x: node.targetX + (Math.random() - 0.5) * 30, y: node.targetY, vx: 0, vy: 0, fx: null, fy: null });
         }
       });
+      graphView.edges = edges.filter((edge) => desired.has(edge.a) && desired.has(edge.b));
 
-      const entityEdges = GRAPH_EDGES.filter(([from, to]) => activeIds.has(from) && activeIds.has(to)).map(([from, to, label]) => {
-        const support = edgeSupport(evidence.get(from), evidence.get(to));
-        if (!support.count) return null;
-        return { a: from, b: to, tier: support.tier, label: `${label} / ${support.count} source${support.count === 1 ? "" : "s"}`, length: 205 };
-      }).filter(Boolean);
-      graphView.edges = [...entityEdges, ...docLinks];
+      if (!state.selectedNode || !desired.has(state.selectedNode)) {
+        state.selectedNode = [...desired.values()].find((node) => node.type === "conflict")?.id
+          || [...desired.values()].find((node) => node.type === "conclusion")?.id
+          || desired.get("entity:backpack")?.id
+          || [...desired.keys()][0];
+      }
 
       graphView.neighbors = new Map();
       graphView.nodes.forEach((_, id) => graphView.neighbors.set(id, new Set([id])));
@@ -1162,15 +1354,16 @@
     }
 
     function buildGraphDom(svg) {
-      const signature = `${[...graphView.nodes.keys()].join("|")}#${graphView.edges.map((edge) => `${edge.a}>${edge.b}`).join("|")}`;
+      const signature = `${[...graphView.nodes.keys()].join("|")}#${graphView.edges.map((edge) => `${edge.a}>${edge.b}:${edge.tier}`).join("|")}`;
       if (graphView.built === signature) return false;
       graphView.built = signature;
-      const edgeMarkup = graphView.edges.map((edge, index) => `<g class="gedge ${edge.tier}" data-edge="${index}"><line></line><text>${escapeHtml(edge.label)}</text></g>`).join("");
+      const markers = `<defs><marker id="arrow-contains" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#98a5b0"></path></marker><marker id="arrow-describes" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6f91ae"></path></marker><marker id="arrow-supports" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#5f9472"></path></marker><marker id="arrow-conflicts" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#b95142"></path></marker><marker id="arrow-exposes" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#b78435"></path></marker></defs>`;
+      const edgeMarkup = graphView.edges.map((edge, index) => `<g class="gedge ${edge.tier}" data-edge="${index}"><line marker-end="url(#arrow-${edge.tier})"></line><text>${escapeHtml(edge.label)}</text></g>`).join("");
       const nodeMarkup = [...graphView.nodes.values()].map((node) => {
-        const sub = node.kind === "source" ? "SOURCE RECORD" : `${node.events} EVENT${node.events === 1 ? "" : "S"}`;
-        return `<g class="gnode ${node.type}" data-node="${escapeHtml(node.id)}" role="button" tabindex="0" aria-label="Inspect ${escapeHtml(node.label)}"><circle r="${node.r}"></circle><text y="${node.r + 13}">${escapeHtml(node.label)}</text><text class="gsub" y="${node.r + 23}">${sub}</text></g>`;
+        const hitWidth = Math.max(node.r, 12);
+        return `<g class="gnode ${node.type}" data-node="${escapeHtml(node.id)}" role="button" tabindex="0" aria-label="Inspect ${escapeHtml(node.label)}"><rect class="node-hit-target" x="${-hitWidth}" y="${node.r - 2}" width="${hitWidth * 2}" height="18" rx="6"></rect><circle r="${node.r}"></circle><text y="${node.r + 14}">${escapeHtml(node.label)}</text><text class="gsub" y="${node.r + 25}">${escapeHtml(node.subtitle || "")}</text></g>`;
       }).join("");
-      svg.innerHTML = `<g id="graph-viewport">${edgeMarkup}${nodeMarkup}</g>`;
+      svg.innerHTML = `${markers}<g id="graph-viewport">${edgeMarkup}${nodeMarkup}</g>`;
       graphView.viewport = svg.querySelector("#graph-viewport");
       graphView.refs = new Map();
       svg.querySelectorAll("[data-node]").forEach((group) => graphView.refs.set(group.dataset.node, group));
@@ -1224,16 +1417,16 @@
         if (!a || !b) return;
         const dx = b.x - a.x, dy = b.y - a.y;
         const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
-        const pull = ((dist - edge.length) / dist) * (edge.tier === "doclink" ? 0.012 : 0.02);
+        const pull = ((dist - edge.length) / dist) * (edge.tier === "contains" ? 0.014 : 0.02);
         a.vx += dx * pull; a.vy += dy * pull; b.vx -= dx * pull; b.vy -= dy * pull;
       });
       nodes.forEach((node) => {
         if (node.fx !== null) { node.x = node.fx; node.y = node.fy; node.vx = 0; node.vy = 0; return; }
-        node.vx += (GRAPH_CX - node.x) * 0.0014 * alpha;
-        node.vy += (GRAPH_CY - node.y) * 0.0026 * alpha;
+        node.vx += (node.targetX - node.x) * 0.006 * alpha;
+        node.vy += (node.targetY - node.y) * 0.0035 * alpha;
         node.vx *= 0.82; node.vy *= 0.82;
-        node.x += Math.max(-14, Math.min(14, node.vx));
-        node.y += Math.max(-14, Math.min(14, node.vy));
+        node.x = Math.max(28, Math.min(GRAPH_W - 28, node.x + Math.max(-14, Math.min(14, node.vx))));
+        node.y = Math.max(24, Math.min(GRAPH_H - 35, node.y + Math.max(-14, Math.min(14, node.vy))));
       });
       graphView.alpha *= 0.99;
     }
@@ -1280,22 +1473,25 @@
     function updateGraphClasses() {
       const svg = byId("evidence-graph");
       svg.classList.toggle("hide-labels", !graphView.showLabels);
-      svg.classList.toggle("focus-mode", Boolean(graphView.hover));
-      const neighborhood = graphView.hover ? graphView.neighbors.get(graphView.hover) || new Set([graphView.hover]) : null;
+      const focusId = graphView.hover || state.selectedNode;
+      svg.classList.toggle("focus-mode", Boolean(focusId));
+      const neighborhood = focusId ? graphView.neighbors.get(focusId) || new Set([focusId]) : null;
       graphView.refs.forEach((group, id) => {
-        group.classList.toggle("selected", id === state.selectedEntity);
+        group.classList.toggle("selected", id === state.selectedNode);
         group.classList.toggle("hovered", id === graphView.hover);
         group.classList.toggle("neighbor", Boolean(neighborhood?.has(id)));
       });
       graphView.edgeRefs.forEach((ref, index) => {
         const edge = graphView.edges[index];
-        ref.classList.toggle("neighbor", Boolean(graphView.hover && (edge.a === graphView.hover || edge.b === graphView.hover)));
+        ref.classList.toggle("neighbor", Boolean(focusId && (edge.a === focusId || edge.b === focusId)));
       });
     }
 
     function activateGraphNode(id) {
-      if (id.startsWith("doc:")) selectSource(id.slice(4));
-      else selectEntity(id);
+      if (!graphView.nodes.has(id)) return;
+      state.selectedNode = id;
+      updateGraphClasses();
+      updateInspector();
     }
 
     function wireGraphInteractions() {
@@ -1354,6 +1550,10 @@
       svg.addEventListener("pointerup", finishPointer);
       svg.addEventListener("pointercancel", finishPointer);
       svg.addEventListener("pointerleave", () => { if (!graphView.pointer) setGraphHover(null); });
+      svg.addEventListener("click", (event) => {
+        const nodeGroup = event.target.closest?.("[data-node]");
+        if (nodeGroup) activateGraphNode(nodeGroup.dataset.node);
+      });
       svg.addEventListener("wheel", (event) => {
         if (!graphView.viewport) return;
         // Plain scroll keeps scrolling the page; pinch gestures and
@@ -1378,40 +1578,57 @@
       });
     }
 
-    function selectEntity(entityId) {
-      state.selectedEntity = entityId;
-      updateGraphClasses();
-      updateInspector();
+    function eventClaimMarkup(event) {
+      const tier = eventTier(event);
+      return `<article class="claim"><div class="claim-top"><span class="tier ${tier.key}">${tier.label}</span><time>${escapeHtml(event.occurred_at.slice(0, 16).replace("T", " "))} / ${escapeHtml(event.time_precision)}</time></div><p>${escapeHtml(event.value)}</p><code>${escapeHtml(event.document?.filename || "source")} @ ${escapeHtml(event.lineage.source_locator || "locator unavailable")}</code></article>`;
     }
 
-    function selectSource(documentId) {
-      state.selectedEntity = `doc:${documentId}`;
-      updateGraphClasses();
-      updateInspector();
+    function traceMarkup(nodeId) {
+      const incoming = graphView.edges.filter((edge) => edge.b === nodeId);
+      const outgoing = graphView.edges.filter((edge) => edge.a === nodeId);
+      const links = (edges, direction) => edges.map((edge) => {
+        const targetId = direction === "in" ? edge.a : edge.b;
+        const target = graphView.nodes.get(targetId);
+        if (!target) return "";
+        return `<button class="trace-link" type="button" data-inspect-node="${escapeHtml(targetId)}"><strong>${escapeHtml(target.label)}</strong><span>${escapeHtml(edge.label)}</span></button>`;
+      }).join("");
+      return `${incoming.length ? `<section class="trace-section"><h5>Inputs</h5><div class="trace-links">${links(incoming, "in")}</div></section>` : ""}${outgoing.length ? `<section class="trace-section"><h5>Leads to</h5><div class="trace-links">${links(outgoing, "out")}</div></section>` : ""}`;
+    }
+
+    function reasoningMarkup(finding) {
+      const support = finding.support || { level: "REVIEW", basis: "Human review required." };
+      const reasoning = finding.reasoning || { rule_id: "unavailable", test: "No decision trace is available.", premises: [] };
+      return `<div class="reasoning-support"><span class="support-level ${escapeHtml(support.level.toLowerCase())}">${escapeHtml(support.level)} support</span><strong>Structural support level, not a probability</strong><p>${escapeHtml(support.basis)}</p></div><div class="reasoning-rule"><code>${escapeHtml(reasoning.rule_id)} / ${reasoning.method === "deterministic_rule" ? "deterministic rule" : escapeHtml(reasoning.method || "method unavailable")}</code><p>${escapeHtml(reasoning.test)}</p><div class="premise-list">${(reasoning.premises || []).map((premise) => `<div><span>${escapeHtml(premise.label)}</span><strong>${escapeHtml(premise.value)}</strong></div>`).join("")}</div></div>`;
+    }
+
+    function wireInspectorTraversal() {
+      document.querySelectorAll("[data-inspect-node]").forEach((button) => button.addEventListener("click", () => activateGraphNode(button.dataset.inspectNode)));
     }
 
     function updateInspector() {
-      const selected = state.selectedEntity;
-      if (!selected) return;
-      if (selected.startsWith("doc:")) {
-        const documentId = selected.slice(4);
-        const document = state.data.documents.find((item) => item.id === documentId);
-        if (!document) return;
-        const supported = collectEvents().filter((event) => event.lineage.document_id === documentId);
-        const entities = [...new Set(supported.map((event) => event.entityId))];
-        byId("inspector-body").innerHTML = `<span class="entity-tag">${escapeHtml(document.source_type)}</span><h4>${escapeHtml(document.filename)}</h4><p class="inspector-summary">${supported.length} active event${supported.length === 1 ? "" : "s"} across ${entities.length} entit${entities.length === 1 ? "y" : "ies"}: ${escapeHtml(entities.map((id) => entityProfile(id).label).join(", "))}. Added at evidence revision ${document.added_at_revision}.</p><div class="claim-list">${supported.map((event) => {
-          const tier = eventTier(event);
-          return `<article class="claim"><div class="claim-top"><span class="tier ${tier.key}">${tier.label}</span><time>${escapeHtml(event.occurred_at.slice(0, 16).replace("T", " "))} / ${escapeHtml(event.time_precision)}</time></div><p>${escapeHtml(event.value)}</p><code>${escapeHtml(event.entity.label)} @ ${escapeHtml(event.lineage.source_locator || "locator unavailable")}</code></article>`;
-        }).join("")}</div>${document.source_uri ? `<p class="inspector-summary" style="margin-top:14px"><a href="${escapeHtml(document.source_uri)}" target="_blank" rel="noreferrer">Open original source</a></p>` : ""}`;
-        return;
-      }
-      const profile = entityProfile(selected);
-      const events = entityEvidence().get(selected) || [];
-      const sourceIds = new Set(events.map((event) => event.lineage.document_id).filter(Boolean));
-      byId("inspector-body").innerHTML = `<span class="entity-tag">${escapeHtml(profile.type)}</span><h4>${escapeHtml(profile.label)}</h4><p class="inspector-summary">${events.length} active event${events.length === 1 ? "" : "s"} supported by ${sourceIds.size} source record${sourceIds.size === 1 ? "" : "s"}. Select a claim to follow its immutable locator.</p><div class="claim-list">${events.map((event) => {
+      const node = graphView.nodes.get(state.selectedNode);
+      if (!node) return;
+      let content = "";
+      if (node.kind === "source") {
+        const document = state.data.documents.find((item) => item.id === node.documentId);
+        const supported = collectEvents().filter((event) => event.lineage.document_id === node.documentId);
+        const entities = [...new Set(supported.map((event) => entityProfile(event.entityId).label))];
+        content = `<span class="entity-tag">Source record</span><h4>${escapeHtml(document?.filename || node.label)}</h4><p class="inspector-summary">${supported.length} active assertion${supported.length === 1 ? "" : "s"} across ${entities.length} entit${entities.length === 1 ? "y" : "ies"}. This is the upstream record for every connected assertion.</p>${traceMarkup(node.id)}${document?.source_uri ? `<p class="inspector-summary" style="margin-top:16px"><a href="${escapeHtml(document.source_uri)}" target="_blank" rel="noreferrer">Open original source</a></p>` : ""}`;
+      } else if (node.kind === "event") {
+        const event = node.event;
         const tier = eventTier(event);
-        return `<article class="claim"><div class="claim-top"><span class="tier ${tier.key}">${tier.label}</span><time>${escapeHtml(event.occurred_at.slice(0, 16).replace("T", " "))} / ${escapeHtml(event.time_precision)}</time></div><p>${escapeHtml(event.value)}</p><code>${escapeHtml(event.document?.filename || "source")} @ ${escapeHtml(event.lineage.source_locator || "locator unavailable")}</code></article>`;
-      }).join("")}</div>`;
+        content = `<span class="entity-tag">Extracted assertion</span><h4>${escapeHtml(humanizeKind(event.kind))}</h4><p class="inspector-summary">This immutable assertion is the bridge between a source span and downstream entities or findings.</p><div class="claim-top"><span class="tier ${tier.key}">${tier.label}</span><time>${escapeHtml(event.occurred_at.slice(0, 16).replace("T", " "))} / ${escapeHtml(event.time_precision)}</time></div><p class="inspector-summary" style="margin-top:12px">${escapeHtml(event.value)}</p><blockquote class="source-quote">${escapeHtml(event.lineage.source_text || "Source text unavailable")}</blockquote><code>${escapeHtml(event.document?.filename || "source")} @ ${escapeHtml(event.lineage.source_locator || "locator unavailable")}</code>${traceMarkup(node.id)}`;
+      } else if (node.kind === "finding") {
+        const finding = node.finding;
+        const typeLabel = node.type === "conflict" ? "Conflicting evidence" : node.type === "gap" ? "Missing link" : "Corroborated insight";
+        content = `<span class="entity-tag">${typeLabel}</span><h4>${escapeHtml(node.label)}</h4><p class="inspector-summary">${escapeHtml(finding.summary)}</p>${reasoningMarkup(finding)}${traceMarkup(node.id)}<section class="trace-section"><h5>Cited evidence</h5><div class="claim-list">${finding.events.map(findingEventMarkup).join("")}</div></section>`;
+      } else {
+        const events = entityEvidence().get(node.entityId) || [];
+        const sourceIds = new Set(events.map((event) => event.lineage.document_id).filter(Boolean));
+        content = `<span class="entity-tag">${escapeHtml(entityProfile(node.entityId).type)}</span><h4>${escapeHtml(node.label)}</h4><p class="inspector-summary">${events.length} active assertion${events.length === 1 ? "" : "s"} from ${sourceIds.size} source record${sourceIds.size === 1 ? "" : "s"}. Follow the inputs to inspect each assertion and its source.</p>${traceMarkup(node.id)}<section class="trace-section"><h5>Active assertions</h5><div class="claim-list">${events.map(eventClaimMarkup).join("")}</div></section>`;
+      }
+      byId("inspector-body").innerHTML = content;
+      wireInspectorTraversal();
     }
 
     function renderStatusDistribution(events) {
@@ -1452,6 +1669,7 @@
     }
 
     function renderFindings() {
+      setStatus("findings-status", "");
       const findings = state.findings || { contradictions: [], corroborations: [], single_source: [] };
       const contradictions = findings.contradictions || [];
       const corroborations = findings.corroborations || [];
@@ -1605,6 +1823,62 @@
         : "The latest revision is still being checked against a full rebuild or has work remaining.";
     }
 
+    function renderOperations() {
+      const operations = state.operations;
+      if (!operations) return;
+      const stateBox = byId("operations-state");
+      stateBox.classList.toggle("pending", !operations.operational);
+      stateBox.querySelector("strong").textContent = operations.operational ? "Operational" : "Work pending";
+      stateBox.querySelector("span").textContent = operations.operational
+        ? `Revision ${operations.case_revision} is verified`
+        : `Revision ${operations.case_revision} is not yet verified`;
+
+      byId("operations-pipeline").innerHTML = operations.stages.map((item, index) => `
+        <div class="pipeline-stage ${escapeHtml(item.status)}">
+          <div class="stage-index"><span>0${index + 1}</span><i class="stage-status" aria-hidden="true"></i></div>
+          <strong>${escapeHtml(item.label)}</strong>
+          <p>${escapeHtml(item.evidence)}</p>
+        </div>
+      `).join("");
+
+      byId("ops-affected").textContent = operations.selectivity.affected_artifacts;
+      byId("ops-untouched").textContent = operations.selectivity.untouched_artifacts;
+      byId("ops-percent").textContent = `${operations.selectivity.recomputed_percent}%`;
+
+      const jobs = operations.jobs.slice(0, 12);
+      byId("operations-jobs").innerHTML = jobs.length ? jobs.map((job) => {
+        const publication = job.publication;
+        const statusClass = job.status.toLowerCase().replaceAll("_", "-");
+        const superseded = job.target_revision < operations.case_revision;
+        const dependencyCopy = publication
+          ? publication.dependencies_matched
+            ? `${publication.dependencies.length} of ${publication.dependencies.length} matched`
+            : superseded
+              ? `Superseded at revision ${operations.case_revision}`
+              : "Version mismatch"
+          : "Not published";
+        return `<tr>
+          <td><code>REV ${job.target_revision}</code></td>
+          <td><code>${escapeHtml(job.artifact_key)}</code><small>${escapeHtml(job.id.slice(0, 8))}</small></td>
+          <td><span class="job-status ${escapeHtml(statusClass)}">${escapeHtml(job.status.replaceAll("_", " "))}</span>${job.failure_code ? `<small>${escapeHtml(job.failure_code)}</small>` : ""}</td>
+          <td>${job.attempts}</td>
+          <td>${publication ? `<strong>v${publication.version}</strong><small>revision ${publication.computed_at_revision}</small>` : "Pending"}</td>
+          <td>${escapeHtml(dependencyCopy)}</td>
+        </tr>`;
+      }).join("") : `<tr><td colspan="6">No recompute jobs have been created for this case.</td></tr>`;
+
+      byId("operations-artifacts").innerHTML = operations.artifacts.length ? operations.artifacts.map((artifact) => `
+        <tr>
+          <td><code>${escapeHtml(artifact.artifact_key)}</code></td>
+          <td>${artifact.current_version === null ? "Pending" : `v${artifact.current_version}`}</td>
+          <td>${artifact.computed_at_revision === null ? "Pending" : artifact.computed_at_revision}</td>
+          <td>${artifact.immutable_versions} immutable version${artifact.immutable_versions === 1 ? "" : "s"}</td>
+          <td><code>${artifact.input_fingerprint ? escapeHtml(artifact.input_fingerprint.slice(0, 14)) : "Pending"}</code></td>
+          <td><span class="job-status ${artifact.fresh ? "succeeded" : "queued"}">${artifact.fresh ? "FRESH" : "STALE"}</span></td>
+        </tr>
+      `).join("") : `<tr><td colspan="6">No materialized artifacts exist yet.</td></tr>`;
+    }
+
     function renderAssignment() {
       const current = state.data.case;
       const name = current.assigned_officer || "Unassigned - assign an officer before handoff";
@@ -1657,6 +1931,7 @@
         artifacts: state.data.artifacts,
         findings: state.findings,
         change_history: state.changes,
+        operations: state.operations,
         verification: state.proof,
       };
       const blob = new Blob([JSON.stringify(packet, null, 2)], { type: "application/json" });
@@ -1684,6 +1959,7 @@
       renderStatusDistribution(events);
       renderFindings();
       renderChangeBrief();
+      renderOperations();
       renderReviewQueue(events);
       renderTimeline();
       renderSources();
@@ -1695,13 +1971,14 @@
     async function openCase(caseId, navigationId = ++state.navigationId) {
       const data = await api(`/cases/${caseId}`);
       if (navigationId !== state.navigationId) return false;
-      const [proof, findings, changes] = await Promise.all([api(`/cases/${caseId}/proof`), api(`/cases/${caseId}/findings`), api(`/cases/${caseId}/changes`)]);
+      const [proof, findings, changes, operations] = await Promise.all([api(`/cases/${caseId}/proof`), api(`/cases/${caseId}/findings`), api(`/cases/${caseId}/changes`), api(`/cases/${caseId}/operations`)]);
       if (navigationId !== state.navigationId) return false;
       state.caseId = caseId;
       state.data = data;
       state.proof = proof;
       state.findings = findings;
       state.changes = changes;
+      state.operations = operations;
       renderCase();
       return true;
     }
@@ -1719,8 +1996,8 @@
         byId("case-app").scrollIntoView({ behavior: "smooth" });
         return true;
       } catch (error) {
-        setStatus("launch-status", error.status === 401 ? "Enter the hosted access key, save it, then open the official case again." : error.message, true);
-        if (error.status === 401) document.querySelector(".access-drawer details").open = true;
+        if (error.status === 401) requestAccess(() => buildOfficialCase({ recovered }));
+        else setStatus("launch-status", error.message, true);
         return false;
       } finally {
         setBusy(button, false, "");
@@ -1943,10 +2220,22 @@
         description: "Each evidence mutation states which source changed, what was recomputed, which findings opened or cleared, and whether the current case still matches a full rebuild.",
       },
       {
+        panel: "operations",
+        selector: "[data-panel='operations'] .pipeline",
+        title: "Inspect the backend work",
+        description: "Every stage is backed by a durable record: committed revision, advanced change key, queued job, immutable publication, dependency match, and deterministic rebuild check.",
+      },
+      {
+        panel: "command",
+        selector: "[data-panel='command'] .board-grid",
+        title: "Traverse evidence to insight",
+        description: "Select any document, assertion, entity, physical artifact, finding, or evidence gap. Follow Inputs backward to exact source text or Leads to forward into downstream review findings.",
+      },
+      {
         panel: "findings",
         selector: "[data-panel='findings'] .findings-grid",
         title: "Make uncertainty actionable",
-        description: "Cross-source structure surfaces contradictions, corroboration, and single-source exposure as review prompts—not automated conclusions.",
+        description: "Cross-source structure surfaces contradictions, corroboration, and single-source exposure as review prompts, not automated conclusions.",
       },
       {
         panel: "ai-intake",
@@ -2027,7 +2316,7 @@
       if (!caseId) { if (demo === REAL_CASE_TEMPLATE_ID) await buildOfficialCase({ recovered: true }); return; }
       try { await openCase(caseId); byId("case-app").scrollIntoView(); }
       catch (error) {
-        if (error.status === 401) { setStatus("launch-status", "Enter the hosted access key to open this case.", true); document.querySelector(".access-drawer details").open = true; }
+        if (error.status === 401) requestAccess(restoreFromUrl);
         else if (error.status === 404 && demo === REAL_CASE_TEMPLATE_ID) await buildOfficialCase({ recovered: true });
         else setStatus("launch-status", error.message, true);
       }
@@ -2064,6 +2353,18 @@
       byId("toggle-sources").setAttribute("aria-pressed", String(graphView.showSources));
       if (state.data) renderGraph();
     });
+    byId("toggle-events").addEventListener("click", () => {
+      graphView.showEvents = !graphView.showEvents;
+      byId("toggle-events").classList.toggle("active", graphView.showEvents);
+      byId("toggle-events").setAttribute("aria-pressed", String(graphView.showEvents));
+      if (state.data) renderGraph();
+    });
+    byId("toggle-findings").addEventListener("click", () => {
+      graphView.showFindings = !graphView.showFindings;
+      byId("toggle-findings").classList.toggle("active", graphView.showFindings);
+      byId("toggle-findings").setAttribute("aria-pressed", String(graphView.showFindings));
+      if (state.data) renderGraph();
+    });
     byId("toggle-labels").addEventListener("click", () => {
       graphView.showLabels = !graphView.showLabels;
       byId("toggle-labels").classList.toggle("active", graphView.showLabels);
@@ -2081,9 +2382,31 @@
     byId("start-tour").addEventListener("click", startGuidedTour);
     byId("new-review").addEventListener("click", () => buildOfficialCase());
     byId("open-case-toggle").addEventListener("click", () => byId("open-case-form").classList.toggle("hidden"));
-    byId("open-case-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await openCase(byId("open-case-id").value.trim()); byId("case-app").scrollIntoView({ behavior: "smooth" }); } catch (error) { setStatus("launch-status", error.message, true); } });
+    byId("open-case-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const caseId = byId("open-case-id").value.trim();
+      try { await openCase(caseId); byId("case-app").scrollIntoView({ behavior: "smooth" }); }
+      catch (error) {
+        if (error.status === 401) requestAccess(async () => { await openCase(caseId); byId("case-app").scrollIntoView({ behavior: "smooth" }); });
+        else setStatus("launch-status", error.message, true);
+      }
+    });
     byId("copy-link").addEventListener("click", async () => { try { await navigator.clipboard.writeText(caseUrl().toString()); setStatus("launch-status", "Case link copied. Hosted recipients also need the access key."); } catch (_error) { setStatus("launch-status", "Clipboard permission was blocked.", true); } });
-    byId("save-key").addEventListener("click", () => { sessionStorage.setItem("evidenceCommandKey", byId("demo-key").value.trim()); setStatus("launch-status", "Access key saved for this browser session."); restoreFromUrl(); });
+    byId("access-gate").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      sessionStorage.setItem("evidenceCommandKey", byId("demo-key").value.trim());
+      byId("access-gate").classList.add("hidden");
+      const retry = state.retryAfterAccess;
+      state.retryAfterAccess = null;
+      setStatus("launch-status", "Access code accepted for this browser session.");
+      if (retry) {
+        try { await retry(); }
+        catch (error) {
+          if (error.status === 401) requestAccess(retry);
+          else setStatus("launch-status", error.message, true);
+        }
+      }
+    });
     document.querySelectorAll("[data-panel-target]").forEach((button) => button.addEventListener("click", () => switchPanel(button.dataset.panelTarget)));
     document.querySelectorAll("[data-go-panel]").forEach((button) => button.addEventListener("click", () => switchPanel(button.dataset.goPanel)));
     document.querySelectorAll("[data-tier]").forEach((button) => button.addEventListener("click", () => { state.timelineTier = button.dataset.tier; document.querySelectorAll("[data-tier]").forEach((item) => item.classList.toggle("active", item === button)); renderTimeline(); }));

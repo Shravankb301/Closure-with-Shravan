@@ -117,12 +117,18 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
     with TestClient(app) as client:
         response = client.get("/")
         assert response.status_code == 200
-        assert "Boston Evidence Review" in response.text
+        assert "Evidence Delta" in response.text
         assert "Boston evidence review" in response.text
-        assert "Open case workspace" in response.text
+        assert "Open demonstration case" in response.text
+        assert "Live backend proof" in response.text
+        assert "/cases/{id}/documents" in response.text
         assert "Guided walkthrough" in response.text
         assert "Review before it enters the record" in response.text
-        assert "Evidence relationship graph" in response.text
+        assert "Evidence-to-insight map" in response.text
+        assert "deterministic rules, not hidden model reasoning" in response.text
+        assert 'id="toggle-events"' in response.text
+        assert 'id="toggle-findings"' in response.text
+        assert "Structural support level, not a probability" in response.text
         assert "Officer review queue" in response.text
         assert "What changed?" in response.text
         assert 'id="change-history-list"' in response.text
@@ -130,6 +136,11 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         assert "Download case packet" in response.text
         assert "Excluded · span not found" in response.text
         assert "prefers-reduced-motion" in response.text
+        assert 'class="access-gate hidden"' in response.text
+        assert "Hosted access key" not in response.text
+        assert "access-drawer" not in response.text
+        assert "\u2014" not in response.text
+        assert "\u2013" not in response.text
         assert "Assign case ownership" in response.text
         assert 'id="evidence-form"' in response.text
         assert 'id="evidence-graph"' in response.text
@@ -163,6 +174,18 @@ def test_official_record_case_is_materialized_with_status_separation() -> None:
         workspace = client.get(f"/cases/{real_case['case_id']}").json()
         assert len(workspace["documents"]) == 4
         assert all(document["source_uri"] for document in workspace["documents"])
+
+        operations = client.get(f"/cases/{real_case['case_id']}/operations").json()
+        assert operations["operational"] is True
+        assert operations["selectivity"] == {
+            "affected_artifacts": 9,
+            "untouched_artifacts": 6,
+            "artifacts_considered": 15,
+            "recomputed_percent": 60.0,
+        }
+        assert all(stage["status"] == "complete" for stage in operations["stages"])
+        assert any(job["status"] == "SUPERSEDED" for job in operations["jobs"])
+        assert all(artifact["fresh"] for artifact in operations["artifacts"])
 
         backpack = client.get(
             f"/cases/{real_case['case_id']}/artifacts/timeline:backpack:2013-04-19"

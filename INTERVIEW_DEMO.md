@@ -14,10 +14,10 @@ https://www.ycombinator.com/companies/closure/jobs/4gxpOAW-founding-fde
 
 ## The one-sentence pitch
 
-> I built a source-backed evidence workspace that lets an investigator see what
-> changed, trace every displayed claim to the record, preserve corrections
-> without erasing history, and hand the case to the next reviewer with the
-> current analytical state intact.
+> I built an evidence change-management system that treats investigative
+> timelines like versioned software artifacts: it selectively rebuilds what a
+> new source affects, proves the result against a clean rebuild, and traces every
+> finding back to the record.
 
 ## The opening: 30 seconds
 
@@ -35,13 +35,19 @@ Then add one sentence of scope discipline:
 > This is a public-record analytical demonstration, not an identification tool,
 > an official law-enforcement system, or a claim of CJIS compliance.
 
+Then make the product boundary explicit:
+
+> Boston is the acceptance test, not the product. The product is the stateful
+> evidence pipeline behind it: durable mutations, selective invalidation,
+> versioned artifacts, dependency verification, review findings, and handoff.
+
 That framing communicates user empathy and integrity before technical depth.
 
 ## The five-minute live path
 
-### 1. Materialize the case — 40 seconds
+### 1. Materialize the case and prove the backend work (60 seconds)
 
-Choose **Run guided case briefing**. Explain that four public records become 25
+Choose **Guided walkthrough**. Explain that four public records become 25
 immutable assertions and 15 materialized entity-day timelines.
 
 Start with the **What changed?** brief. It gives the reviewer one compact answer:
@@ -55,6 +61,40 @@ Then point out three supporting details:
 - broad source windows stay broad instead of becoming invented timestamps;
 - the correctness indicator compares maintained state with a full rebuild.
 
+Move to **Operations**. Do not narrate a static architecture diagram. Point to
+the current database-backed trace:
+
+- the evidence mutation committed at a numbered revision;
+- only affected change keys advanced;
+- durable worker jobs targeted that revision;
+- each successful job published an immutable artifact version;
+- observed dependency versions still match current versions; and
+- incremental state equals a deterministic rebuild from active assertions.
+
+Open one job row and one artifact row visually. The useful sentence is:
+
+> These checks are not presentation copy. This screen is rendering the revision
+> ledger, queue, artifact versions, and dependency records that the backend
+> actually wrote.
+
+If they ask why this is different from a case website, answer:
+
+> A case website can display source material. This application accepts durable
+> changes, runs recoverable work, publishes versioned derived state, exposes
+> freshness, and can prove that a selective update produced the same result as a
+> clean rebuild.
+
+Open the **Evidence-to-insight map** and select a corroborated finding. Use the
+inspector's Inputs controls to move backward through each contributing assertion
+to the original document and locator. Then start from a document and follow
+Leads to in the opposite direction.
+
+Say:
+
+> This is not a generated explanation of hidden model reasoning. The finding
+> carries the exact deterministic rule, premises, source spans, and support
+> classification that produced it, so the explanation is reproducible.
+
 Outcome line:
 
 > The investigator gets a useful case surface, while the system retains enough
@@ -66,11 +106,16 @@ FDE framing:
 > smallest surface that answers the question they face after every update:
 > what requires my attention now?
 
-### 2. Make uncertainty actionable — 60 seconds
+### 2. Make uncertainty actionable (60 seconds)
 
 Move to **Findings**. The official record has no structural contradiction, so
 append the clearly labeled demonstration tip. Show that the laptop now has
 mutually exclusive same-day event classes from two sources.
+
+Return to the map and select the red conflict node. Show the two incoming
+assertions, their incompatible event classes, and both source locators. Contrast
+that with an amber missing-support node, which makes a single-source gap visible
+without pretending it is a factual conclusion.
 
 Say:
 
@@ -81,7 +126,7 @@ Also point to corroboration and single-source exposure. These are more useful
 to a working investigator than a generic model confidence score because they
 describe the structure of the active evidence set.
 
-### 3. Show the human-in-the-loop boundary — 60 seconds
+### 3. Show the human-in-the-loop boundary (60 seconds)
 
 Move to **AI intake**. The guided briefing preloads a short sample. Choose
 **Extract with AI**, then show the editable proposal, verbatim source span,
@@ -97,7 +142,7 @@ Say:
 Do not imply the fallback has model-level recall. Its low-confidence label is a
 feature, not an embarrassment.
 
-### 4. Correct the record — 60 seconds
+### 4. Correct the record (60 seconds)
 
 Move to **Source ledger** and retract only the hypothetical tip. Accept the
 correction dialog, enter a specific reason, and point out that the assigned
@@ -116,7 +161,7 @@ Outcome line:
 > A correction changes active reasoning without destroying the audit trail or
 > forcing an expensive rebuild of unrelated case state.
 
-### 5. Finish with ownership — 60 seconds
+### 5. Finish with ownership (60 seconds)
 
 Move to **Officer handoff**. Enter a fictional demo assignment and a concrete
 next action, for example:
@@ -128,9 +173,9 @@ next action, for example:
 Save it and show the generated handoff summary.
 
 Download the case packet and explain that it contains the current sources,
-derived artifacts, findings, revision history, and rebuild proof in a portable
-JSON envelope. It is intentionally simple integration plumbing: another agency
-tool can consume it without scraping the interface.
+derived artifacts, findings, revision history, operational trace, and rebuild
+proof in a portable JSON envelope. It is intentionally simple integration
+plumbing: another agency tool can consume it without scraping the interface.
 
 Finish with:
 
@@ -208,12 +253,18 @@ adapter into the assertion contract. Preserve original source identity and
 locators. Build one adapter quickly, observe the investigator using it, and only
 then decide which parts belong in the shared product.
 
+Do not claim a live agency connector in the current demonstration. The real
+integration surfaces today are the document API, JSON and CSV adapters,
+review-gated extraction endpoint, PostgreSQL worker boundary, and portable case
+packet. Production SSO, evidence-system connectors, and retention controls begin
+with a real customer deployment.
+
 ### How would you know it helps?
 
 Measure time from source arrival to reviewer-ready case state, percentage of
 displayed claims with resolvable provenance, stale-artifact incidents,
 correction/retraction completion time, review-queue resolution time, and user
-adoption during real casework—not model output volume.
+adoption during real casework, not model output volume.
 
 ## Honest limitations
 
@@ -237,7 +288,7 @@ judgment being evaluated.
 
 ## A credible first 90 days at an agency
 
-### Days 1–30: observe and deliver one outcome
+### Days 1 to 30: observe and deliver one outcome
 
 - shadow investigators on one live workflow;
 - define the concrete decision and evidence sources;
@@ -245,7 +296,7 @@ judgment being evaluated.
 - ship a thin vertical slice with auditability, access controls, and a runbook;
 - measure time saved and provenance coverage with actual users.
 
-### Days 31–60: harden what repeated
+### Days 31 to 60: harden what repeated
 
 - add identity and role-aware access, retention policy hooks, and deployment
   observability;
@@ -253,7 +304,7 @@ judgment being evaluated.
 - build review queues for entity resolution and low-confidence extraction;
 - separate agency-specific adapters from reusable product primitives.
 
-### Days 61–90: productize the recurring pattern
+### Days 61 to 90: productize the recurring pattern
 
 - turn repeated deployment work into supported connectors and configuration;
 - establish upgrade, rollback, incident, and data-migration procedures;

@@ -62,6 +62,20 @@ def test_api_vertical_slice() -> None:
             "settled": False,
             "completed_cleanly": False,
         }
+        pending_operations = client.get(f"/cases/{case_id}/operations")
+        assert pending_operations.status_code == 200
+        pending_trace = pending_operations.json()
+        assert pending_trace["operational"] is False
+        assert [item["status"] for item in pending_trace["stages"]] == [
+            "complete",
+            "complete",
+            "complete",
+            "pending",
+            "pending",
+            "pending",
+        ]
+        assert pending_trace["jobs"][0]["status"] == "QUEUED"
+        assert pending_trace["jobs"][0]["publication"] is None
 
         assigned = client.put(
             f"/cases/{case_id}/assignment",
@@ -107,6 +121,23 @@ def test_api_vertical_slice() -> None:
             "completed_cleanly": True,
         }
 
+        operations = client.get(f"/cases/{case_id}/operations")
+        assert operations.status_code == 200
+        trace = operations.json()
+        assert trace["operational"] is True
+        assert all(item["status"] == "complete" for item in trace["stages"])
+        assert trace["selectivity"] == {
+            "affected_artifacts": 1,
+            "untouched_artifacts": 0,
+            "artifacts_considered": 1,
+            "recomputed_percent": 100.0,
+        }
+        assert trace["jobs"][0]["status"] == "SUCCEEDED"
+        assert trace["jobs"][0]["publication"]["version"] == 1
+        assert trace["jobs"][0]["publication"]["dependencies_matched"] is True
+        assert trace["artifacts"][0]["immutable_versions"] == 1
+        assert trace["artifacts"][0]["fresh"] is True
+
         artifact = client.get(f"/cases/{case_id}/artifacts/timeline:john-carter:2026-03-14")
         assert artifact.status_code == 200
         assert artifact.json()["fresh"] is True
@@ -141,6 +172,8 @@ def test_api_vertical_slice() -> None:
 
         missing = client.get("/cases/does-not-exist/changes")
         assert missing.status_code == 404
+        missing_operations = client.get("/cases/does-not-exist/operations")
+        assert missing_operations.status_code == 404
 
         invalid_reason = client.post(
             f"/cases/{case_id}/documents/{added.json()['document_id']}/retractions",

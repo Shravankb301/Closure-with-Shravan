@@ -65,12 +65,25 @@ def test_boston_record_is_internally_consistent(service, worker) -> None:
     assert len(disposal[0]["documents"]) == 3
     assert disposal[0]["cross_tier"] is True
     assert set(disposal[0]["tiers"]) == {"allegation", "court"}
+    assert disposal[0]["support"]["level"] == "STRONG"
+    assert disposal[0]["support"]["probability"] is None
+    assert disposal[0]["reasoning"]["rule_id"] == (
+        "distinct-source-corroboration-v1"
+    )
 
     single_source_days = {
         (finding["entity_id"], finding["date"]) for finding in findings["single_source"]
     }
     assert ("laptop-computer", "2013-04-19") in single_source_days
     assert ("backpack", "2013-04-26") in single_source_days
+    laptop_gap = next(
+        finding
+        for finding in findings["single_source"]
+        if finding["entity_id"] == "laptop-computer"
+        and finding["date"] == "2013-04-19"
+    )
+    assert laptop_gap["support"]["level"] == "LIMITED"
+    assert laptop_gap["reasoning"]["rule_id"] == "single-source-exposure-v1"
 
 
 def test_conflicting_tip_surfaces_and_clears_contradiction(service, worker) -> None:
@@ -86,6 +99,8 @@ def test_conflicting_tip_surfaces_and_clears_contradiction(service, worker) -> N
     assert contradiction["date"] == "2013-04-19"
     assert contradiction["classes"] == ["concealment", "disposal"]
     assert len(contradiction["documents"]) == 2
+    assert contradiction["support"]["level"] == "CONFLICTED"
+    assert contradiction["reasoning"]["method"] == "deterministic_rule"
     tiers = {event["tier"] for event in contradiction["events"]}
     assert tiers == {"court", "officer"}
     added_change = service.case_changes(case_id)["changes"][0]

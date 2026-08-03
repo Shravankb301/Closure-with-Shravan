@@ -11,6 +11,25 @@ incremental artifacts = artifacts produced from all active assertions
 The test suite checks this after 300 randomized mutations, not only after a
 curated example.
 
+## Operator proof surface
+
+`GET /cases/{case_id}/operations` exposes the invariant as live operational
+data. The response is assembled from change sets, recomputation jobs, artifact
+versions, artifact dependencies, change keys, and the rebuild oracle. The UI
+does not infer success from the presence of a rendered timeline.
+
+For the latest case revision it reports:
+
+1. whether the evidence mutation exists in the durable revision ledger;
+2. how many artifact keys were affected and how many were left untouched;
+3. which durable jobs targeted the revision and their attempts and status;
+4. which immutable artifact version each successful job published;
+5. whether observed dependency versions still match current key versions; and
+6. whether incremental state equals a clean rebuild from active assertions.
+
+This turns backend correctness into a product capability that an operator can
+inspect during a live evidence change.
+
 ## Mutation path
 
 1. Lock the case row and advance its revision.
@@ -138,5 +157,5 @@ assertions that a human confirms before they enter the kernel.
 Case, artifact, proof, and findings responses are marked `Cache-Control:
 no-store`, and the browser client requests with `cache: "no-store"`. Without
 this, a heuristically cached GET can show a reviewer a retracted source as
-still active — observed in practice as a reloaded case rendering one evidence
+still active, observed in practice as a reloaded case rendering one evidence
 revision behind the database. Only the static social-preview image is cacheable.

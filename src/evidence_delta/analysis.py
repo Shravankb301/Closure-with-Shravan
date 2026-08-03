@@ -128,6 +128,7 @@ def derive_findings(events: list[ActiveEvent]) -> dict:
                 if frozenset({left, right}) not in CONFLICTING_CLASS_PAIRS:
                     continue
                 involved = by_class[left] + by_class[right]
+                documents = sorted({item.document_id for item in involved})
                 contradictions.append(
                     {
                         "finding_id": _finding_id(
@@ -145,8 +146,36 @@ def derive_findings(events: list[ActiveEvent]) -> dict:
                             f"{entity_id} on {day}. The accounts cannot both hold; "
                             "review each cited locator before relying on either."
                         ),
-                        "documents": sorted({item.document_id for item in involved}),
+                        "documents": documents,
                         "events": [_event_payload(item) for item in involved],
+                        "support": {
+                            "level": "CONFLICTED",
+                            "probability": None,
+                            "basis": (
+                                "Active sources support mutually exclusive event classes. "
+                                "A reviewer must adjudicate the cited accounts."
+                            ),
+                        },
+                        "reasoning": {
+                            "method": "deterministic_rule",
+                            "rule_id": "conflicting-event-classes-v1",
+                            "test": (
+                                "Flag when active assertions concern the same entity and day "
+                                "and their event classes are an allowlisted conflicting pair."
+                            ),
+                            "premises": [
+                                {"label": "Entity", "value": entity_id},
+                                {"label": "Day", "value": day},
+                                {
+                                    "label": "Conflicting classes",
+                                    "value": " vs ".join(sorted([left, right])),
+                                },
+                                {
+                                    "label": "Distinct sources",
+                                    "value": str(len(documents)),
+                                },
+                            ],
+                        },
                     }
                 )
 
@@ -184,6 +213,32 @@ def derive_findings(events: list[ActiveEvent]) -> dict:
                     "tiers": tiers,
                     "cross_tier": cross_tier,
                     "events": [_event_payload(item) for item in supporting],
+                    "support": {
+                        "level": "STRONG" if cross_tier else "MODERATE",
+                        "probability": None,
+                        "basis": (
+                            "Distinct records across multiple legal-status tiers support "
+                            "the same structured event."
+                            if cross_tier
+                            else "Multiple distinct records in one legal-status tier support "
+                            "the same structured event."
+                        ),
+                    },
+                    "reasoning": {
+                        "method": "deterministic_rule",
+                        "rule_id": "distinct-source-corroboration-v1",
+                        "test": (
+                            "Surface when two or more active source records support the same "
+                            "entity, day, and event class."
+                        ),
+                        "premises": [
+                            {"label": "Entity", "value": entity_id},
+                            {"label": "Day", "value": day},
+                            {"label": "Event class", "value": cls},
+                            {"label": "Distinct sources", "value": str(len(documents))},
+                            {"label": "Legal-status tiers", "value": ", ".join(tiers)},
+                        ],
+                    },
                 }
             )
 
@@ -206,6 +261,28 @@ def derive_findings(events: list[ActiveEvent]) -> dict:
                     ),
                     "documents": group_documents,
                     "events": [_event_payload(item) for item in group],
+                    "support": {
+                        "level": "LIMITED",
+                        "probability": None,
+                        "basis": (
+                            "Every active event for this entity and day depends on one "
+                            "source record."
+                        ),
+                    },
+                    "reasoning": {
+                        "method": "deterministic_rule",
+                        "rule_id": "single-source-exposure-v1",
+                        "test": (
+                            "Surface when all active assertions for an entity and day come "
+                            "from exactly one source record."
+                        ),
+                        "premises": [
+                            {"label": "Entity", "value": entity_id},
+                            {"label": "Day", "value": day},
+                            {"label": "Distinct sources", "value": "1"},
+                            {"label": "Active assertions", "value": str(len(group))},
+                        ],
+                    },
                 }
             )
 

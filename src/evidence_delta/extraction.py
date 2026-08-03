@@ -7,7 +7,7 @@ writes to the immutable ledger: the model only proposes, a human confirms, and
 the confirmed rows enter through the normal ``POST /cases/{id}/documents`` path.
 
 If the Anthropic SDK and an API key are present, extraction uses Claude. When
-they are not — the default for local demos, tests, and the hosted build — a
+they are not, which is the default for local demos, tests, and the hosted build, a
 deterministic keyword-and-date extractor produces the same proposal shape so
 the workflow always works offline.
 """
@@ -156,14 +156,14 @@ def _extract_with_model(excerpt: str, source_hint: str | None) -> list[dict]:
             "You are a forensic evidence analyst preparing structured leads for a "
             "human reviewer in a criminal investigation. Extract discrete, "
             "source-backed assertions from the excerpt. Rules: (1) Every assertion "
-            "MUST set source_text to a VERBATIM span copied from the excerpt — never "
+            "MUST set source_text to a VERBATIM span copied from the excerpt; never "
             "paraphrase it. (2) Do not invent facts, names, or dates not present in "
             "the text. (3) Prefer a coarse time_precision (DAY/MONTH/WINDOW/UNKNOWN) "
             "when the source is vague rather than inventing an exact timestamp; set "
             "occurred_at to ISO 8601 with a UTC offset, or an empty string if no date "
             "is stated. (4) Use a lowercase-hyphenated entity_id for the person, "
             "object, or location the event is about. (5) These are review prompts for "
-            "a human, not conclusions — mark confidence honestly. Return an empty list "
+            "a human, not conclusions; mark confidence honestly. Return an empty list "
             "if nothing concrete is extractable."
         ),
         messages=[{"role": "user", "content": f"Excerpt:{context}\n\n{excerpt}"}],

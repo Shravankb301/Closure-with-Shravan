@@ -851,6 +851,341 @@ class EvidenceService:
             "changes": items,
         }
 
+    def case_operations(self, case_id: str, limit: int = 30) -> dict:
+        """Expose the real mutation and recomputation pipeline for inspection.
+
+        This response is intentionally assembled from durable database rows,
+        rather than inferred from the current page state. It gives operators a
+        compact way to verify which artifacts a revision touched, which jobs
+        ran, what each job published, and whether the published dependencies
+        still match the current change-key versions.
+        """
+
+        changes = self.case_changes(case_id, limit=1)
+        with self.database.session() as session:
+            case = session.get(CaseRecord, case_id)
+            if case is None:
+                raise KeyError(f"Unknown case: {case_id}")
+
+            job_rows = session.execute(
+                select(RecomputeJobRecord, ArtifactRecord)
+                .join(ArtifactRecord, ArtifactRecord.id == RecomputeJobRecord.artifact_id)
+                .where(RecomputeJobRecord.case_id == case_id)
+                .order_by(RecomputeJobRecord.created_at.desc(), RecomputeJobRecord.id.desc())
+                .limit(max(1, min(limit, 100)))
+            ).all()
+            jobs = [row[0] for row in job_rows]
+            artifacts_by_id = {row[1].id: row[1] for row in job_rows}
+            job_ids = [job.id for job in jobs]
+            published_versions = (
+                session.scalars(
+                    select(ArtifactVersionRecord).where(
+                        ArtifactVersionRecord.source_job_id.in_(job_ids)
+                    )
+                ).all()
+                if job_ids
+                else []
+            )
+            versions_by_job = {
+                version.source_job_id: version for version in published_versions
+            }
+            version_ids = [version.id for version in published_versions]
+            dependencies = (
+                session.scalars(
+                    select(ArtifactDependencyRecord)
+                    .where(ArtifactDependencyRecord.artifact_version_id.in_(version_ids))
+                    .order_by(ArtifactDependencyRecord.change_key)
+                ).all()
+                if version_ids
+                else []
+            )
+            dependencies_by_version: dict[str, list[ArtifactDependencyRecord]] = {}
+            for dependency in dependencies:
+                dependencies_by_version.setdefault(dependency.artifact_version_id, []).append(
+                    dependency
+                )
+
+            change_versions = {
+                key: version
+                for key, version in session.execute(
+                    select(ChangeKeyRecord.key, ChangeKeyRecord.version).where(
+                        ChangeKeyRecord.case_id == case_id
+                    )
+                ).all()
+            }
+            artifact_records = session.scalars(
+                select(ArtifactRecord)
+                .where(ArtifactRecord.case_id == case_id)
+                .order_by(ArtifactRecord.artifact_key)
+            ).all()
+            current_version_ids = [
+                artifact.current_version_id
+                for artifact in artifact_records
+                if artifact.current_version_id is not None
+            ]
+            current_versions = {
+                version.id: version
+                for version in (
+                    session.scalars(
+                        select(ArtifactVersionRecord).where(
+                            ArtifactVersionRecord.id.in_(current_version_ids)
+                        )
+                    ).all()
+                    if current_version_ids
+                    else []
+                )
+            }
+            all_current_dependencies = (
+                session.scalars(
+                    select(ArtifactDependencyRecord).where(
+                        ArtifactDependencyRecord.artifact_version_id.in_(current_version_ids)
+                    )
+                ).all()
+                if current_version_ids
+                else []
+            )
+            current_dependencies_by_version: dict[str, list[ArtifactDependencyRecord]] = {}
+            for dependency in all_current_dependencies:
+                current_dependencies_by_version.setdefault(
+                    dependency.artifact_version_id, []
+                ).append(dependency)
+            version_counts = {
+                artifact_id: int(count)
+                for artifact_id, count in session.execute(
+                    select(
+                        ArtifactVersionRecord.artifact_id,
+                        func.count(ArtifactVersionRecord.id),
+                    )
+                    .join(
+                        ArtifactRecord,
+                        ArtifactRecord.id == ArtifactVersionRecord.artifact_id,
+                    )
+                    .where(ArtifactRecord.case_id == case_id)
+                    .group_by(ArtifactVersionRecord.artifact_id)
+                ).all()
+            }
+            job_counts = {
+                status: int(count)
+                for status, count in session.execute(
+                    select(
+                        RecomputeJobRecord.status,
+                        func.count(RecomputeJobRecord.id),
+                    )
+                    .where(RecomputeJobRecord.case_id == case_id)
+                    .group_by(RecomputeJobRecord.status)
+                ).all()
+            }
+
+        job_items = []
+        for job in jobs:
+            artifact = artifacts_by_id[job.artifact_id]
+            published = versions_by_job.get(job.id)
+            observed = (
+                dependencies_by_version.get(published.id, []) if published is not None else []
+            )
+            dependency_items = [
+                {
+                    "change_key": dependency.change_key,
+                    "observed_version": dependency.observed_version,
+                    "current_version": change_versions.get(dependency.change_key),
+                    "matched": dependency.observed_version
+                    == change_versions.get(dependency.change_key),
+                }
+                for dependency in observed
+            ]
+            job_items.append(
+                {
+                    "id": job.id,
+                    "artifact_id": artifact.id,
+                    "artifact_key": artifact.artifact_key,
+                    "target_revision": job.target_revision,
+                    "status": job.status,
+                    "attempts": job.attempts,
+                    "failure_code": job.last_error,
+                    "created_at": job.created_at.isoformat(),
+                    "publication": (
+                        {
+                            "artifact_version_id": published.id,
+                            "version": published.version,
+                            "computed_at_revision": published.computed_at_revision,
+                            "input_fingerprint": published.input_fingerprint,
+                            "dependencies": dependency_items,
+                            "dependencies_matched": bool(dependency_items)
+                            and all(item["matched"] for item in dependency_items),
+                        }
+                        if published is not None
+                        else None
+                    ),
+                }
+            )
+
+        artifact_items = []
+        for artifact in artifact_records:
+            current = current_versions.get(artifact.current_version_id or "")
+            observed = (
+                current_dependencies_by_version.get(current.id, [])
+                if current is not None
+                else []
+            )
+            dependencies_matched = bool(observed) and all(
+                dependency.observed_version
+                == change_versions.get(dependency.change_key)
+                for dependency in observed
+            )
+            artifact_items.append(
+                {
+                    "id": artifact.id,
+                    "artifact_key": artifact.artifact_key,
+                    "current_version": current.version if current is not None else None,
+                    "computed_at_revision": (
+                        current.computed_at_revision if current is not None else None
+                    ),
+                    "immutable_versions": version_counts.get(artifact.id, 0),
+                    "fresh": dependencies_matched,
+                    "input_fingerprint": (
+                        current.input_fingerprint if current is not None else None
+                    ),
+                    "dependency_count": len(observed),
+                }
+            )
+
+        latest_change = changes["changes"][0] if changes["changes"] else None
+        latest_recomputation = latest_change["recomputation"] if latest_change else None
+        latest_requested = latest_recomputation["requested"] if latest_recomputation else 0
+        latest_status_counts = (
+            latest_recomputation["by_status"] if latest_recomputation else {}
+        )
+        latest_job_count = sum(latest_status_counts.values())
+        latest_has_failure = latest_status_counts.get("FAILED_PERMANENT", 0) > 0
+        latest_published = latest_change is not None and latest_change["recomputation"][
+            "completed_cleanly"
+        ]
+        all_artifacts_fresh = bool(artifact_items) and all(
+            item["fresh"] for item in artifact_items
+        )
+        latest_dependencies_match = latest_published and all_artifacts_fresh
+        equivalent_to_full_rebuild = changes["current_verification"][
+            "equivalent_to_full_rebuild"
+        ]
+        queue = {
+            "jobs_total": sum(job_counts.values()),
+            "by_status": job_counts,
+            "settled": all(
+                status in {"SUCCEEDED", "SUPERSEDED", "FAILED_PERMANENT"}
+                for status in job_counts
+            ),
+        }
+
+        def stage(stage_id: str, label: str, status: str, evidence: str) -> dict:
+            return {
+                "id": stage_id,
+                "label": label,
+                "status": status,
+                "evidence": evidence,
+            }
+
+        stages = [
+            stage(
+                "commit",
+                "Mutation committed",
+                "complete" if latest_change else "pending",
+                (
+                    f"Revision {latest_change['revision']} recorded in the change ledger"
+                    if latest_change
+                    else "No evidence mutation has been recorded"
+                ),
+            ),
+            stage(
+                "invalidate",
+                "Change keys advanced",
+                "complete" if latest_change else "pending",
+                (
+                    f"{latest_change['affected']['timeline_count']} affected keys, "
+                    f"{latest_change['affected']['untouched_artifacts']} artifacts untouched"
+                    if latest_change
+                    else "Waiting for the first mutation"
+                ),
+            ),
+            stage(
+                "queue",
+                "Recompute jobs queued",
+                (
+                    "failed"
+                    if latest_has_failure
+                    else "complete"
+                    if latest_change and latest_job_count == latest_requested
+                    else "pending"
+                ),
+                (
+                    f"{latest_job_count} durable jobs target revision {case.revision}"
+                    if latest_change
+                    else "Waiting for affected artifacts"
+                ),
+            ),
+            stage(
+                "publish",
+                "Artifact versions published",
+                "failed" if latest_has_failure else "complete" if latest_published else "pending",
+                (
+                    f"{latest_status_counts.get('SUCCEEDED', 0)} "
+                    "immutable versions published"
+                    if latest_change
+                    else "Waiting for worker publication"
+                ),
+            ),
+            stage(
+                "dependencies",
+                "Dependencies verified",
+                (
+                    "failed"
+                    if latest_has_failure
+                    else "complete"
+                    if latest_dependencies_match
+                    else "pending"
+                ),
+                (
+                    "Every published input version still matches its current change key"
+                    if latest_dependencies_match
+                    else "Verification completes after publication"
+                ),
+            ),
+            stage(
+                "oracle",
+                "Full rebuild matched",
+                "complete" if equivalent_to_full_rebuild else "pending",
+                (
+                    "Incremental state equals a deterministic rebuild from active assertions"
+                    if equivalent_to_full_rebuild
+                    else "Incremental state is not yet equivalent to a full rebuild"
+                ),
+            ),
+        ]
+
+        affected = latest_change["affected"]["timeline_count"] if latest_change else 0
+        untouched = latest_change["affected"]["untouched_artifacts"] if latest_change else 0
+        considered = affected + untouched
+        return {
+            "case_id": case_id,
+            "case_revision": case.revision,
+            "operational": (
+                changes["current_verification"]["verified"]
+                and all_artifacts_fresh
+                and not latest_has_failure
+            ),
+            "stages": stages,
+            "selectivity": {
+                "affected_artifacts": affected,
+                "untouched_artifacts": untouched,
+                "artifacts_considered": considered,
+                "recomputed_percent": round(affected / considered * 100, 1)
+                if considered
+                else 0.0,
+            },
+            "queue": queue,
+            "artifacts": artifact_items,
+            "jobs": job_items,
+        }
+
     def current_artifact(self, case_id: str, key: str) -> dict | None:
         with self.database.session() as session:
             row = session.execute(

@@ -1,20 +1,25 @@
-# Boston Evidence Command Board
+# Evidence Delta
 
-A source-backed public-record investigation workspace built on a deterministic
-evidence recomputation engine.
+A source-backed evidence operations application built on a deterministic
+recomputation engine. Boston public records are one test case, not the product.
 
-The root application is organized around the Boston Marathon bombing
-investigation's evidence-disposal and obstruction sequence. It gives a reviewer
-one operational surface for:
+Evidence Delta applies a software build-system technique to investigation work:
+derived timelines are versioned artifacts, evidence partitions are change keys,
+and each artifact records the exact key versions it read. When the record
+changes, the system can rebuild only affected work while proving that the result
+still matches a clean rebuild from active evidence.
+
+The application gives a reviewer one operational surface for:
 
 - tracing each displayed claim to an immutable source locator,
 - separating complaint and indictment allegations from later court outcomes,
-- inspecting a shared-source relationship graph and chronological reconstruction,
+- traversing an evidence-to-insight graph in either direction,
 - surfacing deterministic cross-source findings: contradiction candidates,
   corroborated events, and single-source exposure,
 - assigning an officer or analyst and persisting handoff context,
 - adding or retracting evidence without erasing the audit trail, and
-- verifying maintained timelines against a deterministic full rebuild.
+- verifying maintained timelines against a deterministic full rebuild, and
+- inspecting the backend path from committed mutation to published artifact.
 
 The trusted engine underneath still answers one central technical question:
 
@@ -27,8 +32,29 @@ artifacts, preserves source lineage, and verifies incremental state against a
 full rebuild after every mutation.
 
 This is an analytical demonstration, not an official law-enforcement system.
-It does not perform raw evidence extraction, identify new suspects, make
-investigative conclusions, or claim CJIS compliance.
+It does not claim to have solved the historical Boston investigation, identify
+new suspects, make investigative conclusions, or satisfy CJIS requirements.
+
+## Why this is an application, not a case website
+
+The browser is one client of a stateful API and worker system. A reviewer can
+make a durable evidence mutation, watch targeted jobs run, inspect immutable
+artifact publications and their dependency versions, retract a source without
+erasing it, and verify the current state against a deterministic rebuild.
+
+`GET /cases/{case_id}/operations` assembles that proof from database records. It
+does not return a hardcoded architecture story. The Operations workspace shows:
+
+- the latest committed evidence revision;
+- affected change keys and artifacts deliberately left untouched;
+- queued, running, successful, superseded, or permanently failed jobs;
+- the immutable artifact version and fingerprint published by each job;
+- observed and current dependency versions; and
+- whether maintained state equals a full rebuild from active assertions.
+
+The Boston record is valuable because it is a bounded, source-cited acceptance
+scenario. The actual product primitive is keeping analytical work correct and
+explainable as its inputs change.
 
 ## The demonstration
 
@@ -63,29 +89,30 @@ Representative impact:
 Timing in the demo is intentionally labeled as a local illustration, not a
 production-scale benchmark. Correctness is the primary result.
 
-For a reviewer, the fastest path is the **Run guided case briefing** action on
+For a reviewer, the fastest path is the **Guided walkthrough** action on
 the opening screen. It walks through the case state, cross-source findings,
-human-confirmed AI intake, append-only retraction, and officer handoff without
-requiring prior knowledge of the architecture.
+the live backend trace, human-confirmed AI intake, append-only retraction, and
+officer handoff without requiring prior knowledge of the architecture.
 
 An outcome-first live-demo script, technical deep-dive prompts, honest
 limitations, and likely FDE interview follow-ups are in
 [INTERVIEW_DEMO.md](INTERVIEW_DEMO.md).
 
-## Investigation workspace
+## Case workspace
 
-The root route opens the **Boston Evidence Command Board**. The official-record
-action materializes 25 assertions from four official records into 15
-entity-day timelines. The command board renders live case metrics, a source-
-supported relationship map, an event chronology, a legal-status distribution,
+The root route opens **Evidence Delta**. The demonstration action materializes
+25 assertions from four official records into 15 entity-day timelines. The
+workspace renders live case metrics, an
+inspectable evidence-to-insight map, an event chronology, a legal-status distribution,
 an officer review queue, a source ledger, evidence intake, persistent case
 assignment/handoff metadata, and a findings board that surfaces contradiction
 candidates, corroboration, and single-source exposure across the active
-source set.
+source set. Its Operations view exposes the durable execution records behind
+the current screen.
 
 ### Official-record use case
 
-The **Open the real case** action creates a durable workspace for the narrow
+The **Open demonstration case** action creates a durable workspace for the narrow
 evidence-disposal obstruction case associated with the Boston Marathon bombing
 investigation. It materializes 25 source-backed assertions into 15 timelines
 from four official records:
@@ -116,7 +143,7 @@ active (non-retracted) assertion set:
   or more distinct source records, with cross-tier support (allegation-tier and
   court-established records agreeing) called out explicitly.
 - **Single-source exposure.** Entity-days whose every active event rests on one
-  source record — the leads most in need of corroboration.
+  source record, highlighting the leads most in need of corroboration.
 
 Detection is structural: entity, day, kind-derived event class, source
 identity, and legal tier. There is no free-text comparison and no model call in
@@ -125,7 +152,7 @@ findings. Event classes come from an explicit kind-suffix allowlist, so a new
 assertion kind never silently joins a conflict rule.
 
 The curated official record is internally consistent, so it produces zero
-contradictions — which is itself the correct finding. The Findings panel
+contradictions, which is itself the correct finding. The Findings panel
 offers a clearly labeled hypothetical demonstration tip that conflicts with
 the court-established laptop concealment; appending it surfaces a live
 contradiction with both cited locators, and retracting it clears the flag
@@ -135,6 +162,27 @@ Findings are recomputed in full on every read. They are a pure function of
 active assertions, so they inherit full-rebuild semantics without incremental
 machinery; if they became expensive they would become artifacts with change
 keys exactly like timelines.
+
+### Inspectable reasoning graph
+
+The overview turns active lineage into a directed graph:
+
+```text
+document -> source-backed assertion -> entity or artifact -> review finding
+```
+
+Documents, assertions, people, locations, physical artifacts, corroborated
+findings, conflicts, and missing-support gaps are separate node types. Selecting
+any node exposes both its inputs and its downstream uses, so a reviewer can move
+from a conclusion to every cited locator or start with a source and see every
+finding it influences.
+
+Each finding includes the exact deterministic rule ID, the test that ran, the
+premises that satisfied it, and a structural support level. Levels such as
+`STRONG`, `MODERATE`, `LIMITED`, and `CONFLICTED` are not probabilities or model
+confidence scores. They summarize source independence, legal-status breadth,
+and known conflict or sourcing gaps. The graph contains no invented semantic
+edges and no hidden model reasoning.
 
 ### Use your own evidence
 
@@ -232,6 +280,7 @@ Core endpoints:
 | `GET` | `/cases/{case_id}/artifacts/{artifact_key}` | Read a versioned artifact and lineage |
 | `GET` | `/cases/{case_id}/findings` | Derive contradiction candidates, corroboration, and single-source exposure |
 | `GET` | `/cases/{case_id}/changes` | Explain recent source mutations, affected timelines, finding deltas, and recomputation state |
+| `GET` | `/cases/{case_id}/operations` | Inspect the live mutation pipeline, worker jobs, publications, dependencies, and selectivity |
 | `GET` | `/cases/{case_id}/proof` | Verify full-rebuild equivalence and inspect live proof counts |
 
 Interactive API documentation is available at `/docs` while the server runs.
