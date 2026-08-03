@@ -122,7 +122,9 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         assert "Open demonstration case" in response.text
         assert "Live backend proof" in response.text
         assert "/cases/{id}/documents" in response.text
-        assert "Guided walkthrough" in response.text
+        assert "Start guided demo" in response.text
+        assert "Evidence overload is only half the problem" in response.text
+        assert "Search finds the record" in response.text
         assert "Review before it enters the record" in response.text
         assert "Evidence-to-insight map" in response.text
         assert "deterministic rules, not hidden model reasoning" in response.text

@@ -89,7 +89,7 @@ Representative impact:
 Timing in the demo is intentionally labeled as a local illustration, not a
 production-scale benchmark. Correctness is the primary result.
 
-For a reviewer, the fastest path is the **Guided walkthrough** action on
+For a reviewer, the fastest path is the **Start guided demo** action on
 the opening screen. It walks through the case state, cross-source findings,
 the live backend trace, human-confirmed AI intake, append-only retraction, and
 officer handoff without requiring prior knowledge of the architecture.

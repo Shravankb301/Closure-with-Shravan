@@ -19,6 +19,31 @@ https://www.ycombinator.com/companies/closure/jobs/4gxpOAW-founding-fde
 > new source affects, proves the result against a clean rebuild, and traces every
 > finding back to the record.
 
+## The four sentences to memorize
+
+Use these as the spine of the entire conversation:
+
+> Closure describes the customer problem as evidence overload: investigators
+> need help turning a large source set into useful case work. I chose the next
+> operational failure mode in that workflow: what happens to the timelines,
+> findings, and handoffs after a source is added, corrected, or withdrawn? I
+> built a stateful evidence operations layer that traces the impact, recomputes
+> only affected work, preserves the audit trail, and proves the result against a
+> clean rebuild. The Boston record is a bounded acceptance test for that
+> capability, not the product itself.
+
+That gives the founders four things in order:
+
+1. **Why:** derived case work can silently drift after evidence changes.
+2. **What:** a versioned, source-backed evidence change pipeline.
+3. **Proof:** a live add-and-retract cycle with selective recomputation.
+4. **Value:** the investigator knows what changed and what needs attention next.
+
+If the conversation gets technical too early, return to this sentence:
+
+> Search finds the record. Evidence Delta keeps the case state trustworthy after
+> the record changes.
+
 ## The opening: 30 seconds
 
 Say this before touching the screen:
@@ -47,7 +72,7 @@ That framing communicates user empathy and integrity before technical depth.
 
 ### 1. Materialize the case and prove the backend work (60 seconds)
 
-Choose **Guided walkthrough**. Explain that four public records become 25
+Choose **Start guided demo**. Explain that four public records become 25
 immutable assertions and 15 materialized entity-day timelines.
 
 Start with the **What changed?** brief. It gives the reviewer one compact answer:
