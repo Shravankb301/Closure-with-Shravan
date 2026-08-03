@@ -52,8 +52,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         nonlocal worker_runtime
-        if database.engine.dialect.name == "sqlite":
-            database.create_schema()
+        database.ensure_schema()
         if embedded_worker:
             worker_runtime = WorkerLoop(worker)
             worker_runtime.start()

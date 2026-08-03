@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 
 from sqlalchemy import create_engine, event, inspect, select, text
 from sqlalchemy.engine import Engine
@@ -51,10 +53,30 @@ class Database:
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
+    def ensure_schema(self) -> None:
+        """Bring the database schema up to date for the running application."""
+
+        if self.engine.dialect.name == "sqlite":
+            self.create_schema()
+            return
+        self.migrate_schema()
+
     def create_schema(self) -> None:
         Base.metadata.create_all(self.engine)
         if self.engine.dialect.name == "sqlite":
             self._upgrade_legacy_sqlite_schema()
+
+    def migrate_schema(self) -> None:
+        """Apply Alembic migrations for durable PostgreSQL deployments."""
+
+        from alembic import command
+        from alembic.config import Config
+
+        alembic_ini = Path(__file__).resolve().parents[2] / "alembic.ini"
+        config = Config(str(alembic_ini))
+        database_url = os.environ.get("DATABASE_URL", str(self.engine.url))
+        config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+        command.upgrade(config, "head")
 
     def _upgrade_legacy_sqlite_schema(self) -> None:
         """Keep local databases created before Alembic adoption usable."""
