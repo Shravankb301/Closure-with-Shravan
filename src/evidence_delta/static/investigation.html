@@ -1201,7 +1201,7 @@
             <div class="acquisition-grid" id="acquisition-sources"></div>
             <p class="acquisition-note" id="acquisition-note">Resolution path: download a constrained artifact through an approved browser, then import it here. The backend fingerprints, stores, reads, verifies, and appends the new attempt to its custody chain without changing the evidentiary revision.</p>
           </details>
-          <input class="hidden" id="artifact-import-file" type="file" accept="application/pdf,text/html,text/plain,.pdf,.html,.htm,.txt">
+          <input class="hidden" id="artifact-import-file" type="file" aria-label="Import source artifact" accept="application/pdf,text/html,text/plain,.pdf,.html,.htm,.txt">
           <p class="form-status" id="artifact-import-status" role="status"></p>
         </article>
 
@@ -2629,8 +2629,8 @@
       const entityId = String(raw.entity_id || "").trim();
       const kind = String(raw.kind || "").trim();
       const value = String(raw.value || "").trim();
-      const occurredAt = new Date(raw.occurred_at);
       const precision = String(raw.time_precision || "EXACT").toUpperCase();
+      const occurredAt = parseOccurredAt(raw.occurred_at, precision);
       if (!entityId || !kind || !value || Number.isNaN(occurredAt.getTime())) throw new Error(`Row ${index + 1} is missing a valid entity_id, occurred_at, kind, or value.`);
       if (!["EXACT", "MINUTE", "HOUR", "DAY", "MONTH", "WINDOW", "UNKNOWN"].includes(precision)) throw new Error(`Row ${index + 1} has an unsupported time_precision.`);
       return { entity_id: entityId, occurred_at: occurredAt.toISOString(), kind, value, time_precision: precision, source_locator: String(raw.source_locator || `row:${index + 1}`), source_text: String(raw.source_text || value) };
@@ -2673,13 +2673,29 @@
 
     const AI_KIND_OPTIONS = ["OBSERVED_AT", "CONTACTED", "TRANSFERRED", "MENTIONED", "REMOVED_FROM", "REPORTED_DISPOSAL", "REPORTED_CONCEALMENT", "REPORTED_TRANSFER", "REPORTED_RECOVERY", "REPORTED_AGREEMENT", "OTHER"];
     const AI_PRECISIONS = ["EXACT", "MINUTE", "HOUR", "DAY", "MONTH", "WINDOW", "UNKNOWN"];
+    const COARSE_TIME_PRECISIONS = new Set(["DAY", "MONTH", "WINDOW", "UNKNOWN"]);
 
-    function toLocalInput(iso) {
+    function parseOccurredAt(value, precision = "EXACT") {
+      const text = String(value || "").trim();
+      const hasTimeZone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(text);
+      if (!text || hasTimeZone || !COARSE_TIME_PRECISIONS.has(String(precision).toUpperCase())) return new Date(text);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return new Date(`${text}T00:00:00Z`);
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(text)) return new Date(`${text}Z`);
+      return new Date(text);
+    }
+
+    function toLocalInput(iso, precision = "EXACT") {
       if (!iso) return "";
       const date = new Date(iso);
       if (Number.isNaN(date.getTime())) return "";
       const pad = (value) => String(value).padStart(2, "0");
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      const coarse = COARSE_TIME_PRECISIONS.has(String(precision).toUpperCase());
+      const year = coarse ? date.getUTCFullYear() : date.getFullYear();
+      const month = coarse ? date.getUTCMonth() : date.getMonth();
+      const day = coarse ? date.getUTCDate() : date.getDate();
+      const hour = coarse ? date.getUTCHours() : date.getHours();
+      const minute = coarse ? date.getUTCMinutes() : date.getMinutes();
+      return `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(minute)}`;
     }
 
     function selectOptions(values, selected) {
@@ -2724,7 +2740,7 @@
           <blockquote class="ai-quote${proposal.provenance_verified ? "" : " unverified"}" data-ai-source>${escapeHtml(proposal.source_text)}</blockquote>
           <div class="ai-fields">
             <div class="field"><label>Entity ID</label><input data-ai-entity value="${escapeHtml(proposal.entity_id)}"></div>
-            <div class="field"><label>Occurred at</label><input type="datetime-local" data-ai-occurred value="${toLocalInput(proposal.occurred_at)}"></div>
+            <div class="field"><label>Occurred at</label><input type="datetime-local" data-ai-occurred value="${toLocalInput(proposal.occurred_at, proposal.time_precision)}"></div>
             <div class="field"><label>Event kind</label><select data-ai-kind>${selectOptions(AI_KIND_OPTIONS, proposal.kind)}</select></div>
             <div class="field"><label>Time precision</label><select data-ai-precision>${selectOptions(AI_PRECISIONS, proposal.time_precision)}</select></div>
             <div class="field full"><label>Analytical value</label><textarea data-ai-value>${escapeHtml(proposal.value)}</textarea></div>
@@ -2749,13 +2765,14 @@
       const originalExcerpt = byId("ai-text").value;
       for (const card of cards) {
         const occurredRaw = card.querySelector("[data-ai-occurred]").value;
-        const occurred = new Date(occurredRaw);
+        const precision = card.querySelector("[data-ai-precision]").value;
+        const occurred = parseOccurredAt(occurredRaw, precision);
         const entity = card.querySelector("[data-ai-entity]").value.trim();
         const value = card.querySelector("[data-ai-value]").value.trim();
         const sourceText = card.querySelector("[data-ai-source]").textContent;
         if (!entity || !value || Number.isNaN(occurred.getTime())) { setStatus("ai-confirm-status", "Every included assertion needs an entity, a value, and a valid date.", true); return; }
         if (!sourceText || !originalExcerpt.includes(sourceText)) { setStatus("ai-confirm-status", "A selected quotation no longer matches the source excerpt. Extract again before confirming.", true); return; }
-        assertions.push({ entity_id: entity, occurred_at: occurred.toISOString(), kind: card.querySelector("[data-ai-kind]").value, value, time_precision: card.querySelector("[data-ai-precision]").value, source_locator: card.querySelector("[data-ai-locator]").value.trim() || "ai-intake", source_text: sourceText });
+        assertions.push({ entity_id: entity, occurred_at: occurred.toISOString(), kind: card.querySelector("[data-ai-kind]").value, value, time_precision: precision, source_locator: card.querySelector("[data-ai-locator]").value.trim() || "ai-intake", source_text: sourceText });
       }
       const button = byId("ai-confirm");
       setBusy(button, true, "Confirming...");

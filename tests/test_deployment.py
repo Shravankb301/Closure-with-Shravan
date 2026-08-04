@@ -204,6 +204,9 @@ def test_dashboard_serves_the_boston_evidence_command_board() -> None:
         assert "/cases/${state.caseId}/search?q=" in response.text
         assert "No live agency connector is claimed" not in response.text
         assert "function parseCsv" in response.text
+        assert "const COARSE_TIME_PRECISIONS" in response.text
+        assert "toLocalInput(proposal.occurred_at, proposal.time_precision)" in response.text
+        assert "parseOccurredAt(occurredRaw, precision)" in response.text
         assert (
             'const REAL_CASE_TEMPLATE_ID = "boston-obstruction-public-record-v1"' in response.text
         )
