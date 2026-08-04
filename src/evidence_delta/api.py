@@ -87,7 +87,11 @@ def create_app(
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         nonlocal worker_runtime
-        database.ensure_schema()
+        # SQLite setup is safe and necessary for local use. Durable database
+        # migrations run on startup only when the deployment profile permits it.
+        # In particular, Vercel functions must not run Alembic during a request.
+        if database.engine.dialect.name == "sqlite" or settings.migrate_on_startup:
+            database.ensure_schema()
         if embedded_worker:
             worker_runtime = WorkerLoop(worker)
             worker_runtime.start()
