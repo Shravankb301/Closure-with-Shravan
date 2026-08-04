@@ -405,6 +405,12 @@ Core endpoints:
 
 Interactive API documentation is available at `/docs` while the server runs.
 
+PostgreSQL migrations should run once as a deployment step with
+`alembic upgrade head`. `MIGRATE_ON_STARTUP` defaults to `false` on Vercel so
+concurrent serverless invocations never compete to change the schema. It
+defaults to `true` elsewhere for conventional long-running deployments and can
+be set explicitly. Local SQLite setup always runs at startup.
+
 Artifact processing uses on-device macOS Vision OCR locally and automatically
 falls back to Poppler plus Tesseract when those binaries are installed. The
 included Docker image installs the cross-platform OCR runtime used by Render.

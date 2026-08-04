@@ -11,6 +11,7 @@ from evidence_delta.api import create_app
 from evidence_delta.database import Database
 from evidence_delta.runtime import WorkerLoop
 from evidence_delta.service import EvidenceService
+from evidence_delta.settings import AppSettings
 from evidence_delta.worker import RecomputeWorker
 from tests.helpers import document
 
@@ -39,6 +40,46 @@ def test_provider_postgres_url_uses_psycopg_three() -> None:
     assert Database.normalize_url("postgres://user:pass@db/internal") == (
         "postgresql+psycopg://user:pass@db/internal"
     )
+
+
+def test_vercel_disables_startup_migrations_by_default(monkeypatch) -> None:
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.delenv("MIGRATE_ON_STARTUP", raising=False)
+
+    assert AppSettings.from_environment().migrate_on_startup is False
+
+
+def test_startup_migration_setting_can_be_overridden(monkeypatch) -> None:
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("MIGRATE_ON_STARTUP", "true")
+
+    assert AppSettings.from_environment().migrate_on_startup is True
+
+
+def test_vercel_postgres_lifespan_does_not_run_migrations(monkeypatch) -> None:
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.delenv("MIGRATE_ON_STARTUP", raising=False)
+    migration_calls: list[str] = []
+    monkeypatch.setattr(
+        Database,
+        "ensure_schema",
+        lambda database: migration_calls.append(database.engine.dialect.name),
+    )
+    app = create_app("postgresql+psycopg://user:password@localhost/evidence_delta")
+
+    with TestClient(app):
+        pass
+
+    assert migration_calls == []
+
+
+def test_sqlite_initializes_even_when_startup_migrations_are_disabled(monkeypatch) -> None:
+    monkeypatch.setenv("MIGRATE_ON_STARTUP", "false")
+    app = create_app("sqlite+pysqlite:///:memory:")
+
+    with TestClient(app) as client:
+        assert client.get("/health").status_code == 200
+        assert client.post("/cases", json={"name": "Local schema"}).status_code == 201
 
 
 def test_local_sqlite_schema_upgrades_legacy_evidence_columns(tmp_path: Path) -> None:

@@ -22,6 +22,7 @@ class AppSettings:
     manual_drain: bool
     enable_local_ocr: bool
     artifact_vault_dir: str | None
+    migrate_on_startup: bool
 
     @classmethod
     def from_environment(cls, database_url: str | None = None) -> AppSettings:
@@ -40,4 +41,10 @@ class AppSettings:
                 "ARTIFACT_VAULT_DIR", "./.evidence_delta_artifacts"
             ).strip()
             or None,
+            # A Vercel function can be started concurrently for many requests.
+            # Schema changes belong in a deployment step, not each invocation.
+            migrate_on_startup=_environment_flag(
+                "MIGRATE_ON_STARTUP",
+                default=not bool(os.getenv("VERCEL")),
+            ),
         )
